@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Controle do Edital</title>
+    <style>
+        /* Regra universal para a tela ocupar 100% corretamente */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        :root {
+            --bg-principal: linear-gradient(135deg, #121212 0%, #000000 100%);
+            --bg-painel: rgba(20, 20, 20, 0.6);
+            --bg-card: rgba(30, 30, 30, 0.4);
+            --borda-sutil: rgba(255, 255, 255, 0.08);
+            --borda-hover: rgba(255, 255, 255, 0.2);
+            --texto-puro: #ffffff;
+            --texto-base: #e0e0e0;
+            --texto-mutado: #888888;
+            --btn-primario-bg: linear-gradient(135deg, #f5f5f5 0%, #c0c0c0 100%);
+            --btn-primario-texto: #000000;
+            --btn-secundario-bg: #2a2a2a;
+            --btn-secundario-hover: #3a3a3a;
+            --btn-excluir: #2b1d1d;
+            --btn-excluir-hover: #4a2525;
+            --texto-excluir: #d99a9a;
+        }
+
+        body, html {
+            height: 100%;
+            font-family: 'Inter', 'Segoe UI', Roboto, Helvetica, sans-serif;
+            background: linear-gradient(135deg, #121212 0%, #000000 100%);
+            color: var(--texto-base);
+            display: flex;
+            overflow: hidden;
+            width: 100vw;
+        }
+
+        .sidebar {
+            width: 260px;
+            min-width: 260px;
+            background: var(--bg-painel);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-right: 1px solid var(--borda-sutil);
+            display: flex;
+            flex-direction: column;
+            box-shadow: 5px 0 15px rgba(0,0,0,0.5);
+            z-index: 10;
+        }
+
+        .status-panel {
+            padding: 40px 20px;
+            text-align: center;
+            border-bottom: 1px solid var(--borda-sutil);
+            margin-bottom: 20px;
+        }
+
+        .xp-label { font-size: 0.85rem; color: var(--texto-mutado); text-transform: uppercase; letter-spacing: 1px; }
+        
+        .xp-valor { 
+            font-size: 2.5rem; 
+            font-weight: 800; 
+            color: var(--texto-puro); 
+            margin: 10px 0;
+            text-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
+        }
+
+        .nivel-valor { 
+            font-size: 0.9rem; 
+            color: var(--texto-base); 
+            background: rgba(255, 255, 255, 0.1);
+            padding: 4px 12px;
+            border-radius: 20px;
+            display: inline-block;
+        }
+
+        .nav-btn {
+            background: none;
+            border: none;
+            color: var(--texto-mutado);
+            padding: 16px 24px;
+            text-align: left;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: block;
+            border-left: 3px solid transparent;
+        }
+
+        .nav-btn:hover { background: rgba(255, 255, 255, 0.03); color: var(--texto-puro); }
+        .nav-btn.active { 
+            border-left-color: var(--texto-puro); 
+            background: linear-gradient(90deg, rgba(255,255,255,0.05) 0%, transparent 100%);
+            color: var(--texto-puro); 
+            font-weight: 600; 
+        }
+
+        .main-content {
+            flex: 1;
+            padding: 50px;
+            overflow-y: auto;
+            width: 100%;
+        }
+
+        .container-interno {
+            max-width: 1200px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .main-content::-webkit-scrollbar { width: 8px; }
+        .main-content::-webkit-scrollbar-track { background: transparent; }
+        .main-content::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
+
+        h1 { 
+            margin-top: 0; 
+            font-size: 2.2rem;
+            font-weight: 300;
+            letter-spacing: -1px;
+            background: linear-gradient(to right, #ffffff, #777777);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 40px;
+        }
+
+        /* =========================================
+           WIDGET DE FOCO ATUALIZADO
+           ========================================= */
+        .widget-timer {
+            background: var(--bg-card);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            border: 1px solid var(--borda-sutil);
+            border-radius: 12px;
+            padding: 25px 30px;
+            margin-bottom: 40px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 20px;
+            transition: border-color 0.3s ease;
+        }
+        
+        .widget-timer:hover { border-color: var(--borda-hover); }
+
+        .timer-info {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .timer-info h3 {
+            margin: 0;
+            font-size: 1.2rem;
+            color: var(--texto-puro);
+            font-weight: 500;
+        }
+
+        .timer-setup { display: flex; gap: 15px; align-items: center; }
+        .timer-setup label { font-size: 0.85rem; color: var(--texto-mutado); margin-right: 8px; }
+        
+        .input-tempo {
+            background: rgba(0,0,0,0.5);
+            border: 1px solid var(--borda-sutil);
+            color: var(--texto-puro);
+            padding: 8px;
+            border-radius: 6px;
+            width: 60px;
+            text-align: center;
+            outline: none;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+        .input-tempo:focus { border-color: var(--borda-hover); background: rgba(0,0,0,0.8); }
+
+        /* Estilos do Select da Disciplina */
+        select.input-tempo {
+            width: auto;
+            min-width: 180px;
+            cursor: pointer;
+            text-align: left;
+            padding: 8px 12px;
+        }
+        select.input-tempo option {
+            background: #1a1a1a;
+            color: #fff;
+        }
+        select:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .timer-display-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .timer-display {
+            font-size: 4rem;
+            font-weight: 800;
+            font-variant-numeric: tabular-nums;
+            letter-spacing: 2px;
+            line-height: 1;
+            transition: color 0.5s, text-shadow 0.5s;
+        }
+
+        .timer-neutro { color: #cccccc; text-shadow: none; }
+        .timer-foco { color: #ffffff; text-shadow: 0 0 25px rgba(255, 255, 255, 0.4); }
+        .timer-descanso { color: #82b1ff; text-shadow: 0 0 25px rgba(130, 177, 255, 0.4); }
+
+        .timer-status {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-top: 8px;
+            color: var(--texto-mutado);
+            font-weight: bold;
+        }
+
+        .timer-controles {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        /* ========================================= */
+
+        .top-bar {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 40px;
+            background: var(--bg-painel);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid var(--borda-sutil);
+            width: 100%;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            padding: 14px 20px;
+            border-radius: 6px;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid var(--borda-sutil);
+            color: var(--texto-puro);
+            font-size: 1rem;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+        
+        input[type="text"]:focus { border-color: var(--borda-hover); background: rgba(0, 0, 0, 0.8); box-shadow: 0 0 10px rgba(255, 255, 255, 0.05); }
+
+        button, .btn-link {
+            padding: 12px 20px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-primario { background: var(--btn-primario-bg); color: var(--btn-primario-texto); box-shadow: 0 4px 15px rgba(255, 255, 255, 0.1); }
+        .btn-primario:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(255, 255, 255, 0.2); }
+        .btn-secundario { background: var(--btn-secundario-bg); color: var(--texto-base); border: 1px solid var(--borda-sutil); }
+        .btn-secundario:hover { background: var(--btn-secundario-hover); border-color: var(--borda-hover); }
+        .btn-excluir { background: var(--btn-excluir); color: var(--texto-excluir); border: 1px solid rgba(217, 154, 154, 0.1); }
+        .btn-excluir:hover { background: var(--btn-excluir-hover); color: #fff; border-color: rgba(255, 100, 100, 0.3); }
+        .btn-concluido { background: transparent; color: var(--texto-mutado); border: 1px dashed var(--borda-sutil); cursor: default; }
+
+        .disciplina-card {
+            background: var(--bg-card);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 30px;
+            border: 1px solid var(--borda-sutil);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            transition: transform 0.3s ease;
+            width: 100%;
+        }
+
+        .disciplina-card:hover { border-color: var(--borda-hover); }
+
+        .disciplina-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--borda-sutil);
+        }
+
+        .disciplina-header h2 { margin: 0; font-size: 1.4rem; font-weight: 500; color: var(--texto-puro); }
+
+        .assunto-item {
+            background: rgba(10, 10, 10, 0.4);
+            border: 1px solid var(--borda-sutil);
+            border-radius: 8px;
+            padding: 18px 24px;
+            margin-top: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.2s ease;
+        }
+
+        .assunto-item:hover { background: rgba(20, 20, 20, 0.8); transform: translateX(5px); border-color: var(--borda-hover); }
+        .assunto-title { font-weight: 400; font-size: 1.05rem; }
+        .assunto-actions { display: flex; gap: 12px; align-items: center; }
+    </style>
+</head>
+<body>
+    <aside class="sidebar">
+        <div class="status-panel">
+            <div class="xp-label">Pontuação Total</div>
+            <div id="xp-display" class="xp-valor">0</div>
+            <div id="nivel-display" class="nivel-valor">Nível 1</div>
+        </div>
+        <a href="/" class="nav-btn active">Edital de Estudos</a>
+        <a href="/nucleo" class="nav-btn">Desempenho & Gráficos</a>
+    </aside>
+
+    <main class="main-content">
+        <div class="container-interno">
+            <h1>Controle Estratégico</h1>
+            
+            <!-- WIDGET DE FOCO COM SELEÇÃO DE DISCIPLINA -->
+            <div class="widget-timer">
+                <div class="timer-info">
+                    <h3>⏱ Foco & Produtividade</h3>
+                    <div class="timer-setup">
+                        <div>
+                            <label>Foco (min)</label>
+                            <input type="number" id="input-foco" class="input-tempo" value="50" min="1">
+                        </div>
+                        <div>
+                            <label>Pausa (min)</label>
+                            <input type="number" id="input-pausa" class="input-tempo" value="10" min="1">
+                        </div>
+                    </div>
+                    <!-- NOVO: Seleção de Disciplina para vincular as horas -->
+                    <div class="timer-setup" style="margin-top: 5px;">
+                        <label>Vincular tempo à:</label>
+                        <select id="select-disciplina-timer" class="input-tempo">
+                            <option value="-1">Geral (Não contabilizar)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="timer-display-container">
+                    <div id="display-tempo" class="timer-display timer-neutro">50:00</div>
+                    <div id="status-tempo" class="timer-status">Pronto para Iniciar</div>
+                </div>
+
+                <div class="timer-controles">
+                    <button class="btn-primario" id="btn-iniciar" onclick="iniciarTimer()">▶ Iniciar</button>
+                    <button class="btn-secundario" onclick="pausarTimer()">⏸ Pausar</button>
+                    <button class="btn-excluir" onclick="resetarTimer()">⏹ Reset</button>
+                </div>
+            </div>
+            
+            <div class="top-bar">
+                <input type="text" id="input-disciplina" placeholder="Nome da Nova Disciplina (Ex: Direito Constitucional)">
+                <button class="btn-primario" onclick="adicionarDisciplina()">Adicionar Disciplina</button>
+            </div>
+            
+            <div id="lista-disciplinas"></div>
+        </div>
+    </main>
+
+    <script>
+        let dadosApp = { xp: 0, tempo_total: 0, edital: [] };
+
+        // Variáveis do Timer
+        let tempoRestante = 0;
+        let intervaloTimer = null;
+        let emFoco = true;
+        let rodando = false;
+        
+        // NOVO: Variável para acumular os segundos estudados antes de salvar no banco
+        let segundosAcumuladosFoco = 0; 
+
+        window.onload = async () => {
+            await carregarDoBanco();
+            renderizarTela();
+            inicializarTimerVisual(); 
+        };
+
+        /* =========================================
+           LÓGICA DE SALVAMENTO DE TEMPO
+           ========================================= */
+        function registrarTempoEstudado() {
+            // Só salva se tiver acumulado tempo e se estava focado (não salva pausa)
+            if (segundosAcumuladosFoco > 0) {
+                // Adiciona no tempo total global da conta (garante que existe)
+                if (typeof dadosApp.tempo_total === 'undefined') dadosApp.tempo_total = 0;
+                dadosApp.tempo_total += segundosAcumuladosFoco;
+
+                const select = document.getElementById('select-disciplina-timer');
+                const indexDisc = parseInt(select.value);
+
+                // Se selecionou uma disciplina válida (-1 é "Geral/Não contabilizar")
+                if (indexDisc >= 0 && dadosApp.edital[indexDisc]) {
+                    if (typeof dadosApp.edital[indexDisc].tempo_estudado === 'undefined') {
+                        dadosApp.edital[indexDisc].tempo_estudado = 0;
+                    }
+                    dadosApp.edital[indexDisc].tempo_estudado += segundosAcumuladosFoco;
+                }
+
+                // Zera o acumulador após salvar na variável e dispara o save no banco
+                segundosAcumuladosFoco = 0;
+                salvarNoBanco();
+            }
+        }
+
+        // Atualiza a lista do Select sem perder a seleção atual do usuário
+        function atualizarSelectDisciplinas() {
+            const select = document.getElementById('select-disciplina-timer');
+            const selecaoAtual = select.value;
+            
+            select.innerHTML = '<option value="-1">Geral (Não contabilizar)</option>';
+            
+            dadosApp.edital.forEach((disc, index) => {
+                select.insertAdjacentHTML('beforeend', `<option value="${index}">${disc.nome}</option>`);
+            });
+
+            // Tenta restaurar a seleção anterior se ela ainda existir
+            if (selecaoAtual && document.querySelector(`#select-disciplina-timer option[value="${selecaoAtual}"]`)) {
+                select.value = selecaoAtual;
+            }
+        }
+
+        /* =========================================
+           LÓGICA DO TIMER DE FOCO
+           ========================================= */
+        function inicializarTimerVisual() {
+            const minFoco = document.getElementById('input-foco').value.padStart(2, '0');
+            document.getElementById('display-tempo').innerText = `${minFoco}:00`;
+        }
+
+        function atualizarDisplayTempo() {
+            const min = Math.floor(tempoRestante / 60).toString().padStart(2, '0');
+            const seg = (tempoRestante % 60).toString().padStart(2, '0');
+            document.getElementById('display-tempo').innerText = `${min}:${seg}`;
+        }
+
+        function mudarEstadoVisual(estado) {
+            const display = document.getElementById('display-tempo');
+            const status = document.getElementById('status-tempo');
+            
+            display.classList.remove('timer-neutro', 'timer-foco', 'timer-descanso');
+            
+            if (estado === 'foco') {
+                display.classList.add('timer-foco');
+                status.innerText = "SESSÃO DE FOCO PROFUNDO";
+                status.style.color = "#ffffff";
+            } else if (estado === 'descanso') {
+                display.classList.add('timer-descanso');
+                status.innerText = "TEMPO DE DESCANSO";
+                status.style.color = "#82b1ff";
+            } else {
+                display.classList.add('timer-neutro');
+                status.innerText = "PAUSADO / AGUARDANDO";
+                status.style.color = "var(--texto-mutado)";
+            }
+        }
+
+        function alternarFase() {
+            // Se estava no foco e acabou, salva o tempo acumulado no banco
+            if (emFoco) registrarTempoEstudado();
+
+            emFoco = !emFoco;
+            const inputId = emFoco ? 'input-foco' : 'input-pausa';
+            tempoRestante = parseInt(document.getElementById(inputId).value) * 60;
+            
+            mudarEstadoVisual(emFoco ? 'foco' : 'descanso');
+            tocarBeep(); 
+
+            // Se entrou no descanso, libera a seleção de disciplina. Se entrou no foco, bloqueia.
+            document.getElementById('select-disciplina-timer').disabled = emFoco;
+        }
+
+        function iniciarTimer() {
+            if (rodando) return;
+            
+            if (tempoRestante === 0) {
+                tempoRestante = parseInt(document.getElementById('input-foco').value) * 60;
+            }
+
+            rodando = true;
+            mudarEstadoVisual(emFoco ? 'foco' : 'descanso');
+            document.getElementById('btn-iniciar').innerText = "▶ Rodando...";
+            
+            // Trava o seletor de disciplina para o usuário não mudar no meio da sessão
+            document.getElementById('select-disciplina-timer').disabled = true;
+
+            intervaloTimer = setInterval(() => {
+                tempoRestante--;
+                
+                // Se estiver em modo foco, acumula 1 segundo estudado
+                if (emFoco) {
+                    segundosAcumuladosFoco++;
+                }
+
+                atualizarDisplayTempo();
+
+                if (tempoRestante <= 0) {
+                    alternarFase();
+                }
+            }, 1000);
+        }
+
+        function pausarTimer() {
+            clearInterval(intervaloTimer);
+            rodando = false;
+            mudarEstadoVisual('neutro');
+            document.getElementById('btn-iniciar').innerText = "▶ Retomar";
+            document.getElementById('select-disciplina-timer').disabled = false; // Destrava
+            
+            // Ao pausar, já salva o que foi estudado até agora
+            registrarTempoEstudado();
+        }
+
+        function resetarTimer() {
+            clearInterval(intervaloTimer);
+            rodando = false;
+            tempoRestante = 0;
+            emFoco = true;
+            
+            // Salva qualquer resquício de tempo estudado antes de resetar
+            registrarTempoEstudado();
+
+            inicializarTimerVisual();
+            document.getElementById('btn-iniciar').innerText = "▶ Iniciar";
+            mudarEstadoVisual('neutro');
+            document.getElementById('select-disciplina-timer').disabled = false; // Destrava
+        }
+
+        function tocarBeep() {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = ctx.createOscillator();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(emFoco ? 800 : 500, ctx.currentTime);
+                osc.connect(ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.5);
+            } catch(e) {
+                console.log("Áudio não suportado ou bloqueado pelo navegador.");
+            }
+        }
+
+        /* =========================================
+           LÓGICA ORIGINAL DO APLICATIVO
+           ========================================= */
+        async function carregarDoBanco() {
+            try {
+                const res = await fetch('/api/dados');
+                dadosApp = await res.json();
+            } catch (erro) { console.error("Erro ao carregar dados:", erro); }
+        }
+
+        async function salvarNoBanco() {
+            try {
+                await fetch('/api/dados', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(dadosApp)
+                });
+                renderizarTela(); 
+            } catch (erro) { console.error("Erro ao salvar dados:", erro); }
+        }
+
+        function renderizarTela() {
+            atualizarStatus();
+            atualizarSelectDisciplinas(); // Mantém o dropdown sempre com os nomes atualizados
+
+            const container = document.getElementById('lista-disciplinas');
+            container.innerHTML = ''; 
+
+            dadosApp.edital.forEach((disciplina, i_disc) => {
+                let htmlTopicos = '';
+                disciplina.topicos.forEach((topico, i_top) => {
+                    const idAssunto = `${i_disc}-${i_top}`;
+                    let btnEstudarHtml = topico.estudou 
+                        ? `<button class="btn-concluido">Concluído</button>` 
+                        : `<button class="btn-primario" onclick="marcarComoEstudado(${i_disc}, ${i_top})">Marcar Estudado</button>`;
+
+                    htmlTopicos += `
+                        <div class="assunto-item">
+                            <span class="assunto-title" style="${topico.estudou ? 'color: var(--texto-mutado); text-decoration: line-through;' : ''}">
+                                ${topico.nome}
+                            </span>
+                            <div class="assunto-actions">
+                                ${btnEstudarHtml}
+                                <a href="/sala/${idAssunto}" class="btn-secundario">Acessar Sala</a>
+                                <button class="btn-excluir" onclick="removerTopico(${i_disc}, ${i_top})">Excluir</button>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                container.insertAdjacentHTML('beforeend', `
+                    <div class="disciplina-card">
+                        <div class="disciplina-header">
+                            <h2>${disciplina.nome}</h2>
+                            <button class="btn-excluir" onclick="removerDisciplina(${i_disc})">Remover Disciplina</button>
+                        </div>
+                        <div class="top-bar" style="margin-bottom: 15px; border: none; padding: 0; background: transparent;">
+                            <input type="text" id="input_assunto_${i_disc}" placeholder="Adicionar novo assunto à disciplina...">
+                            <button class="btn-secundario" onclick="adicionarTopico(${i_disc})">Adicionar Assunto</button>
+                        </div>
+                        <div>${htmlTopicos}</div>
+                    </div>
+                `);
+            });
+        }
+
+        function atualizarStatus() {
+            const xp = dadosApp.xp || 0;
+            document.getElementById('xp-display').innerText = xp;
+            const nivel = Math.floor(Math.sqrt(xp / 50)) + 1; 
+            document.getElementById('nivel-display').innerText = `Nível ${nivel}`;
+        }
+
+        function adicionarDisciplina() {
+            const input = document.getElementById('input-disciplina');
+            const nome = input.value.trim();
+            if (!nome) return;
+            // NOVO: A disciplina já é criada com o parâmetro "tempo_estudado: 0"
+            dadosApp.edital.push({ nome: nome, tempo_estudado: 0, topicos: [] });
+            input.value = '';
+            salvarNoBanco();
+        }
+
+        function removerDisciplina(index) {
+            if (confirm('Tem certeza que deseja apagar esta disciplina inteira? O tempo estudado também será perdido.')) {
+                dadosApp.edital.splice(index, 1);
+                salvarNoBanco();
+            }
+        }
+
+        function adicionarTopico(i_disc) {
+            const input = document.getElementById(`input_assunto_${i_disc}`);
+            const nome = input.value.trim();
+            if (!nome) return;
+            dadosApp.edital[i_disc].topicos.push({ nome: nome, estudou: false, data_conclusao: null, questoes: 0, resumo: "" });
+            input.value = '';
+            salvarNoBanco();
+        }
+
+        function removerTopico(i_disc, i_top) {
+            if (confirm('Remover este assunto?')) {
+                dadosApp.edital[i_disc].topicos.splice(i_top, 1);
+                salvarNoBanco();
+            }
+        }
+
+        function marcarComoEstudado(i_disc, i_top) {
+            const topico = dadosApp.edital[i_disc].topicos[i_top];
+            if (!topico.estudou) {
+                topico.estudou = true;
+                topico.data_conclusao = new Date().toISOString().split('T')[0];
+                dadosApp.xp += 10;
+                salvarNoBanco();
+            }
+        }
+    </script>
+</body>
+</html>

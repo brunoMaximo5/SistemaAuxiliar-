@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Desempenho & Gráficos</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root { 
+            --bg-principal: linear-gradient(135deg, #0a0a0a 0%, #000000 100%);
+            --bg-painel: rgba(20, 20, 20, 0.75); 
+            --texto-puro: #ffffff; 
+            --texto-base: #e0e0e0;
+            --texto-mutado: #888888;
+            --borda-sutil: rgba(255, 255, 255, 0.08); 
+        }
+
+        body, html { 
+            height: 100%; 
+            width: 100vw;
+            font-family: 'Inter', 'Segoe UI', Roboto, sans-serif; 
+            background: var(--bg-principal); 
+            color: var(--texto-base); 
+            overflow: hidden; 
+        }
+
+        .btn-voltar { 
+            position: absolute; 
+            top: 30px; 
+            left: 30px; 
+            z-index: 10; 
+            background: var(--bg-painel); 
+            color: var(--texto-puro); 
+            padding: 12px 24px; 
+            text-decoration: none; 
+            border-radius: 6px; 
+            border: 1px solid var(--borda-sutil); 
+            transition: 0.3s;
+            font-weight: 600;
+            backdrop-filter: blur(5px);
+        }
+        .btn-voltar:hover { background: rgba(255,255,255,0.1); }
+
+        #canvas-energia { 
+            position: absolute; 
+            top: 0; 
+            left: 0; 
+            width: 100vw; 
+            height: 100vh; 
+            z-index: 1; 
+            pointer-events: none;
+        }
+
+        .main-container {
+            position: relative;
+            z-index: 2;
+            display: flex;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        /* Esfera centralizada corretamente */
+        .area-nucleo { 
+            flex: 1; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+        }
+
+        .area-stats { 
+            width: 400px; 
+            background: var(--bg-painel); 
+            backdrop-filter: blur(15px); 
+            -webkit-backdrop-filter: blur(15px);
+            border-left: 1px solid var(--borda-sutil); 
+            padding: 50px 40px; 
+            display: flex; 
+            flex-direction: column; 
+            justify-content: center; 
+            gap: 2rem; 
+            box-shadow: -10px 0 30px rgba(0,0,0,0.5); 
+        }
+
+        /* Tons de cinza e prata para a esfera de energia */
+        .nucleo { border-radius: 50%; transition: all 1s ease-in-out; position: relative; }
+        .nivel-1 { width: 60px; height: 60px; background: #333333; box-shadow: 0 0 20px rgba(255,255,255,0.2); animation: pulse-suave 3s infinite; }
+        .nivel-2 { width: 100px; height: 100px; background: #666666; box-shadow: 0 0 40px rgba(255,255,255,0.4); animation: pulse-suave 2s infinite; }
+        .nivel-3 { width: 140px; height: 140px; background: #a0a0a0; box-shadow: 0 0 60px rgba(255,255,255,0.6); animation: pulse-cardiaco 1.5s infinite; }
+        .nivel-4 { width: 180px; height: 180px; background: #e0e0e0; box-shadow: 0 0 80px rgba(255,255,255,0.8); animation: pulse-sol 3s infinite alternate; }
+        .nivel-5 { width: 200px; height: 200px; background: #000000; border: 4px solid #ffffff; box-shadow: 0 0 100px #ffffff; animation: pulse-singularidade 4s infinite linear; }
+        
+        @keyframes pulse-suave { 0%, 100% { transform: scale(0.95); opacity: 0.8; } 50% { transform: scale(1.05); opacity: 1; } }
+        @keyframes pulse-cardiaco { 0%, 30%, 100% { transform: scale(0.95); } 15% { transform: scale(1.05); } 45% { transform: scale(1.02); } }
+        @keyframes pulse-sol { 0% { transform: scale(0.98); box-shadow: 0 0 60px rgba(255,255,255,0.5); } 100% { transform: scale(1.02); box-shadow: 0 0 100px rgba(255,255,255,0.9); } }
+        @keyframes pulse-singularidade { 0% { transform: rotate(0deg) scale(1); box-shadow: 0 0 60px rgba(255,255,255,0.7); } 50% { transform: rotate(180deg) scale(1.05); box-shadow: 0 0 120px rgba(255,255,255,1); } 100% { transform: rotate(360deg) scale(1); box-shadow: 0 0 60px rgba(255,255,255,0.7); } }
+
+        .titulo { font-size: 1.5rem; font-weight: 300; margin: 0; color: var(--texto-mutado); text-transform: uppercase; letter-spacing: 2px;}
+        .nivel-display { font-size: 3.5rem; color: var(--texto-puro); font-weight: 800; margin-bottom: 1rem; text-shadow: 0 0 20px rgba(255,255,255,0.2);}
+        
+        .stat-card { background: rgba(0,0,0,0.4); border: 1px solid var(--borda-sutil); padding: 20px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; }
+        .stat-label { font-size: 0.9rem; color: var(--texto-mutado); text-transform: uppercase; font-weight: 600;}
+        .stat-value { font-size: 1.4rem; font-weight: bold; color: var(--texto-puro); }
+    </style>
+</head>
+<body>
+
+    <a href="/" class="btn-voltar">Voltar ao Edital</a>
+    <canvas id="canvas-energia"></canvas>
+
+    <div class="main-container">
+        <div class="area-nucleo">
+            <div id="meu-nucleo" class="nucleo nivel-1"></div>
+        </div>
+
+        <div class="area-stats">
+            <div>
+                <h1 class="titulo">Nível Atual</h1>
+                <div id="txt-nivel" class="nivel-display">Nível 1</div>
+            </div>
+            
+            <div class="stat-card">
+                <span class="stat-label">Sequência de Estudos</span>
+                <span class="stat-value">1 Dia</span>
+            </div>
+            
+            <div class="stat-card">
+                <span class="stat-label">Pontuação Total</span>
+                <span id="txt-xp-total" class="stat-value">Carregando...</span>
+            </div>
+        </div>
+    </div>
+
+<script>
+    async function carregarDadosReais() {
+        try {
+            const res = await fetch('/api/dados');
+            const data = await res.json();
+            const xpReal = data.xp || 0;
+            
+            document.getElementById('txt-xp-total').innerText = xpReal;
+            const nivel = Math.floor(Math.sqrt(xpReal / 50)) + 1; 
+            document.getElementById('txt-nivel').innerText = `Nível ${nivel}`;
+            
+            const nucleo = document.getElementById('meu-nucleo');
+            nucleo.className = 'nucleo'; 
+
+            if (nivel < 10) nucleo.classList.add('nivel-1'); 
+            else if (nivel < 30) nucleo.classList.add('nivel-2');
+            else if (nivel < 60) nucleo.classList.add('nivel-3');
+            else if (nivel < 100) nucleo.classList.add('nivel-4');
+            else nucleo.classList.add('nivel-5');
+        } catch(e) { console.error("Erro ao carregar dados:", e); }
+    }
+
+    const canvas = document.getElementById('canvas-energia');
+    const ctx = canvas.getContext('2d');
+    let width, height, particulas = [];
+
+    function resize() { 
+        width = canvas.width = window.innerWidth; 
+        height = canvas.height = window.innerHeight; 
+    }
+    window.addEventListener('resize', resize);
+    resize();
+
+    class Particula {
+        constructor() { 
+            this.x = Math.random() * width; 
+            this.y = Math.random() * height; 
+            this.tamanho = Math.random() * 1.5; 
+            this.vx = (Math.random() - 0.5) * 0.5; 
+            this.vy = (Math.random() - 0.5) * 0.5; 
+        }
+        update() { 
+            this.x += this.vx; 
+            this.y += this.vy; 
+            if(this.x < 0 || this.x > width) this.vx *= -1; 
+            if(this.y < 0 || this.y > height) this.vy *= -1; 
+        }
+        draw() { 
+            ctx.fillStyle = `rgba(255, 255, 255, 0.3)`; 
+            ctx.beginPath(); 
+            ctx.arc(this.x, this.y, this.tamanho, 0, Math.PI * 2); 
+            ctx.fill(); 
+        }
+    }
+    
+    for(let i = 0; i < 150; i++) particulas.push(new Particula());
+
+    function animarCanvas() {
+        ctx.clearRect(0, 0, width, height);
+        particulas.forEach(p => { p.update(); p.draw(); });
+        requestAnimationFrame(animarCanvas);
+    }
+    
+    animarCanvas();
+    carregarDadosReais();
+</script>
+</body>
+</html>

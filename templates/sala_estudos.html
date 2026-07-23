@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sala de Estudos</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg-principal: #0a0a0a;
+            --bg-painel: #141414;
+            --bg-card: #1e1e1e;
+            --borda-sutil: #333333;
+            --borda-hover: #555555;
+            --texto-puro: #ffffff;
+            --texto-base: #cccccc;
+            --texto-mutado: #888888;
+            --btn-primario-bg: linear-gradient(135deg, #f5f5f5 0%, #c0c0c0 100%);
+            --btn-primario-texto: #000000;
+            --btn-secundario-bg: #2a2a2a;
+            --btn-secundario-hover: #3a3a3a;
+            --cor-acerto: #4caf50;
+            --cor-erro: #f44336;
+        }
+
+        body, html {
+            height: 100%;
+            font-family: 'Inter', 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-principal);
+            color: var(--texto-base);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* =========================================
+           TOP BAR
+           ========================================= */
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 30px;
+            background: var(--bg-painel);
+            border-bottom: 1px solid var(--borda-sutil);
+            z-index: 10;
+        }
+
+        .titulo-assunto {
+            font-size: 1.2rem;
+            font-weight: 400;
+            color: var(--texto-puro);
+        }
+
+        /* =========================================
+           BOTÕES
+           ========================================= */
+        button, .btn-link {
+            padding: 10px 18px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-primario { background: var(--btn-primario-bg); color: var(--btn-primario-texto); }
+        .btn-primario:hover { transform: translateY(-1px); box-shadow: 0 4px 15px rgba(255,255,255,0.15); }
+        .btn-secundario { background: var(--btn-secundario-bg); color: var(--texto-puro); border: 1px solid var(--borda-sutil); }
+        .btn-secundario:hover { background: var(--btn-secundario-hover); border-color: var(--borda-hover); }
+
+        /* =========================================
+           LAYOUT PRINCIPAL (2 COLUNAS)
+           ========================================= */
+        .workspace {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        /* LADO ESQUERDO: EDITOR DARK */
+        .area-editor {
+            flex: 2;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid var(--borda-sutil);
+            background: var(--bg-principal);
+        }
+
+        .toolbar-custom {
+            padding: 10px;
+            background: var(--bg-painel);
+            border-bottom: 1px solid var(--borda-sutil);
+            display: flex;
+            gap: 5px;
+        }
+
+        .toolbar-btn {
+            background: transparent;
+            border: 1px solid transparent;
+            color: var(--texto-base);
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .toolbar-btn:hover { background: rgba(255,255,255,0.1); }
+
+        #editor-resumo {
+            flex: 1;
+            padding: 30px;
+            overflow-y: auto;
+            outline: none;
+            font-size: 1.05rem;
+            line-height: 1.6;
+            color: var(--texto-base);
+        }
+
+        /* LADO DIREITO: QUIZ E PEGADINHAS */
+        .area-ferramentas {
+            flex: 1;
+            min-width: 350px;
+            background: var(--bg-painel);
+            padding: 30px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+        }
+
+        .secao-titulo {
+            font-size: 1.1rem;
+            color: var(--texto-puro);
+            margin-bottom: 15px;
+            font-weight: 500;
+            border-bottom: 1px solid var(--borda-sutil);
+            padding-bottom: 10px;
+        }
+
+        textarea.input-dark {
+            width: 100%;
+            height: 150px;
+            background: rgba(0,0,0,0.5);
+            border: 1px solid var(--borda-sutil);
+            color: var(--texto-puro);
+            padding: 15px;
+            border-radius: 6px;
+            resize: vertical;
+            font-family: inherit;
+            outline: none;
+        }
+        textarea.input-dark:focus { border-color: var(--borda-hover); }
+
+        .card-quiz {
+            background: var(--bg-card);
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid var(--borda-sutil);
+            text-align: center;
+        }
+
+        .quiz-status { font-size: 2rem; font-weight: bold; color: var(--texto-puro); margin: 10px 0; }
+
+        /* =========================================
+           MODAIS (SOBREPOSIÇÃO)
+           ========================================= */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(0,0,0,0.85);
+            backdrop-filter: blur(5px);
+            display: none; justify-content: center; align-items: center; z-index: 100;
+        }
+
+        .modal-box {
+            background: var(--bg-painel);
+            border: 1px solid var(--borda-sutil);
+            border-radius: 12px;
+            padding: 30px;
+            width: 600px;
+            max-width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.5);
+        }
+
+        .modal-box h2 { margin-top: 0; color: var(--texto-puro); margin-bottom: 20px; }
+        
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; color: var(--texto-mutado); font-size: 0.9rem; }
+        
+        input[type="text"].input-dark {
+            width: 100%; padding: 12px; background: rgba(0,0,0,0.5); border: 1px solid var(--borda-sutil);
+            color: var(--texto-puro); border-radius: 6px; outline: none;
+        }
+
+        /* Itens do Quiz rodando */
+        .questao-box {
+            background: rgba(0,0,0,0.3); border: 1px solid var(--borda-sutil);
+            border-radius: 8px; padding: 20px; margin-bottom: 20px;
+        }
+        .questao-box h3 { font-size: 1.05rem; margin-top: 0; margin-bottom: 15px; color: var(--texto-puro); }
+        .alternativa-label {
+            display: block; padding: 10px 15px; background: var(--bg-secundario-bg);
+            border: 1px solid var(--borda-sutil); border-radius: 6px; margin-bottom: 8px;
+            cursor: pointer; transition: 0.2s;
+        }
+        .alternativa-label:hover { background: var(--bg-secundario-hover); border-color: var(--borda-hover); }
+        
+        /* Classes aplicadas após correção */
+        .alt-correta { background: rgba(76, 175, 80, 0.2) !important; border-color: var(--cor-acerto) !important; color: var(--cor-acerto); }
+        .alt-errada { background: rgba(244, 67, 54, 0.2) !important; border-color: var(--cor-erro) !important; color: var(--cor-erro); }
+        
+        .botoes-modal { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+
+    </style>
+</head>
+<body>
+
+    <header class="top-bar">
+        <a href="/" class="btn-secundario">← Voltar</a>
+        <div class="titulo-assunto" id="nome-assunto">Carregando Assunto...</div>
+        <button class="btn-primario" onclick="salvarTudo()">Salvar Progresso</button>
+    </header>
+
+    <div class="workspace">
+        <!-- LADO ESQUERDO: Resumo -->
+        <main class="area-editor">
+            <div class="toolbar-custom">
+                <button class="toolbar-btn" onclick="formatar('bold')">B</button>
+                <button class="toolbar-btn" onclick="formatar('italic')">I</button>
+                <button class="toolbar-btn" onclick="formatar('underline')">U</button>
+                <button class="toolbar-btn" onclick="formatar('insertUnorderedList')">• Lista</button>
+            </div>
+            <div id="editor-resumo" contenteditable="true" placeholder="Digite seu resumo aqui..."></div>
+        </main>
+
+        <!-- LADO DIREITO: Ferramentas -->
+        <aside class="area-ferramentas">
+            <div>
+                <h3 class="secao-titulo">Pegadinhas & Erros Recorrentes</h3>
+                <textarea id="texto-erros" class="input-dark" placeholder="Anote aqui as cascas de banana da banca..."></textarea>
+            </div>
+
+            <div class="card-quiz">
+                <h3 class="secao-titulo" style="border:none; margin-bottom: 0;">Quiz Interativo</h3>
+                <div class="quiz-status" id="qtd-questoes">0</div>
+                <div style="color: var(--texto-mutado); margin-bottom: 20px; font-size: 0.9rem;">Questões Cadastradas</div>
+                
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                    <button class="btn-secundario" onclick="abrirModalNovaQuestao()">+ Adicionar Questão</button>
+                    <button class="btn-primario" onclick="abrirModalQuiz()">Iniciar Revisão (Quiz)</button>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <!-- MODAL: ADICIONAR QUESTÃO -->
+    <div id="modal-add-questao" class="modal-overlay">
+        <div class="modal-box">
+            <h2>Nova Questão</h2>
+            <div class="form-group">
+                <label>Enunciado da Questão</label>
+                <textarea id="novo-enunciado" class="input-dark" style="height: 80px;"></textarea>
+            </div>
+            
+            <label style="color: var(--texto-mutado); font-size: 0.9rem; display: block; margin-bottom: 10px;">Preencha as alternativas e marque o círculo da correta:</label>
+            
+            <div class="form-group" style="display: flex; gap: 10px; align-items: center;">
+                <input type="radio" name="correta" value="0" checked>
+                <input type="text" id="alt-0" class="input-dark" placeholder="Alternativa A">
+            </div>
+            <div class="form-group" style="display: flex; gap: 10px; align-items: center;">
+                <input type="radio" name="correta" value="1">
+                <input type="text" id="alt-1" class="input-dark" placeholder="Alternativa B">
+            </div>
+            <div class="form-group" style="display: flex; gap: 10px; align-items: center;">
+                <input type="radio" name="correta" value="2">
+                <input type="text" id="alt-2" class="input-dark" placeholder="Alternativa C">
+            </div>
+            <div class="form-group" style="display: flex; gap: 10px; align-items: center;">
+                <input type="radio" name="correta" value="3">
+                <input type="text" id="alt-3" class="input-dark" placeholder="Alternativa D">
+            </div>
+
+            <div class="botoes-modal">
+                <button class="btn-secundario" onclick="fecharModal('modal-add-questao')">Cancelar</button>
+                <button class="btn-primario" onclick="salvarNovaQuestao()">Salvar Questão</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: RESOLVER QUIZ -->
+    <div id="modal-quiz" class="modal-overlay">
+        <div class="modal-box" style="width: 800px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--borda-sutil); padding-bottom: 15px; margin-bottom: 20px;">
+                <h2 style="margin: 0;">Revisão: Quiz</h2>
+                <h2 id="resultado-final" style="margin: 0; color: var(--cor-acerto); display: none;">Acertos: 0/0</h2>
+            </div>
+            
+            <div id="lista-quiz">
+                <!-- Javascript vai injetar as questões aqui -->
+            </div>
+
+            <div class="botoes-modal">
+                <button class="btn-secundario" onclick="fecharModal('modal-quiz')">Sair</button>
+                <button id="btn-corrigir" class="btn-primario" onclick="corrigirQuiz()">Finalizar e Corrigir</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let dadosApp = {};
+        let i_disc = 0;
+        let i_top = 0;
+        let topicoAtual = null;
+
+        // 1. CARREGAMENTO INICIAL
+        window.onload = async () => {
+            // Extrai os IDs da URL (ex: /sala/0-1)
+            const path = window.location.pathname.split('/');
+            const ids = path[path.length - 1].split('-');
+            if (ids.length === 2) {
+                i_disc = parseInt(ids[0]);
+                i_top = parseInt(ids[1]);
+            }
+
+            try {
+                const res = await fetch('/api/dados');
+                dadosApp = await res.json();
+                
+                topicoAtual = dadosApp.edital[i_disc].topicos[i_top];
+                
+                // Garante que os novos campos do quiz existam no banco antigo
+                if(!topicoAtual.erros) topicoAtual.erros = "";
+                if(!topicoAtual.quiz) topicoAtual.quiz = [];
+
+                renderizarDados();
+            } catch (erro) {
+                console.error("Erro ao carregar dados:", erro);
+                alert("Erro ao carregar os dados do banco.");
+            }
+        };
+
+        // 2. RENDERIZAÇÃO
+        function renderizarDados() {
+            document.getElementById('nome-assunto').innerText = topicoAtual.nome;
+            document.getElementById('editor-resumo').innerHTML = topicoAtual.resumo || "";
+            document.getElementById('texto-erros').value = topicoAtual.erros || "";
+            document.getElementById('qtd-questoes').innerText = topicoAtual.quiz.length;
+        }
+
+        // Editor de Texto Simples
+        function formatar(comando) {
+            document.execCommand(comando, false, null);
+            document.getElementById('editor-resumo').focus();
+        }
+
+        // 3. SALVAR TUDO (Botão Topo Direito)
+        async function salvarTudo() {
+            topicoAtual.resumo = document.getElementById('editor-resumo').innerHTML;
+            topicoAtual.erros = document.getElementById('texto-erros').value;
+            
+            try {
+                await fetch('/api/dados', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(dadosApp)
+                });
+                alert("Progresso salvo com sucesso!");
+            } catch (erro) {
+                alert("Erro ao salvar.");
+            }
+        }
+
+        // 4. LÓGICA DE MODAIS
+        function fecharModal(id) {
+            document.getElementById(id).style.display = 'none';
+        }
+
+        function abrirModalNovaQuestao() {
+            // Limpa o formulário
+            document.getElementById('novo-enunciado').value = "";
+            for(let i=0; i<4; i++) document.getElementById(`alt-${i}`).value = "";
+            document.querySelector('input[name="correta"][value="0"]').checked = true;
+            
+            document.getElementById('modal-add-questao').style.display = 'flex';
+        }
+
+        function salvarNovaQuestao() {
+            const enunciado = document.getElementById('novo-enunciado').value.trim();
+            const alternativas = [
+                document.getElementById('alt-0').value.trim(),
+                document.getElementById('alt-1').value.trim(),
+                document.getElementById('alt-2').value.trim(),
+                document.getElementById('alt-3').value.trim()
+            ];
+            const correta = parseInt(document.querySelector('input[name="correta"]:checked').value);
+
+            if (!enunciado || alternativas.some(a => a === "")) {
+                alert("Preencha o enunciado e todas as 4 alternativas!");
+                return;
+            }
+
+            topicoAtual.quiz.push({
+                enunciado: enunciado,
+                alternativas: alternativas,
+                correta: correta
+            });
+
+            document.getElementById('qtd-questoes').innerText = topicoAtual.quiz.length;
+            fecharModal('modal-add-questao');
+            salvarTudo(); // Já salva no backend
+        }
+
+        // 5. LÓGICA DO QUIZ INTERATIVO
+        function abrirModalQuiz() {
+            if (topicoAtual.quiz.length === 0) {
+                alert("Cadastre algumas questões primeiro!");
+                return;
+            }
+            
+            document.getElementById('resultado-final').style.display = 'none';
+            document.getElementById('btn-corrigir').style.display = 'inline-flex';
+            
+            const container = document.getElementById('lista-quiz');
+            container.innerHTML = "";
+
+            topicoAtual.quiz.forEach((q, indexQuestao) => {
+                let htmlAlternativas = "";
+                q.alternativas.forEach((alt, indexAlt) => {
+                    htmlAlternativas += `
+                        <label class="alternativa-label" id="label-${indexQuestao}-${indexAlt}">
+                            <input type="radio" name="resposta-${indexQuestao}" value="${indexAlt}">
+                            ${alt}
+                        </label>
+                    `;
+                });
+
+                container.insertAdjacentHTML('beforeend', `
+                    <div class="questao-box">
+                        <h3>${indexQuestao + 1}. ${q.enunciado}</h3>
+                        <div class="opcoes-container">
+                            ${htmlAlternativas}
+                        </div>
+                    </div>
+                `);
+            });
+
+            document.getElementById('modal-quiz').style.display = 'flex';
+        }
+
+        function corrigirQuiz() {
+            let acertos = 0;
+            const total = topicoAtual.quiz.length;
+
+            topicoAtual.quiz.forEach((q, indexQuestao) => {
+                const selecionada = document.querySelector(`input[name="resposta-${indexQuestao}"]:checked`);
+                const valSelecionado = selecionada ? parseInt(selecionada.value) : -1;
+
+                // Destaca a opção que era a correta (Verde)
+                const labelCorreta = document.getElementById(`label-${indexQuestao}-${q.correta}`);
+                labelCorreta.classList.add('alt-correta');
+
+                if (valSelecionado === q.correta) {
+                    acertos++;
+                } else if (valSelecionado !== -1) {
+                    // Se marcou errado, destaca de Vermelho
+                    const labelErrada = document.getElementById(`label-${indexQuestao}-${valSelecionado}`);
+                    labelErrada.classList.add('alt-errada');
+                }
+                
+                // Trava os botões
+                const radios = document.querySelectorAll(`input[name="resposta-${indexQuestao}"]`);
+                radios.forEach(r => r.disabled = true);
+            });
+
+            const lblResultado = document.getElementById('resultado-final');
+            lblResultado.innerText = `Acertos: ${acertos} / ${total}`;
+            lblResultado.style.color = acertos === total ? "var(--cor-acerto)" : (acertos === 0 ? "var(--cor-erro)" : "var(--texto-puro)");
+            lblResultado.style.display = "block";
+            
+            document.getElementById('btn-corrigir').style.display = 'none';
+        }
+    </script>
+</body>
+</html>
