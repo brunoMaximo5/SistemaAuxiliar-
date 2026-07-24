@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Estatística de Estudos</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        :root {
+            --bg-principal: linear-gradient(135deg, #121212 0%, #000000 100%);
+            --bg-painel: rgba(20, 20, 20, 0.6);
+            --bg-card: rgba(30, 30, 30, 0.4);
+            --borda-sutil: rgba(255, 255, 255, 0.08);
+            --borda-hover: rgba(255, 255, 255, 0.2);
+            --texto-puro: #ffffff;
+            --texto-base: #e0e0e0;
+            --texto-mutado: #888888;
+        }
+
+        body, html {
+            height: 100%;
+            font-family: 'Inter', 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-principal);
+            color: var(--texto-base);
+            display: flex;
+            overflow: hidden;
+            width: 100vw;
+        }
+
+        /* SIDEBAR (Mesmo padrão do index) */
+        .sidebar {
+            width: 260px; min-width: 260px;
+            background: var(--bg-painel); backdrop-filter: blur(10px);
+            border-right: 1px solid var(--borda-sutil);
+            display: flex; flex-direction: column;
+            box-shadow: 5px 0 15px rgba(0,0,0,0.5); z-index: 10;
+        }
+        .status-panel { padding: 40px 20px; text-align: center; border-bottom: 1px solid var(--borda-sutil); margin-bottom: 20px; }
+        .xp-label { font-size: 0.85rem; color: var(--texto-mutado); text-transform: uppercase; letter-spacing: 1px; }
+        .xp-valor { font-size: 2.5rem; font-weight: 800; color: var(--texto-puro); margin: 10px 0; text-shadow: 0 0 20px rgba(255, 255, 255, 0.2); }
+        .nivel-valor { font-size: 0.9rem; color: var(--texto-base); background: rgba(255, 255, 255, 0.1); padding: 4px 12px; border-radius: 20px; display: inline-block; }
+        
+        .nav-btn {
+            background: none; border: none; color: var(--texto-mutado);
+            padding: 16px 24px; text-align: left; font-size: 1rem;
+            cursor: pointer; transition: all 0.3s ease; text-decoration: none;
+            display: block; border-left: 3px solid transparent;
+        }
+        .nav-btn:hover { background: rgba(255, 255, 255, 0.03); color: var(--texto-puro); }
+        .nav-btn.active { border-left-color: var(--texto-puro); background: linear-gradient(90deg, rgba(255,255,255,0.05) 0%, transparent 100%); color: var(--texto-puro); font-weight: 600; }
+
+        /* MAIN CONTENT */
+        .main-content { flex: 1; padding: 50px; overflow-y: auto; width: 100%; }
+        .container-interno { max-width: 1000px; margin: 0 auto; width: 100%; }
+        
+        h1 { 
+            font-size: 2.2rem; font-weight: 300; letter-spacing: -1px;
+            background: linear-gradient(to right, #ffffff, #777777);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            margin-bottom: 40px;
+        }
+
+        .grid-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .stat-card {
+            background: var(--bg-card); border: 1px solid var(--borda-sutil);
+            border-radius: 12px; padding: 30px; text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3); transition: transform 0.3s ease;
+        }
+        .stat-card:hover { border-color: var(--borda-hover); transform: translateY(-5px); }
+        .stat-titulo { color: var(--texto-mutado); font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 15px; }
+        .stat-valor { font-size: 3rem; font-weight: 800; color: var(--texto-puro); }
+
+    </style>
+</head>
+<body>
+    <aside class="sidebar">
+        <div class="status-panel">
+            <div class="xp-label">Pontuação Total</div>
+            <div id="xp-display" class="xp-valor">0</div>
+            <div id="nivel-display" class="nivel-valor">Nível 1</div>
+        </div>
+<!-- MÓDULO DE FOCO DECRESCENTE -->
+        <div style="padding: 20px; border-bottom: 1px solid var(--borda-sutil); background: rgba(0,0,0,0.3);">
+            <div style="font-size: 0.75rem; color: var(--texto-mutado); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; text-align: center;">Modo Foco</div>
+            
+            <select id="select-disciplina" style="width: 100%; padding: 8px; margin-bottom: 10px; background: rgba(0,0,0,0.5); color: var(--texto-puro); border: 1px solid var(--borda-sutil); border-radius: 4px; outline: none;">
+                <option value="">Selecione a Disciplina...</option>
+            </select>
+
+            <div style="display: flex; gap: 5px; margin-bottom: 15px; justify-content: center; align-items: center;">
+                <input type="number" id="input-minutos" placeholder="Min" value="50" style="width: 60px; padding: 5px; text-align: center; background: rgba(0,0,0,0.5); color: var(--texto-puro); border: 1px solid var(--borda-sutil); border-radius: 4px;">
+                <span style="color: var(--texto-mutado); font-size: 0.8rem;">minutos</span>
+            </div>
+
+            <div id="relogio-global" style="font-size: 2.2rem; font-weight: 800; color: var(--texto-puro); font-family: monospace; text-align: center; margin-bottom: 15px; text-shadow: 0 0 10px rgba(255,255,255,0.1);">
+                00:00:00
+            </div>
+            
+            <div style="display: flex; gap: 10px;">
+                <button id="btn-relogio" onclick="alternarRelogio()" style="flex: 1; padding: 10px; border-radius: 6px; border: none; font-weight: bold; cursor: pointer; background: var(--texto-puro); color: #000; transition: 0.3s;">
+                    ▶ Iniciar
+                </button>
+                <button onclick="cancelarFoco()" style="padding: 10px; border-radius: 6px; border: 1px solid var(--borda-sutil); font-weight: bold; cursor: pointer; background: transparent; color: #ff4444; transition: 0.3s;">
+                    ⏹ Cancelar
+                </button>
+            </div>
+        </div>
+        <!-- FIM DO MÓDULO DE FOCO -->
+        <a href="/" class="nav-btn">Tela Inicial</a>
+        <a href="/nucleo" class="nav-btn">Meu Núcleo</a>
+        <a href="/estatistica" class="nav-btn active">Estatística</a>
+        <a href="/forum" class="nav-btn">Fórum</a>
+    </aside>
+
+    <main class="main-content">
+        <div class="container-interno">
+            <h1>Visão Geral do Desempenho</h1>
+            
+            <div class="grid-stats">
+                <div class="stat-card">
+                    <div class="stat-titulo">Horas de Foco</div>
+                    <div id="stat-horas" class="stat-valor">0h</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-titulo">Disciplinas Ativas</div>
+                    <div id="stat-disciplinas" class="stat-valor">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-titulo">Tópicos Concluídos</div>
+                    <div id="stat-topicos" class="stat-valor">0</div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        window.onload = async () => {
+            try {
+                const res = await fetch('/api/dados');
+                const dadosApp = await res.json();
+                
+                // Atualiza Sidebar
+                const xp = dadosApp.xp || 0;
+                document.getElementById('xp-display').innerText = xp;
+                document.getElementById('nivel-display').innerText = `Nível ${Math.floor(Math.sqrt(xp / 50)) + 1}`;
+
+                // Processa Estatísticas
+                let totalSegundos = dadosApp.tempo_total || 0;
+                let horasEstudadas = (totalSegundos / 3600).toFixed(1);
+                
+                let totalDisciplinas = dadosApp.edital ? dadosApp.edital.length : 0;
+                
+                let topicosConcluidos = 0;
+                if(dadosApp.edital) {
+                    dadosApp.edital.forEach(disc => {
+                        if(disc.topicos) {
+                            topicosConcluidos += disc.topicos.filter(t => t.estudou).length;
+                        }
+                    });
+                }
+
+                // Atualiza Tela
+                document.getElementById('stat-horas').innerText = `${horasEstudadas}h`;
+                document.getElementById('stat-disciplinas').innerText = totalDisciplinas;
+                document.getElementById('stat-topicos').innerText = topicosConcluidos;
+
+            } catch (erro) {
+                console.error("Erro ao carregar os dados:", erro);
+            }
+        };
+    </script>
+  <script>
+        // === SISTEMA DE FOCO DECRESCENTE (POMODORO) ===
+        let relogioIntervalo;
+        let tempoTotalDefinido = parseInt(localStorage.getItem('foco_total_segundos')) || 0;
+        let tempoFim = parseInt(localStorage.getItem('foco_fim_timestamp')) || 0;
+        let estaRodando = localStorage.getItem('foco_rodando') === 'true';
+        let idDisciplinaAtual = localStorage.getItem('foco_disciplina') || "";
+
+        const displayRelogio = document.getElementById('relogio-global');
+        const btnRelogio = document.getElementById('btn-relogio');
+        const selectDisciplina = document.getElementById('select-disciplina');
+        const inputMinutos = document.getElementById('input-minutos');
+
+        async function carregarDisciplinasSelect() {
+            if (!selectDisciplina) return; 
+            try {
+                const res = await fetch('/api/dados');
+                const dadosApp = await res.json();
+                const edital = dadosApp.edital || [];
+                
+                selectDisciplina.innerHTML = '<option value="">Selecione a Disciplina...</option>';
+                edital.forEach(disc => {
+                    const option = document.createElement('option');
+                    option.value = disc.id || disc.nome;
+                    option.innerText = disc.nome;
+                    selectDisciplina.appendChild(option);
+                });
+                if (idDisciplinaAtual) selectDisciplina.value = idDisciplinaAtual;
+            } catch (e) { console.error(e); }
+        }
+
+        function formatarTempo(seg) {
+            if (seg <= 0) return "00:00:00";
+            const h = String(Math.floor(seg / 3600)).padStart(2, '0');
+            const m = String(Math.floor((seg % 3600) / 60)).padStart(2, '0');
+            const s = String(seg % 60).padStart(2, '0');
+            return `${h}:${m}:${s}`;
+        }
+
+        function atualizarTelaRelogio() {
+            if (!estaRodando && tempoTotalDefinido === 0) {
+                if (displayRelogio) displayRelogio.innerText = "00:00:00";
+                return;
+            }
+
+            let tempoRestante = Math.max(0, Math.floor((tempoFim - Date.now()) / 1000));
+            
+            if (displayRelogio && btnRelogio && selectDisciplina && inputMinutos) {
+                displayRelogio.innerText = formatarTempo(tempoRestante);
+                
+                if (estaRodando) {
+                    btnRelogio.innerText = "Em Foco...";
+                    btnRelogio.disabled = true;
+                    btnRelogio.style.opacity = "0.5";
+                    selectDisciplina.disabled = true;
+                    inputMinutos.disabled = true;
+                } else {
+                    btnRelogio.innerText = "▶ Iniciar";
+                    btnRelogio.disabled = false;
+                    btnRelogio.style.opacity = "1";
+                    selectDisciplina.disabled = false;
+                    inputMinutos.disabled = false;
+                }
+            }
+
+            // Quando o tempo zera!
+            if (estaRodando && tempoRestante <= 0) {
+                estaRodando = false;
+                clearInterval(relogioIntervalo);
+                salvarFocoConcluido();
+            }
+        }
+
+        function alternarRelogio() {
+            if (selectDisciplina && !selectDisciplina.value) {
+                alert("Selecione uma disciplina primeiro!");
+                return;
+            }
+            let minutos = parseInt(inputMinutos.value);
+            if (isNaN(minutos) || minutos <= 0) {
+                alert("Digite um tempo válido em minutos.");
+                return;
+            }
+
+            tempoTotalDefinido = minutos * 60;
+            tempoFim = Date.now() + (tempoTotalDefinido * 1000);
+            
+            localStorage.setItem('foco_total_segundos', tempoTotalDefinido);
+            localStorage.setItem('foco_fim_timestamp', tempoFim);
+            localStorage.setItem('foco_rodando', 'true');
+            if (selectDisciplina) localStorage.setItem('foco_disciplina', selectDisciplina.value);
+            
+            estaRodando = true;
+            relogioIntervalo = setInterval(atualizarTelaRelogio, 1000);
+            atualizarTelaRelogio();
+        }
+
+        function cancelarFoco() {
+            if (!estaRodando) return;
+            if(confirm("Deseja realmente cancelar este foco? O tempo não será salvo.")) {
+                limparFocoLocal();
+            }
+        }
+
+        function limparFocoLocal() {
+            estaRodando = false;
+            clearInterval(relogioIntervalo);
+            localStorage.removeItem('foco_total_segundos');
+            localStorage.removeItem('foco_fim_timestamp');
+            localStorage.removeItem('foco_rodando');
+            localStorage.removeItem('foco_disciplina');
+            tempoTotalDefinido = 0;
+            if(btnRelogio) {
+                btnRelogio.innerText = "▶ Iniciar";
+                btnRelogio.disabled = false;
+                btnRelogio.style.opacity = "1";
+            }
+            if(selectDisciplina) selectDisciplina.disabled = false;
+            if(inputMinutos) inputMinutos.disabled = false;
+            atualizarTelaRelogio();
+        }
+
+        async function salvarFocoConcluido() {
+            alert("🎯 Parabéns! Bloco de foco concluído. Salvando dados...");
+            
+            try {
+                const res = await fetch('/api/dados');
+                let dados = await res.json();
+
+                // Soma o tempo e XP
+                dados.tempo_total = (dados.tempo_total || 0) + tempoTotalDefinido;
+                dados.xp = (dados.xp || 0) + Math.floor(tempoTotalDefinido / 60);
+                
+                // Lógica de Ofensiva (Dias Seguidos)
+                const hoje = new Date().toLocaleDateString('pt-BR');
+                if (dados.ultimo_acesso !== hoje) {
+                    dados.dias_seguidos = (dados.dias_seguidos || 0) + 1;
+                    dados.ultimo_acesso = hoje;
+                }
+
+                await fetch('/api/dados', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(dados)
+                });
+
+                limparFocoLocal();
+                window.location.reload(); // Recarrega para atualizar a tela inicial
+            } catch (e) {
+                console.error("Erro ao salvar:", e);
+                alert("Erro ao salvar o progresso.");
+            }
+        }
+
+        // INICIALIZAÇÃO
+        carregarDisciplinasSelect();
+        if (estaRodando) relogioIntervalo = setInterval(atualizarTelaRelogio, 1000);
+        atualizarTelaRelogio();
+    </script>
+</body>
+</html>

@@ -1,0 +1,8 @@
+# Ignora o banco de dados pessoal
+dados.json
+
+# Ignora a pasta inteira de uploads (PDFs, imagens, etc.)
+uploads/
+
+# Ignora arquivos de cache temporários do Python (boa prática)
+__pycache__/
