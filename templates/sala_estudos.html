@@ -259,7 +259,7 @@
         </aside>
     </div>
 
-    <!-- MODAL: ADICIONAR QUESTÃO -->
+    <!-- MODAL: ADICIONAR QUESTÃO (ATUALIZADO) -->
     <div id="modal-add-questao" class="modal-overlay">
         <div class="modal-box">
             <h2>Nova Questão</h2>
@@ -268,24 +268,19 @@
                 <textarea id="novo-enunciado" class="input-dark" style="height: 80px;"></textarea>
             </div>
             
-            <label style="color: var(--texto-mutado); font-size: 0.9rem; display: block; margin-bottom: 10px;">Preencha as alternativas e marque o círculo da correta:</label>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <label style="color: var(--texto-mutado); font-size: 0.9rem; margin: 0;">Preencha as alternativas e marque a correta:</label>
+                
+                <!-- Controle de Quantidade -->
+                <div style="display: flex; align-items: center; background: rgba(0,0,0,0.3); border: 1px solid var(--borda-sutil); border-radius: 6px; padding: 2px;">
+                    <button class="toolbar-btn" style="padding: 2px 10px;" onclick="mudarQtdAlternativas(-1)">-</button>
+                    <span id="contador-alt" style="color: var(--texto-puro); font-weight: bold; width: 20px; text-align: center;">4</span>
+                    <button class="toolbar-btn" style="padding: 2px 10px;" onclick="mudarQtdAlternativas(1)">+</button>
+                </div>
+            </div>
             
-            <div class="form-group" style="display: flex; gap: 10px; align-items: center;">
-                <input type="radio" name="correta" value="0" checked>
-                <input type="text" id="alt-0" class="input-dark" placeholder="Alternativa A">
-            </div>
-            <div class="form-group" style="display: flex; gap: 10px; align-items: center;">
-                <input type="radio" name="correta" value="1">
-                <input type="text" id="alt-1" class="input-dark" placeholder="Alternativa B">
-            </div>
-            <div class="form-group" style="display: flex; gap: 10px; align-items: center;">
-                <input type="radio" name="correta" value="2">
-                <input type="text" id="alt-2" class="input-dark" placeholder="Alternativa C">
-            </div>
-            <div class="form-group" style="display: flex; gap: 10px; align-items: center;">
-                <input type="radio" name="correta" value="3">
-                <input type="text" id="alt-3" class="input-dark" placeholder="Alternativa D">
-            </div>
+            <!-- Container onde os inputs vão aparecer magicamente -->
+            <div id="container-alternativas"></div>
 
             <div class="botoes-modal">
                 <button class="btn-secundario" onclick="fecharModal('modal-add-questao')">Cancelar</button>
@@ -377,35 +372,83 @@
             }
         }
 
-        // 4. LÓGICA DE MODAIS
+        // 4. LÓGICA DE MODAIS E DINÂMICA DE QUESTÕES
+        let qtdAlternativasAtuais = 4;
+
         function fecharModal(id) {
             document.getElementById(id).style.display = 'none';
         }
 
+        // Gera os inputs na tela baseado na quantidade escolhida
+        function renderizarInputsAlternativas() {
+            const container = document.getElementById('container-alternativas');
+            if (!container) return; // Segurança extra
+            container.innerHTML = "";
+            
+            for (let i = 0; i < qtdAlternativasAtuais; i++) {
+                const checked = (i === 0) ? "checked" : "";
+                const letra = String.fromCharCode(65 + i); // Transforma 0,1,2 em A,B,C...
+                
+                container.insertAdjacentHTML('beforeend', `
+                    <div class="form-group" style="display: flex; gap: 10px; align-items: center;">
+                        <input type="radio" name="correta" value="${i}" ${checked}>
+                        <input type="text" id="alt-${i}" class="input-dark" placeholder="Alternativa ${letra}">
+                    </div>
+                `);
+            }
+            const contadorEl = document.getElementById('contador-alt');
+            if (contadorEl) contadorEl.innerText = qtdAlternativasAtuais;
+        }
+
+        // Botões de + e -
+        function mudarQtdAlternativas(delta) {
+            const novaQtd = qtdAlternativasAtuais + delta;
+            // Limita para ter no mínimo Certo/Errado (2) e no máximo 6 alternativas
+            if (novaQtd >= 2 && novaQtd <= 6) { 
+                qtdAlternativasAtuais = novaQtd;
+                renderizarInputsAlternativas();
+            }
+        }
+
         function abrirModalNovaQuestao() {
-            // Limpa o formulário
+            // Limpa o formulário e reseta para 4 opções por padrão
             document.getElementById('novo-enunciado').value = "";
-            for(let i=0; i<4; i++) document.getElementById(`alt-${i}`).value = "";
-            document.querySelector('input[name="correta"][value="0"]').checked = true;
+            qtdAlternativasAtuais = 4; 
+            renderizarInputsAlternativas();
             
             document.getElementById('modal-add-questao').style.display = 'flex';
         }
 
         function salvarNovaQuestao() {
             const enunciado = document.getElementById('novo-enunciado').value.trim();
-            const alternativas = [
-                document.getElementById('alt-0').value.trim(),
-                document.getElementById('alt-1').value.trim(),
-                document.getElementById('alt-2').value.trim(),
-                document.getElementById('alt-3').value.trim()
-            ];
-            const correta = parseInt(document.querySelector('input[name="correta"]:checked').value);
+            const alternativas = [];
+            
+            // Puxa apenas os inputs que estão na tela atualmente
+            for (let i = 0; i < qtdAlternativasAtuais; i++) {
+                const inputEl = document.getElementById(`alt-${i}`);
+                if (!inputEl) continue;
+                
+                const valorInput = inputEl.value.trim();
+                if (valorInput === "") {
+                    alert("Preencha todas as alternativas visíveis!");
+                    return;
+                }
+                alternativas.push(valorInput);
+            }
 
-            if (!enunciado || alternativas.some(a => a === "")) {
-                alert("Preencha o enunciado e todas as 4 alternativas!");
+            const radioSelecionado = document.querySelector('input[name="correta"]:checked');
+            if (!radioSelecionado) {
+                alert("Selecione qual é a resposta correta marcando a bolinha!");
+                return;
+            }
+            const correta = parseInt(radioSelecionado.value);
+
+            if (!enunciado) {
+                alert("Preencha o enunciado!");
                 return;
             }
 
+            // Salva no banco de dados
             topicoAtual.quiz.push({
                 enunciado: enunciado,
                 alternativas: alternativas,
@@ -464,14 +507,14 @@
 
                 // Destaca a opção que era a correta (Verde)
                 const labelCorreta = document.getElementById(`label-${indexQuestao}-${q.correta}`);
-                labelCorreta.classList.add('alt-correta');
+                if (labelCorreta) labelCorreta.classList.add('alt-correta');
 
                 if (valSelecionado === q.correta) {
                     acertos++;
                 } else if (valSelecionado !== -1) {
                     // Se marcou errado, destaca de Vermelho
                     const labelErrada = document.getElementById(`label-${indexQuestao}-${valSelecionado}`);
-                    labelErrada.classList.add('alt-errada');
+                    if (labelErrada) labelErrada.classList.add('alt-errada');
                 }
                 
                 // Trava os botões
@@ -487,8 +530,12 @@
             document.getElementById('btn-corrigir').style.display = 'none';
         }
     </script>
+    
     <script>
         // === SISTEMA DE FOCO DECRESCENTE (POMODORO) ===
+        // Mantive este script intacto conforme o seu arquivo, embora ele pareça
+        // pertencer à tela principal do Dashboard. As lógicas de segurança (if displayRelogio)
+        // garantem que ele não quebre nada nesta tela de estudos.
         let relogioIntervalo;
         let tempoTotalDefinido = parseInt(localStorage.getItem('foco_total_segundos')) || 0;
         let tempoFim = parseInt(localStorage.getItem('foco_fim_timestamp')) || 0;
