@@ -278,80 +278,109 @@
             });
         }
     </script>
- <script>
-        // === SISTEMA DE FOCO DECRESCENTE (POMODORO) ===
-        let relogioIntervalo;
-        let tempoTotalDefinido = parseInt(localStorage.getItem('foco_total_segundos')) || 0;
-        let tempoFim = parseInt(localStorage.getItem('foco_fim_timestamp')) || 0;
-        let estaRodando = localStorage.getItem('foco_rodando') === 'true';
-        let idDisciplinaAtual = localStorage.getItem('foco_disciplina') || "";
+<!-- SCRIPT DO RELÓGIO GLOBAL (ATUALIZADO COM PAUSE E HISTÓRICO) -->
+<script>
+    let relogioIntervalo;
+    let tempoTotalDefinido = parseInt(localStorage.getItem('foco_total_segundos')) || 0;
+    let tempoFim = parseInt(localStorage.getItem('foco_fim_timestamp')) || 0;
+    let tempoRestanteSalvo = parseInt(localStorage.getItem('foco_tempo_restante')) || 0;
+    let estaRodando = localStorage.getItem('foco_rodando') === 'true';
+    let estaPausado = localStorage.getItem('foco_pausado') === 'true';
+    let idDisciplinaAtual = localStorage.getItem('foco_disciplina') || "";
 
-        const displayRelogio = document.getElementById('relogio-global');
-        const btnRelogio = document.getElementById('btn-relogio');
-        const selectDisciplina = document.getElementById('select-disciplina');
-        const inputMinutos = document.getElementById('input-minutos');
+    const displayRelogio = document.getElementById('relogio-global');
+    const btnRelogio = document.getElementById('btn-relogio');
+    const selectDisciplina = document.getElementById('select-disciplina');
+    const inputMinutos = document.getElementById('input-minutos');
 
-        async function carregarDisciplinasSelect() {
-            if (!selectDisciplina) return; 
-            try {
-                const res = await fetch('/api/dados');
-                const dadosApp = await res.json();
-                const edital = dadosApp.edital || [];
-                
-                selectDisciplina.innerHTML = '<option value="">Selecione a Disciplina...</option>';
-                edital.forEach(disc => {
-                    const option = document.createElement('option');
-                    option.value = disc.id || disc.nome;
-                    option.innerText = disc.nome;
-                    selectDisciplina.appendChild(option);
-                });
-                if (idDisciplinaAtual) selectDisciplina.value = idDisciplinaAtual;
-            } catch (e) { console.error(e); }
-        }
-
-        function formatarTempo(seg) {
-            if (seg <= 0) return "00:00:00";
-            const h = String(Math.floor(seg / 3600)).padStart(2, '0');
-            const m = String(Math.floor((seg % 3600) / 60)).padStart(2, '0');
-            const s = String(seg % 60).padStart(2, '0');
-            return `${h}:${m}:${s}`;
-        }
-
-        function atualizarTelaRelogio() {
-            if (!estaRodando && tempoTotalDefinido === 0) {
-                if (displayRelogio) displayRelogio.innerText = "00:00:00";
-                return;
-            }
-
-            let tempoRestante = Math.max(0, Math.floor((tempoFim - Date.now()) / 1000));
+    async function carregarDisciplinasSelect() {
+        if (!selectDisciplina) return; 
+        try {
+            const res = await fetch('/api/dados');
+            const appData = await res.json();
+            const edital = appData.edital || [];
             
-            if (displayRelogio && btnRelogio && selectDisciplina && inputMinutos) {
-                displayRelogio.innerText = formatarTempo(tempoRestante);
-                
-                if (estaRodando) {
-                    btnRelogio.innerText = "Em Foco...";
-                    btnRelogio.disabled = true;
-                    btnRelogio.style.opacity = "0.5";
-                    selectDisciplina.disabled = true;
-                    inputMinutos.disabled = true;
-                } else {
-                    btnRelogio.innerText = "▶ Iniciar";
-                    btnRelogio.disabled = false;
-                    btnRelogio.style.opacity = "1";
-                    selectDisciplina.disabled = false;
-                    inputMinutos.disabled = false;
-                }
-            }
+            selectDisciplina.innerHTML = '<option value="">Selecione a Disciplina...</option>';
+            edital.forEach((disc, index) => {
+                const option = document.createElement('option');
+                option.value = index; 
+                const tagCategoria = disc.categoria ? `[${disc.categoria}] ` : '';
+                option.innerText = tagCategoria + disc.nome;
+                selectDisciplina.appendChild(option);
+            });
+            if (idDisciplinaAtual) selectDisciplina.value = idDisciplinaAtual;
+        } catch (e) { console.error(e); }
+    }
 
-            // Quando o tempo zera!
-            if (estaRodando && tempoRestante <= 0) {
-                estaRodando = false;
-                clearInterval(relogioIntervalo);
-                salvarFocoConcluido();
+    function formatarTempo(seg) {
+        if (seg <= 0) return "00:00:00";
+        const h = String(Math.floor(seg / 3600)).padStart(2, '0');
+        const m = String(Math.floor((seg % 3600) / 60)).padStart(2, '0');
+        const s = String(seg % 60).padStart(2, '0');
+        return `${h}:${m}:${s}`;
+    }
+
+    function atualizarTelaRelogio() {
+        if (!estaRodando && tempoTotalDefinido === 0) {
+            if (displayRelogio) displayRelogio.innerText = "00:00:00";
+            return;
+        }
+
+        let tempoRestante;
+        if (estaPausado) {
+            // Usa a variável congelada perfeitamente
+            tempoRestante = tempoRestanteSalvo;
+        } else {
+            tempoRestante = Math.max(0, Math.floor((tempoFim - Date.now()) / 1000));
+            // AQUI ESTÁ A CORREÇÃO PRINCIPAL: Atualiza a variável global enquanto o relógio roda
+            tempoRestanteSalvo = tempoRestante; 
+            localStorage.setItem('foco_tempo_restante', tempoRestante);
+        }
+        
+        if (displayRelogio && btnRelogio && selectDisciplina && inputMinutos) {
+            displayRelogio.innerText = formatarTempo(tempoRestante);
+            
+            selectDisciplina.disabled = estaRodando;
+            inputMinutos.disabled = estaRodando;
+
+            if (estaRodando) {
+                if (estaPausado) {
+                    btnRelogio.innerText = "▶ Retomar";
+                    btnRelogio.style.background = "#ff9800"; // Laranja
+                } else {
+                    btnRelogio.innerText = "⏸ Pausar";
+                    btnRelogio.style.background = "var(--texto-puro)";
+                }
+            } else {
+                btnRelogio.innerText = "▶ Iniciar";
+                btnRelogio.style.background = "var(--texto-puro)";
             }
         }
 
-        function alternarRelogio() {
+        if (estaRodando && !estaPausado && tempoRestante <= 0) {
+            estaRodando = false;
+            clearInterval(relogioIntervalo);
+            salvarFocoConcluido();
+        }
+    }
+
+    function alternarRelogio() {
+        if (estaRodando && !estaPausado) {
+            // Pausar
+            estaPausado = true;
+            localStorage.setItem('foco_pausado', 'true');
+            clearInterval(relogioIntervalo);
+            atualizarTelaRelogio();
+        } else if (estaRodando && estaPausado) {
+            // Retomar
+            estaPausado = false;
+            localStorage.setItem('foco_pausado', 'false');
+            tempoFim = Date.now() + (tempoRestanteSalvo * 1000);
+            localStorage.setItem('foco_fim_timestamp', tempoFim);
+            relogioIntervalo = setInterval(atualizarTelaRelogio, 1000);
+            atualizarTelaRelogio();
+        } else {
+            // Iniciar Novo
             if (selectDisciplina && !selectDisciplina.value) {
                 alert("Selecione uma disciplina primeiro!");
                 return;
@@ -363,79 +392,92 @@
             }
 
             tempoTotalDefinido = minutos * 60;
+            tempoRestanteSalvo = tempoTotalDefinido; // Congela o valor inicial corretamente
             tempoFim = Date.now() + (tempoTotalDefinido * 1000);
             
             localStorage.setItem('foco_total_segundos', tempoTotalDefinido);
             localStorage.setItem('foco_fim_timestamp', tempoFim);
+            localStorage.setItem('foco_tempo_restante', tempoTotalDefinido);
             localStorage.setItem('foco_rodando', 'true');
+            localStorage.setItem('foco_pausado', 'false');
             if (selectDisciplina) localStorage.setItem('foco_disciplina', selectDisciplina.value);
             
             estaRodando = true;
+            estaPausado = false;
             relogioIntervalo = setInterval(atualizarTelaRelogio, 1000);
             atualizarTelaRelogio();
         }
+    }
 
-        function cancelarFoco() {
-            if (!estaRodando) return;
-            if(confirm("Deseja realmente cancelar este foco? O tempo não será salvo.")) {
-                limparFocoLocal();
-            }
+    function cancelarFoco() {
+        if (!estaRodando && !estaPausado) return;
+        if(confirm("Deseja realmente cancelar este foco? O tempo não será salvo.")) {
+            limparFocoLocal();
         }
+    }
 
-        function limparFocoLocal() {
-            estaRodando = false;
-            clearInterval(relogioIntervalo);
-            localStorage.removeItem('foco_total_segundos');
-            localStorage.removeItem('foco_fim_timestamp');
-            localStorage.removeItem('foco_rodando');
-            localStorage.removeItem('foco_disciplina');
-            tempoTotalDefinido = 0;
-            if(btnRelogio) {
-                btnRelogio.innerText = "▶ Iniciar";
-                btnRelogio.disabled = false;
-                btnRelogio.style.opacity = "1";
-            }
-            if(selectDisciplina) selectDisciplina.disabled = false;
-            if(inputMinutos) inputMinutos.disabled = false;
-            atualizarTelaRelogio();
-        }
-
-        async function salvarFocoConcluido() {
-            alert("🎯 Parabéns! Bloco de foco concluído. Salvando dados...");
-            
-            try {
-                const res = await fetch('/api/dados');
-                let dados = await res.json();
-
-                // Soma o tempo e XP
-                dados.tempo_total = (dados.tempo_total || 0) + tempoTotalDefinido;
-                dados.xp = (dados.xp || 0) + Math.floor(tempoTotalDefinido / 60);
-                
-                // Lógica de Ofensiva (Dias Seguidos)
-                const hoje = new Date().toLocaleDateString('pt-BR');
-                if (dados.ultimo_acesso !== hoje) {
-                    dados.dias_seguidos = (dados.dias_seguidos || 0) + 1;
-                    dados.ultimo_acesso = hoje;
-                }
-
-                await fetch('/api/dados', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(dados)
-                });
-
-                limparFocoLocal();
-                window.location.reload(); // Recarrega para atualizar a tela inicial
-            } catch (e) {
-                console.error("Erro ao salvar:", e);
-                alert("Erro ao salvar o progresso.");
-            }
-        }
-
-        // INICIALIZAÇÃO
-        carregarDisciplinasSelect();
-        if (estaRodando) relogioIntervalo = setInterval(atualizarTelaRelogio, 1000);
+    function limparFocoLocal() {
+        estaRodando = false;
+        estaPausado = false;
+        clearInterval(relogioIntervalo);
+        localStorage.removeItem('foco_total_segundos');
+        localStorage.removeItem('foco_fim_timestamp');
+        localStorage.removeItem('foco_tempo_restante');
+        localStorage.removeItem('foco_rodando');
+        localStorage.removeItem('foco_pausado');
+        localStorage.removeItem('foco_disciplina');
+        tempoTotalDefinido = 0;
         atualizarTelaRelogio();
-    </script>
+    }
+
+    async function salvarFocoConcluido() {
+        alert("🎯 Parabéns! Bloco de foco concluído. Salvando dados...");
+        
+        try {
+            const res = await fetch('/api/dados');
+            let dados = await res.json();
+
+            dados.tempo_total = (dados.tempo_total || 0) + tempoTotalDefinido;
+            dados.xp = (dados.xp || 0) + Math.floor(tempoTotalDefinido / 60);
+
+            // CORREÇÃO DE FUSO HORÁRIO AQUI TAMBÉM (salvar o foco concluído no dia correto)
+            const d = new Date();
+            const ano = d.getFullYear();
+            const mes = String(d.getMonth() + 1).padStart(2, '0');
+            const dia = String(d.getDate()).padStart(2, '0');
+            const hojeIso = `${ano}-${mes}-${dia}`;
+            
+            if (!dados.historico_diario) dados.historico_diario = {};
+            dados.historico_diario[hojeIso] = (dados.historico_diario[hojeIso] || 0) + tempoTotalDefinido;
+
+            const indexDisciplina = localStorage.getItem('foco_disciplina');
+            if (indexDisciplina !== null && dados.edital[indexDisciplina]) {
+                dados.edital[indexDisciplina].tempo_estudado = (dados.edital[indexDisciplina].tempo_estudado || 0) + tempoTotalDefinido;
+            }
+            
+            const hoje = new Date().toLocaleDateString('pt-BR');
+            if (dados.ultimo_acesso !== hoje) {
+                dados.dias_seguidos = (dados.dias_seguidos || 0) + 1;
+                dados.ultimo_acesso = hoje;
+            }
+
+            await fetch('/api/dados', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(dados)
+            });
+
+            limparFocoLocal();
+            window.location.reload(); 
+        } catch (e) {
+            console.error("Erro ao salvar:", e);
+            alert("Erro ao salvar o progresso.");
+        }
+    }
+
+    carregarDisciplinasSelect();
+    if (estaRodando && !estaPausado) relogioIntervalo = setInterval(atualizarTelaRelogio, 1000);
+    atualizarTelaRelogio();
+</script>
 </body>
 </html>

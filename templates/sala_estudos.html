@@ -130,7 +130,7 @@
             overflow-y: auto;
             display: flex;
             flex-direction: column;
-            gap: 30px;
+            gap: 20px;
         }
 
         .secao-titulo {
@@ -156,7 +156,7 @@
         }
         textarea.input-dark:focus { border-color: var(--borda-hover); }
 
-        .card-quiz {
+        .card-ferramenta {
             background: var(--bg-card);
             padding: 20px;
             border-radius: 8px;
@@ -164,7 +164,7 @@
             text-align: center;
         }
 
-        .quiz-status { font-size: 2rem; font-weight: bold; color: var(--texto-puro); margin: 10px 0; }
+        .ferramenta-status { font-size: 2rem; font-weight: bold; color: var(--texto-puro); margin: 10px 0; }
 
         /* =========================================
            MODAIS (SOBREPOSIÇÃO)
@@ -190,7 +190,7 @@
 
         .modal-box h2 { margin-top: 0; color: var(--texto-puro); margin-bottom: 20px; }
         
-        .form-group { margin-bottom: 15px; }
+        .form-group { margin-bottom: 15px; text-align: left; }
         .form-group label { display: block; margin-bottom: 5px; color: var(--texto-mutado); font-size: 0.9rem; }
         
         input[type="text"].input-dark {
@@ -201,7 +201,7 @@
         /* Itens do Quiz rodando */
         .questao-box {
             background: rgba(0,0,0,0.3); border: 1px solid var(--borda-sutil);
-            border-radius: 8px; padding: 20px; margin-bottom: 20px;
+            border-radius: 8px; padding: 20px; margin-bottom: 20px; text-align: left;
         }
         .questao-box h3 { font-size: 1.05rem; margin-top: 0; margin-bottom: 15px; color: var(--texto-puro); }
         .alternativa-label {
@@ -211,12 +211,18 @@
         }
         .alternativa-label:hover { background: var(--bg-secundario-hover); border-color: var(--borda-hover); }
         
-        /* Classes aplicadas após correção */
         .alt-correta { background: rgba(76, 175, 80, 0.2) !important; border-color: var(--cor-acerto) !important; color: var(--cor-acerto); }
         .alt-errada { background: rgba(244, 67, 54, 0.2) !important; border-color: var(--cor-erro) !important; color: var(--cor-erro); }
         
         .botoes-modal { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
 
+        /* Estilos do Cartão de Flashcard (Revisão) */
+        .flashcard-viewer {
+            background: var(--bg-card); min-height: 250px; padding: 30px; 
+            border-radius: 12px; border: 1px solid var(--borda-sutil); 
+            display: flex; flex-direction: column; justify-content: center; 
+            margin-bottom: 20px; text-align: center;
+        }
     </style>
 </head>
 <body>
@@ -246,9 +252,22 @@
                 <textarea id="texto-erros" class="input-dark" placeholder="Anote aqui as cascas de banana da banca..."></textarea>
             </div>
 
-            <div class="card-quiz">
+            <!-- CARD DE FLASHCARDS (NOVO) -->
+            <div class="card-ferramenta">
+                <h3 class="secao-titulo" style="border:none; margin-bottom: 0;">Flashcards</h3>
+                <div class="ferramenta-status" id="qtd-flashcards">0</div>
+                <div style="color: var(--texto-mutado); margin-bottom: 20px; font-size: 0.9rem;">Cartões Cadastrados</div>
+                
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                    <button class="btn-secundario" onclick="abrirModalAddFlashcard()">+ Adicionar Cartão</button>
+                    <button class="btn-primario" onclick="abrirModalRevisaoFlashcard()">Estudar Flashcards</button>
+                </div>
+            </div>
+
+            <!-- CARD DE QUIZ -->
+            <div class="card-ferramenta">
                 <h3 class="secao-titulo" style="border:none; margin-bottom: 0;">Quiz Interativo</h3>
-                <div class="quiz-status" id="qtd-questoes">0</div>
+                <div class="ferramenta-status" id="qtd-questoes">0</div>
                 <div style="color: var(--texto-mutado); margin-bottom: 20px; font-size: 0.9rem;">Questões Cadastradas</div>
                 
                 <div style="display: flex; flex-direction: column; gap: 10px;">
@@ -259,7 +278,8 @@
         </aside>
     </div>
 
-    <!-- MODAL: ADICIONAR QUESTÃO (ATUALIZADO) -->
+    <!-- MODAIS DO QUIZ -->
+    <!-- Modal Add Questão -->
     <div id="modal-add-questao" class="modal-overlay">
         <div class="modal-box">
             <h2>Nova Questão</h2>
@@ -270,18 +290,13 @@
             
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
                 <label style="color: var(--texto-mutado); font-size: 0.9rem; margin: 0;">Preencha as alternativas e marque a correta:</label>
-                
-                <!-- Controle de Quantidade -->
                 <div style="display: flex; align-items: center; background: rgba(0,0,0,0.3); border: 1px solid var(--borda-sutil); border-radius: 6px; padding: 2px;">
                     <button class="toolbar-btn" style="padding: 2px 10px;" onclick="mudarQtdAlternativas(-1)">-</button>
                     <span id="contador-alt" style="color: var(--texto-puro); font-weight: bold; width: 20px; text-align: center;">4</span>
                     <button class="toolbar-btn" style="padding: 2px 10px;" onclick="mudarQtdAlternativas(1)">+</button>
                 </div>
             </div>
-            
-            <!-- Container onde os inputs vão aparecer magicamente -->
             <div id="container-alternativas"></div>
-
             <div class="botoes-modal">
                 <button class="btn-secundario" onclick="fecharModal('modal-add-questao')">Cancelar</button>
                 <button class="btn-primario" onclick="salvarNovaQuestao()">Salvar Questão</button>
@@ -289,21 +304,66 @@
         </div>
     </div>
 
-    <!-- MODAL: RESOLVER QUIZ -->
+    <!-- Modal Resolver Quiz -->
     <div id="modal-quiz" class="modal-overlay">
         <div class="modal-box" style="width: 800px;">
             <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--borda-sutil); padding-bottom: 15px; margin-bottom: 20px;">
                 <h2 style="margin: 0;">Revisão: Quiz</h2>
                 <h2 id="resultado-final" style="margin: 0; color: var(--cor-acerto); display: none;">Acertos: 0/0</h2>
             </div>
-            
-            <div id="lista-quiz">
-                <!-- Javascript vai injetar as questões aqui -->
-            </div>
-
+            <div id="lista-quiz"></div>
             <div class="botoes-modal">
                 <button class="btn-secundario" onclick="fecharModal('modal-quiz')">Sair</button>
                 <button id="btn-corrigir" class="btn-primario" onclick="corrigirQuiz()">Finalizar e Corrigir</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==========================================
+         NOVOS MODAIS: FLASHCARDS 
+         ========================================== -->
+    
+    <!-- Modal Add Flashcard -->
+    <div id="modal-add-flashcard" class="modal-overlay">
+        <div class="modal-box">
+            <h2>Novo Flashcard</h2>
+            <div class="form-group">
+                <label>Frente do Cartão (Conceito ou Pergunta)</label>
+                <textarea id="novo-flash-frente" class="input-dark" style="height: 80px;" placeholder="Ex: O que é o Princípio da Legalidade?"></textarea>
+            </div>
+            <div class="form-group">
+                <label>Verso do Cartão (Resposta)</label>
+                <textarea id="novo-flash-verso" class="input-dark" style="height: 100px;" placeholder="Ex: A Administração Pública só pode fazer o que a lei permite..."></textarea>
+            </div>
+            <div class="botoes-modal">
+                <button class="btn-secundario" onclick="fecharModal('modal-add-flashcard')">Cancelar</button>
+                <button class="btn-primario" onclick="salvarNovoFlashcard()">Salvar Cartão</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Estudar Flashcards -->
+    <div id="modal-revisao-flashcard" class="modal-overlay">
+        <div class="modal-box" style="width: 600px; text-align: center;">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--borda-sutil); padding-bottom: 15px; margin-bottom: 20px;">
+                <h2 style="margin: 0;">Treino de Flashcards</h2>
+                <span id="flashcard-contador" style="color: var(--texto-mutado);">0/0</span>
+            </div>
+            
+            <div class="flashcard-viewer">
+                <h3 id="flashcard-frente-texto" style="font-size: 1.3rem; margin-bottom: 20px; color: var(--texto-puro);">Pergunta...</h3>
+                <div id="flashcard-verso-texto" style="font-size: 1.1rem; color: var(--cor-acerto); display: none; padding-top: 20px; border-top: 1px dashed var(--borda-sutil);">
+                    Resposta...
+                </div>
+            </div>
+
+            <div class="botoes-modal" style="justify-content: center; gap: 15px;">
+                <button class="btn-secundario" onclick="navegarFlashcard(-1)" id="btn-flash-ant">← Anterior</button>
+                <button class="btn-primario" onclick="virarFlashcardAtual()" id="btn-flash-virar">Mostrar Resposta</button>
+                <button class="btn-secundario" onclick="navegarFlashcard(1)" id="btn-flash-prox">Próximo →</button>
+            </div>
+            <div style="margin-top: 15px; text-align: right;">
+                 <button class="btn-secundario" onclick="fecharModal('modal-revisao-flashcard')" style="font-size: 0.8rem;">Sair da Revisão</button>
             </div>
         </div>
     </div>
@@ -316,7 +376,6 @@
 
         // 1. CARREGAMENTO INICIAL
         window.onload = async () => {
-            // Extrai os IDs da URL (ex: /sala/0-1)
             const path = window.location.pathname.split('/');
             const ids = path[path.length - 1].split('-');
             if (ids.length === 2) {
@@ -330,9 +389,10 @@
                 
                 topicoAtual = dadosApp.edital[i_disc].topicos[i_top];
                 
-                // Garante que os novos campos do quiz existam no banco antigo
+                // Garantir existência das chaves
                 if(!topicoAtual.erros) topicoAtual.erros = "";
                 if(!topicoAtual.quiz) topicoAtual.quiz = [];
+                if(!topicoAtual.flashcards) topicoAtual.flashcards = []; // <-- NOVO
 
                 renderizarDados();
             } catch (erro) {
@@ -347,15 +407,16 @@
             document.getElementById('editor-resumo').innerHTML = topicoAtual.resumo || "";
             document.getElementById('texto-erros').value = topicoAtual.erros || "";
             document.getElementById('qtd-questoes').innerText = topicoAtual.quiz.length;
+            document.getElementById('qtd-flashcards').innerText = topicoAtual.flashcards.length; // <-- NOVO
         }
 
-        // Editor de Texto Simples
+        // Editor
         function formatar(comando) {
             document.execCommand(comando, false, null);
             document.getElementById('editor-resumo').focus();
         }
 
-        // 3. SALVAR TUDO (Botão Topo Direito)
+        // 3. SALVAR TUDO
         async function salvarTudo() {
             topicoAtual.resumo = document.getElementById('editor-resumo').innerHTML;
             topicoAtual.erros = document.getElementById('texto-erros').value;
@@ -372,23 +433,89 @@
             }
         }
 
-        // 4. LÓGICA DE MODAIS E DINÂMICA DE QUESTÕES
-        let qtdAlternativasAtuais = 4;
+        function fecharModal(id) { document.getElementById(id).style.display = 'none'; }
 
-        function fecharModal(id) {
-            document.getElementById(id).style.display = 'none';
+        // ==========================================
+        // 4. LÓGICA DE FLASHCARDS (NOVO)
+        // ==========================================
+        let indexFlashcardAtual = 0;
+
+        function abrirModalAddFlashcard() {
+            document.getElementById('novo-flash-frente').value = "";
+            document.getElementById('novo-flash-verso').value = "";
+            document.getElementById('modal-add-flashcard').style.display = 'flex';
         }
 
-        // Gera os inputs na tela baseado na quantidade escolhida
+        function salvarNovoFlashcard() {
+            const frente = document.getElementById('novo-flash-frente').value.trim();
+            const verso = document.getElementById('novo-flash-verso').value.trim();
+
+            if (!frente || !verso) {
+                alert("Preencha a Frente e o Verso do cartão!");
+                return;
+            }
+
+            topicoAtual.flashcards.push({ pergunta: frente, resposta: verso });
+            document.getElementById('qtd-flashcards').innerText = topicoAtual.flashcards.length;
+            
+            fecharModal('modal-add-flashcard');
+            salvarTudo();
+        }
+
+        function abrirModalRevisaoFlashcard() {
+            if (topicoAtual.flashcards.length === 0) {
+                alert("Cadastre alguns flashcards primeiro!");
+                return;
+            }
+            indexFlashcardAtual = 0;
+            atualizarUIFlashcard();
+            document.getElementById('modal-revisao-flashcard').style.display = 'flex';
+        }
+
+        function atualizarUIFlashcard() {
+            const card = topicoAtual.flashcards[indexFlashcardAtual];
+            
+            // Textos
+            document.getElementById('flashcard-frente-texto').innerText = card.pergunta;
+            document.getElementById('flashcard-verso-texto').innerText = card.resposta;
+            
+            // Esconde resposta ao trocar de card
+            document.getElementById('flashcard-verso-texto').style.display = 'none';
+            document.getElementById('btn-flash-virar').style.display = 'inline-flex';
+            
+            // Status do contador
+            document.getElementById('flashcard-contador').innerText = `${indexFlashcardAtual + 1} / ${topicoAtual.flashcards.length}`;
+            
+            // Controles de botão
+            document.getElementById('btn-flash-ant').disabled = (indexFlashcardAtual === 0);
+            document.getElementById('btn-flash-prox').disabled = (indexFlashcardAtual === topicoAtual.flashcards.length - 1);
+        }
+
+        function virarFlashcardAtual() {
+            document.getElementById('flashcard-verso-texto').style.display = 'block';
+            document.getElementById('btn-flash-virar').style.display = 'none';
+        }
+
+        function navegarFlashcard(direcao) {
+            const novoIndice = indexFlashcardAtual + direcao;
+            if (novoIndice >= 0 && novoIndice < topicoAtual.flashcards.length) {
+                indexFlashcardAtual = novoIndice;
+                atualizarUIFlashcard();
+            }
+        }
+
+        // ==========================================
+        // 5. LÓGICA DO QUIZ (MANTIDO DO ORIGINAL)
+        // ==========================================
+        let qtdAlternativasAtuais = 4;
+
         function renderizarInputsAlternativas() {
             const container = document.getElementById('container-alternativas');
-            if (!container) return; // Segurança extra
+            if (!container) return; 
             container.innerHTML = "";
-            
             for (let i = 0; i < qtdAlternativasAtuais; i++) {
                 const checked = (i === 0) ? "checked" : "";
-                const letra = String.fromCharCode(65 + i); // Transforma 0,1,2 em A,B,C...
-                
+                const letra = String.fromCharCode(65 + i);
                 container.insertAdjacentHTML('beforeend', `
                     <div class="form-group" style="display: flex; gap: 10px; align-items: center;">
                         <input type="radio" name="correta" value="${i}" ${checked}>
@@ -400,10 +527,8 @@
             if (contadorEl) contadorEl.innerText = qtdAlternativasAtuais;
         }
 
-        // Botões de + e -
         function mudarQtdAlternativas(delta) {
             const novaQtd = qtdAlternativasAtuais + delta;
-            // Limita para ter no mínimo Certo/Errado (2) e no máximo 6 alternativas
             if (novaQtd >= 2 && novaQtd <= 6) { 
                 qtdAlternativasAtuais = novaQtd;
                 renderizarInputsAlternativas();
@@ -411,62 +536,35 @@
         }
 
         function abrirModalNovaQuestao() {
-            // Limpa o formulário e reseta para 4 opções por padrão
             document.getElementById('novo-enunciado').value = "";
             qtdAlternativasAtuais = 4; 
             renderizarInputsAlternativas();
-            
             document.getElementById('modal-add-questao').style.display = 'flex';
         }
 
         function salvarNovaQuestao() {
             const enunciado = document.getElementById('novo-enunciado').value.trim();
             const alternativas = [];
-            
-            // Puxa apenas os inputs que estão na tela atualmente
             for (let i = 0; i < qtdAlternativasAtuais; i++) {
                 const inputEl = document.getElementById(`alt-${i}`);
                 if (!inputEl) continue;
-                
                 const valorInput = inputEl.value.trim();
-                if (valorInput === "") {
-                    alert("Preencha todas as alternativas visíveis!");
-                    return;
-                }
+                if (valorInput === "") { alert("Preencha todas as alternativas visíveis!"); return; }
                 alternativas.push(valorInput);
             }
-
             const radioSelecionado = document.querySelector('input[name="correta"]:checked');
-            if (!radioSelecionado) {
-                alert("Selecione qual é a resposta correta marcando a bolinha!");
-                return;
-            }
+            if (!radioSelecionado) { alert("Selecione qual é a resposta correta marcando a bolinha!"); return; }
             const correta = parseInt(radioSelecionado.value);
+            if (!enunciado) { alert("Preencha o enunciado!"); return; }
 
-            if (!enunciado) {
-                alert("Preencha o enunciado!");
-                return;
-            }
-
-            // Salva no banco de dados
-            topicoAtual.quiz.push({
-                enunciado: enunciado,
-                alternativas: alternativas,
-                correta: correta
-            });
-
+            topicoAtual.quiz.push({ enunciado: enunciado, alternativas: alternativas, correta: correta });
             document.getElementById('qtd-questoes').innerText = topicoAtual.quiz.length;
             fecharModal('modal-add-questao');
-            salvarTudo(); // Já salva no backend
+            salvarTudo(); 
         }
 
-        // 5. LÓGICA DO QUIZ INTERATIVO
         function abrirModalQuiz() {
-            if (topicoAtual.quiz.length === 0) {
-                alert("Cadastre algumas questões primeiro!");
-                return;
-            }
-            
+            if (topicoAtual.quiz.length === 0) { alert("Cadastre algumas questões primeiro!"); return; }
             document.getElementById('resultado-final').style.display = 'none';
             document.getElementById('btn-corrigir').style.display = 'inline-flex';
             
@@ -483,216 +581,39 @@
                         </label>
                     `;
                 });
-
                 container.insertAdjacentHTML('beforeend', `
                     <div class="questao-box">
                         <h3>${indexQuestao + 1}. ${q.enunciado}</h3>
-                        <div class="opcoes-container">
-                            ${htmlAlternativas}
-                        </div>
+                        <div class="opcoes-container">${htmlAlternativas}</div>
                     </div>
                 `);
             });
-
             document.getElementById('modal-quiz').style.display = 'flex';
         }
 
         function corrigirQuiz() {
             let acertos = 0;
             const total = topicoAtual.quiz.length;
-
             topicoAtual.quiz.forEach((q, indexQuestao) => {
                 const selecionada = document.querySelector(`input[name="resposta-${indexQuestao}"]:checked`);
                 const valSelecionado = selecionada ? parseInt(selecionada.value) : -1;
-
-                // Destaca a opção que era a correta (Verde)
                 const labelCorreta = document.getElementById(`label-${indexQuestao}-${q.correta}`);
                 if (labelCorreta) labelCorreta.classList.add('alt-correta');
 
-                if (valSelecionado === q.correta) {
-                    acertos++;
-                } else if (valSelecionado !== -1) {
-                    // Se marcou errado, destaca de Vermelho
+                if (valSelecionado === q.correta) { acertos++; } 
+                else if (valSelecionado !== -1) {
                     const labelErrada = document.getElementById(`label-${indexQuestao}-${valSelecionado}`);
                     if (labelErrada) labelErrada.classList.add('alt-errada');
                 }
-                
-                // Trava os botões
                 const radios = document.querySelectorAll(`input[name="resposta-${indexQuestao}"]`);
                 radios.forEach(r => r.disabled = true);
             });
-
             const lblResultado = document.getElementById('resultado-final');
             lblResultado.innerText = `Acertos: ${acertos} / ${total}`;
             lblResultado.style.color = acertos === total ? "var(--cor-acerto)" : (acertos === 0 ? "var(--cor-erro)" : "var(--texto-puro)");
             lblResultado.style.display = "block";
-            
             document.getElementById('btn-corrigir').style.display = 'none';
         }
     </script>
-    
-    <script>
-        // === SISTEMA DE FOCO DECRESCENTE (POMODORO) ===
-        // Mantive este script intacto conforme o seu arquivo, embora ele pareça
-        // pertencer à tela principal do Dashboard. As lógicas de segurança (if displayRelogio)
-        // garantem que ele não quebre nada nesta tela de estudos.
-        let relogioIntervalo;
-        let tempoTotalDefinido = parseInt(localStorage.getItem('foco_total_segundos')) || 0;
-        let tempoFim = parseInt(localStorage.getItem('foco_fim_timestamp')) || 0;
-        let estaRodando = localStorage.getItem('foco_rodando') === 'true';
-        let idDisciplinaAtual = localStorage.getItem('foco_disciplina') || "";
-
-        const displayRelogio = document.getElementById('relogio-global');
-        const btnRelogio = document.getElementById('btn-relogio');
-        const selectDisciplina = document.getElementById('select-disciplina');
-        const inputMinutos = document.getElementById('input-minutos');
-
-        async function carregarDisciplinasSelect() {
-            if (!selectDisciplina) return; 
-            try {
-                const res = await fetch('/api/dados');
-                const dadosApp = await res.json();
-                const edital = dadosApp.edital || [];
-                
-                selectDisciplina.innerHTML = '<option value="">Selecione a Disciplina...</option>';
-                edital.forEach(disc => {
-                    const option = document.createElement('option');
-                    option.value = disc.id || disc.nome;
-                    option.innerText = disc.nome;
-                    selectDisciplina.appendChild(option);
-                });
-                if (idDisciplinaAtual) selectDisciplina.value = idDisciplinaAtual;
-            } catch (e) { console.error(e); }
-        }
-
-        function formatarTempo(seg) {
-            if (seg <= 0) return "00:00:00";
-            const h = String(Math.floor(seg / 3600)).padStart(2, '0');
-            const m = String(Math.floor((seg % 3600) / 60)).padStart(2, '0');
-            const s = String(seg % 60).padStart(2, '0');
-            return `${h}:${m}:${s}`;
-        }
-
-        function atualizarTelaRelogio() {
-            if (!estaRodando && tempoTotalDefinido === 0) {
-                if (displayRelogio) displayRelogio.innerText = "00:00:00";
-                return;
-            }
-
-            let tempoRestante = Math.max(0, Math.floor((tempoFim - Date.now()) / 1000));
-            
-            if (displayRelogio && btnRelogio && selectDisciplina && inputMinutos) {
-                displayRelogio.innerText = formatarTempo(tempoRestante);
-                
-                if (estaRodando) {
-                    btnRelogio.innerText = "Em Foco...";
-                    btnRelogio.disabled = true;
-                    btnRelogio.style.opacity = "0.5";
-                    selectDisciplina.disabled = true;
-                    inputMinutos.disabled = true;
-                } else {
-                    btnRelogio.innerText = "▶ Iniciar";
-                    btnRelogio.disabled = false;
-                    btnRelogio.style.opacity = "1";
-                    selectDisciplina.disabled = false;
-                    inputMinutos.disabled = false;
-                }
-            }
-
-            // Quando o tempo zera!
-            if (estaRodando && tempoRestante <= 0) {
-                estaRodando = false;
-                clearInterval(relogioIntervalo);
-                salvarFocoConcluido();
-            }
-        }
-
-        function alternarRelogio() {
-            if (selectDisciplina && !selectDisciplina.value) {
-                alert("Selecione uma disciplina primeiro!");
-                return;
-            }
-            let minutos = parseInt(inputMinutos.value);
-            if (isNaN(minutos) || minutos <= 0) {
-                alert("Digite um tempo válido em minutos.");
-                return;
-            }
-
-            tempoTotalDefinido = minutos * 60;
-            tempoFim = Date.now() + (tempoTotalDefinido * 1000);
-            
-            localStorage.setItem('foco_total_segundos', tempoTotalDefinido);
-            localStorage.setItem('foco_fim_timestamp', tempoFim);
-            localStorage.setItem('foco_rodando', 'true');
-            if (selectDisciplina) localStorage.setItem('foco_disciplina', selectDisciplina.value);
-            
-            estaRodando = true;
-            relogioIntervalo = setInterval(atualizarTelaRelogio, 1000);
-            atualizarTelaRelogio();
-        }
-
-        function cancelarFoco() {
-            if (!estaRodando) return;
-            if(confirm("Deseja realmente cancelar este foco? O tempo não será salvo.")) {
-                limparFocoLocal();
-            }
-        }
-
-        function limparFocoLocal() {
-            estaRodando = false;
-            clearInterval(relogioIntervalo);
-            localStorage.removeItem('foco_total_segundos');
-            localStorage.removeItem('foco_fim_timestamp');
-            localStorage.removeItem('foco_rodando');
-            localStorage.removeItem('foco_disciplina');
-            tempoTotalDefinido = 0;
-            if(btnRelogio) {
-                btnRelogio.innerText = "▶ Iniciar";
-                btnRelogio.disabled = false;
-                btnRelogio.style.opacity = "1";
-            }
-            if(selectDisciplina) selectDisciplina.disabled = false;
-            if(inputMinutos) inputMinutos.disabled = false;
-            atualizarTelaRelogio();
-        }
-
-        async function salvarFocoConcluido() {
-            alert("🎯 Parabéns! Bloco de foco concluído. Salvando dados...");
-            
-            try {
-                const res = await fetch('/api/dados');
-                let dados = await res.json();
-
-                // Soma o tempo e XP
-                dados.tempo_total = (dados.tempo_total || 0) + tempoTotalDefinido;
-                dados.xp = (dados.xp || 0) + Math.floor(tempoTotalDefinido / 60);
-                
-                // Lógica de Ofensiva (Dias Seguidos)
-                const hoje = new Date().toLocaleDateString('pt-BR');
-                if (dados.ultimo_acesso !== hoje) {
-                    dados.dias_seguidos = (dados.dias_seguidos || 0) + 1;
-                    dados.ultimo_acesso = hoje;
-                }
-
-                await fetch('/api/dados', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(dados)
-                });
-
-                limparFocoLocal();
-                window.location.reload(); // Recarrega para atualizar a tela inicial
-            } catch (e) {
-                console.error("Erro ao salvar:", e);
-                alert("Erro ao salvar o progresso.");
-            }
-        }
-
-        // INICIALIZAÇÃO
-        carregarDisciplinasSelect();
-        if (estaRodando) relogioIntervalo = setInterval(atualizarTelaRelogio, 1000);
-        atualizarTelaRelogio();
-    </script>
-    
 </body>
 </html>

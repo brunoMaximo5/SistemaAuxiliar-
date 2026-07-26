@@ -82,6 +82,9 @@
         }
         .filtro-secao:hover { border-color: var(--borda-hover); }
 
+        /* Força o ícone do calendário a ficar claro no tema escuro */
+        input[type="date"] { color-scheme: dark; }
+
         .grid-stats {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -188,7 +191,7 @@
             <div class="grid-stats">
                 <div class="stat-card">
                     <div class="stat-titulo">Horas de Foco (Filtro)</div>
-                    <div id="stat-horas" class="stat-valor">0h</div>
+                    <div id="stat-horas" class="stat-valor">0m</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-titulo">Progresso do Edital</div>
@@ -208,7 +211,7 @@
                 </div>
                 <div class="stat-card">
                     <div class="stat-titulo">Foco S/ Disciplina (Global)</div>
-                    <div id="stat-sem-disciplina" class="stat-valor">0h</div>
+                    <div id="stat-sem-disciplina" class="stat-valor">0m</div>
                 </div>
             </div>
 
@@ -217,6 +220,7 @@
                 <button class="aba-btn active" onclick="mudarAba('aba-horas', this)">⏱️ Tempo Investido</button>
                 <button class="aba-btn" onclick="mudarAba('aba-rosca', this)">🍩 Distribuição de Foco</button>
                 <button class="aba-btn" onclick="mudarAba('aba-topicos', this)">📚 Avanço no Edital</button>
+                <button class="aba-btn" onclick="mudarAba('aba-temporal', this)">📅 Histórico de Tempo</button>
             </div>
 
             <!-- Gráfico 1: Horas (Barras) -->
@@ -243,6 +247,31 @@
                 </div>
             </div>
 
+            <!-- Gráfico 4: Histórico Temporal (Com Calendário) -->
+            <div id="aba-temporal" class="secao-grafico">
+                <div class="chart-container">
+                    <div class="chart-title">Evolução do Tempo de Estudo</div>
+                    
+                    <div style="display: flex; flex-direction: column; align-items: center; margin-bottom: 20px; gap: 10px;">
+                        <select id="filtro-periodo" class="filtro-secao" onchange="verificarCalendario()">
+                            <option value="7">Últimos 7 dias</option>
+                            <option value="30">Últimos 30 dias</option>
+                            <option value="custom">Período Personalizado...</option>
+                        </select>
+
+                        <!-- Contêiner do calendário oculto por padrão -->
+                        <div id="container-calendario" style="display: none; align-items: center; gap: 10px;">
+                            <input type="date" id="data-inicio" class="filtro-secao">
+                            <span style="color: var(--texto-mutado);">até</span>
+                            <input type="date" id="data-fim" class="filtro-secao">
+                            <button class="aba-btn active" style="padding: 10px 15px;" onclick="atualizarGraficoTemporal()">Filtrar</button>
+                        </div>
+                    </div>
+
+                    <div class="canvas-wrapper"><canvas id="graficoTemporal"></canvas></div>
+                </div>
+            </div>
+
         </div>
     </main>
 
@@ -252,6 +281,18 @@
         let graficoHorasApp = null;
         let graficoRoscaApp = null;
         let graficoTopicosApp = null;
+        let graficoTemporalApp = null;
+
+        // Função mágica para converter segundos em texto (ex: 1h 30m)
+        function formatarTempoTexto(seg) {
+            if (seg <= 0) return "0m";
+            const h = Math.floor(seg / 3600);
+            const m = Math.floor((seg % 3600) / 60);
+            
+            if (h > 0 && m > 0) return `${h}h ${m}m`;
+            if (h > 0 && m === 0) return `${h}h`;
+            return `${m}m`;
+        }
 
         // Alternar abas visuais
         function mudarAba(idAlvo, botaoApertado) {
@@ -283,23 +324,20 @@
                     });
                 }
 
-                processarDados(); // Processa com "TODAS" inicialmente
+                processarDados(); 
 
             } catch (erro) {
                 console.error("Erro ao carregar:", erro);
             }
         };
 
-        // Função que processa os dados com base no filtro selecionado
         function processarDados() {
             if (!dadosGlobais) return;
             const filtroAtual = document.getElementById('filtro-secao').value;
 
-            // Dados globais absolutos
             let totalSegundosGlobal = dadosGlobais.tempo_total || 0;
             let diasSeguidos = dadosGlobais.dias_seguidos || 0;
             
-            // Variáveis para o filtro atual
             let tempoGastoNasDisciplinas = 0;
             let tempoGastoNoFiltro = 0;
             let totalDisciplinasFiltro = 0;
@@ -308,23 +346,19 @@
             
             let nomesGrafico = [];
             let horasGrafico = [];
-
             let nomesTopicos = [];
             let qtdConcluidos = [];
             let qtdFaltantes = [];
 
             if(dadosGlobais.edital) {
                 dadosGlobais.edital.forEach(disc => {
-                    // Calcula o tempo global gasto em TODAS as disciplinas para achar o "Tempo Sem Disciplina"
                     tempoGastoNasDisciplinas += (disc.tempo_estudado || 0);
 
-                    // Verifica se a disciplina pertence ao filtro selecionado
                     if (filtroAtual === "TODAS" || disc.categoria === filtroAtual) {
                         totalDisciplinasFiltro++;
                         let tempoDiscSegundos = disc.tempo_estudado || 0;
                         tempoGastoNoFiltro += tempoDiscSegundos;
 
-                        // Dados Tópicos
                         if(disc.topicos && disc.topicos.length > 0) {
                             let concluidos = disc.topicos.filter(t => t.estudou).length;
                             let faltantes = disc.topicos.length - concluidos;
@@ -337,50 +371,125 @@
                             qtdFaltantes.push(faltantes);
                         }
 
-                        // Dados Horas (só adiciona se tiver tempo, ou pode adicionar 0 se preferir ver todas)
                         if (tempoDiscSegundos > 0) {
                             nomesGrafico.push(disc.nome);
-                            horasGrafico.push((tempoDiscSegundos / 3600).toFixed(1));
+                            horasGrafico.push((tempoDiscSegundos / 3600).toFixed(2));
                         }
                     }
                 });
             }
 
-            // Cálculos Finais
             let tempoSemDisciplinaSegundos = totalSegundosGlobal - tempoGastoNasDisciplinas;
             if(tempoSemDisciplinaSegundos < 0) tempoSemDisciplinaSegundos = 0;
-            let horasSemDisciplina = (tempoSemDisciplinaSegundos / 3600).toFixed(1);
 
-            // O Card de Horas mostra o Total Global se for "TODAS", ou o total da Seção
-            let horasDisplay = filtroAtual === "TODAS" ? (totalSegundosGlobal / 3600).toFixed(1) : (tempoGastoNoFiltro / 3600).toFixed(1);
+            let tempoParaMostrarTopCard = filtroAtual === "TODAS" ? totalSegundosGlobal : tempoGastoNoFiltro;
             let porcentagemGeral = topicosTotaisFiltro > 0 ? ((topicosConcluidosFiltro / topicosTotaisFiltro) * 100).toFixed(1) : 0;
 
-            // Se estiver em "TODAS" e houver tempo sem disciplina, adicionamos no gráfico de horas/rosca
             if (filtroAtual === "TODAS" && tempoSemDisciplinaSegundos > 0) {
                 nomesGrafico.push('Sem Disciplina / Avulso');
-                horasGrafico.push(horasSemDisciplina);
+                horasGrafico.push((tempoSemDisciplinaSegundos / 3600).toFixed(2));
             }
 
-            // Atualiza os Cards
-            document.getElementById('stat-horas').innerText = `${horasDisplay}h`;
+            // APLICANDO A NOVA FORMATAÇÃO NOS CARDS
+            document.getElementById('stat-horas').innerText = formatarTempoTexto(tempoParaMostrarTopCard);
             document.getElementById('stat-progresso').innerText = `${porcentagemGeral}%`;
             document.getElementById('stat-ofensiva').innerText = `${diasSeguidos} Dias`;
             document.getElementById('stat-topicos').innerText = topicosConcluidosFiltro;
             document.getElementById('stat-disciplinas').innerText = totalDisciplinasFiltro;
-            document.getElementById('stat-sem-disciplina').innerText = `${horasSemDisciplina}h`;
+            document.getElementById('stat-sem-disciplina').innerText = formatarTempoTexto(tempoSemDisciplinaSegundos);
 
-            // Desenha Gráficos
             desenharGraficoHoras(nomesGrafico, horasGrafico);
             desenharGraficoRosca(nomesGrafico, horasGrafico);
             desenharGraficoTopicos(nomesTopicos, qtdConcluidos, qtdFaltantes);
+            
+            atualizarGraficoTemporal();
         }
 
-        // --- PALETA DE CORES PROFISSIONAL (Tons de Cinza/Branco para combinar com o fundo escuro) ---
+        function verificarCalendario() {
+            const periodo = document.getElementById('filtro-periodo').value;
+            const containerCal = document.getElementById('container-calendario');
+            
+            if (periodo === 'custom') {
+                containerCal.style.display = 'flex'; // Mostra o calendário
+            } else {
+                containerCal.style.display = 'none'; // Esconde o calendário
+                atualizarGraficoTemporal(); // Atualiza automático se for 7 ou 30
+            }
+        }
+
+        function atualizarGraficoTemporal() {
+            if (!dadosGlobais) return;
+            
+            const periodo = document.getElementById('filtro-periodo').value;
+            const historico = dadosGlobais.historico_diario || {};
+            
+            let labelsX = [];
+            let valoresY = [];
+            
+            if (periodo === '7' || periodo === '30') {
+                const diasSelecionados = parseInt(periodo);
+                for(let i = diasSelecionados - 1; i >= 0; i--) {
+                    let d = new Date();
+                    d.setDate(d.getDate() - i);
+                    
+                    let ano = d.getFullYear();
+                    let mes = String(d.getMonth() + 1).padStart(2, '0');
+                    let dia = String(d.getDate()).padStart(2, '0');
+                    
+                    let iso = `${ano}-${mes}-${dia}`;
+                    let diaFormatado = `${dia}/${mes}`; 
+                    
+                    labelsX.push(diaFormatado);
+                    
+                    let seg = historico[iso] ? historico[iso] : 0;
+                    valoresY.push((seg / 3600).toFixed(2));
+                }
+            } 
+            else if (periodo === 'custom') {
+                let dataInicio = document.getElementById('data-inicio').value;
+                let dataFim = document.getElementById('data-fim').value;
+                
+                if(!dataInicio || !dataFim) {
+                    alert("Por favor, selecione as datas de início e fim no calendário.");
+                    return;
+                }
+
+                // Ajusta timezone adicionando a hora no formato ISO para evitar pular 1 dia pra trás
+                let dAtual = new Date(dataInicio + 'T00:00:00'); 
+                let dFim = new Date(dataFim + 'T00:00:00');
+
+                if (dAtual > dFim) {
+                    alert("A Data de Início não pode ser maior que a Data de Fim.");
+                    return;
+                }
+
+                while (dAtual <= dFim) {
+                    let ano = dAtual.getFullYear();
+                    let mes = String(dAtual.getMonth() + 1).padStart(2, '0');
+                    let dia = String(dAtual.getDate()).padStart(2, '0');
+                    
+                    let iso = `${ano}-${mes}-${dia}`;
+                    let diaFormatado = `${dia}/${mes}`;
+                    
+                    labelsX.push(diaFormatado);
+                    
+                    let seg = historico[iso] ? historico[iso] : 0;
+                    valoresY.push((seg / 3600).toFixed(2));
+
+                    // Avança 1 dia no loop
+                    dAtual.setDate(dAtual.getDate() + 1);
+                }
+            }
+            
+            desenharGraficoTemporal(labelsX, valoresY);
+        }
+
         const coresGrafico = [
             '#ffffff', '#e0e0e0', '#bdbdbd', '#9e9e9e', '#757575', 
             '#616161', '#424242', '#333333', '#212121', '#111111'
         ];
 
+        // GRÁFICOS COM TOOLTIP (JANELINHA) FORMATADA
         function desenharGraficoHoras(nomes, valores) {
             const ctx = document.getElementById('graficoHoras').getContext('2d');
             if (graficoHorasApp) graficoHorasApp.destroy();
@@ -389,14 +498,24 @@
                 data: {
                     labels: nomes,
                     datasets: [{
-                        label: 'Horas', data: valores,
+                        label: 'Tempo Estudado', data: valores,
                         backgroundColor: 'rgba(255, 255, 255, 0.8)',
                         borderRadius: 6, borderWidth: 0, maxBarThickness: 60
                     }]
                 },
                 options: {
                     responsive: true, maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
+                    plugins: { 
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let seg = Math.round(context.raw * 3600);
+                                    return ' ' + formatarTempoTexto(seg);
+                                }
+                            }
+                        }
+                    },
                     scales: {
                         y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#888' } },
                         x: { grid: { display: false }, ticks: { color: '#e0e0e0' } }
@@ -409,10 +528,9 @@
             const ctx = document.getElementById('graficoRosca').getContext('2d');
             if (graficoRoscaApp) graficoRoscaApp.destroy();
             
-            // Tratamento caso não haja dados
             if (valores.length === 0) {
                 nomes = ['Sem dados de foco nesta seção'];
-                valores = [1]; // Valor fake só pra desenhar o círculo vazio
+                valores = [1]; 
                 var corBg = ['rgba(255,255,255,0.05)'];
             } else {
                 var corBg = coresGrafico.slice(0, valores.length);
@@ -423,25 +541,23 @@
                 data: {
                     labels: nomes,
                     datasets: [{
-                        data: valores,
-                        backgroundColor: corBg,
-                        borderColor: '#1e1e1e', // Cor da borda interna entre as fatias
-                        borderWidth: 2,
-                        hoverOffset: 10
+                        data: valores, backgroundColor: corBg, borderColor: '#1e1e1e', borderWidth: 2, hoverOffset: 10
                     }]
                 },
                 options: {
-                    responsive: true, maintainAspectRatio: false,
-                    cutout: '70%', // Faz o buraco no meio (Rosca)
+                    responsive: true, maintainAspectRatio: false, cutout: '70%',
                     plugins: { 
                         legend: { position: 'right', labels: { color: '#e0e0e0', padding: 20, font: { size: 13 } } },
                         tooltip: {
                             callbacks: {
                                 label: function(context) {
                                     let label = context.label || '';
-                                    if (label === 'Sem dados de foco nesta seção') return ' 0h';
+                                    if (label === 'Sem dados de foco nesta seção') return ' 0m';
                                     if (label) label += ': ';
-                                    if (context.parsed !== null) label += context.parsed + 'h';
+                                    if (context.raw !== null) {
+                                        let seg = Math.round(context.raw * 3600);
+                                        label += formatarTempoTexto(seg);
+                                    }
                                     return label;
                                 }
                             }
@@ -473,83 +589,139 @@
                 }
             });
         }
+
+        function desenharGraficoTemporal(nomes, valores) {
+            const ctx = document.getElementById('graficoTemporal').getContext('2d');
+            if (graficoTemporalApp) graficoTemporalApp.destroy();
+            graficoTemporalApp = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: nomes,
+                    datasets: [{
+                        label: 'Tempo Estudado', data: valores, borderColor: '#ffffff', backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                        fill: true, tension: 0.3, borderWidth: 2, pointBackgroundColor: '#ffffff', pointRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { 
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let seg = Math.round(context.raw * 3600);
+                                    return ' ' + formatarTempoTexto(seg);
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#888' } },
+                        x: { grid: { display: false }, ticks: { color: '#e0e0e0' } }
+                    }
+                }
+            });
+        }
     </script>
 
-    <!-- SCRIPT DO RELÓGIO (SIDEBAR) -->
-    <script>
-        let relogioIntervalo;
-        let tempoTotalDefinido = parseInt(localStorage.getItem('foco_total_segundos')) || 0;
-        let tempoFim = parseInt(localStorage.getItem('foco_fim_timestamp')) || 0;
-        let estaRodando = localStorage.getItem('foco_rodando') === 'true';
-        let idDisciplinaAtual = localStorage.getItem('foco_disciplina') || "";
+    <!-- SCRIPT DO RELÓGIO -->
+<script>
+    let relogioIntervalo;
+    let tempoTotalDefinido = parseInt(localStorage.getItem('foco_total_segundos')) || 0;
+    let tempoFim = parseInt(localStorage.getItem('foco_fim_timestamp')) || 0;
+    let tempoRestanteSalvo = parseInt(localStorage.getItem('foco_tempo_restante')) || 0;
+    let estaRodando = localStorage.getItem('foco_rodando') === 'true';
+    let estaPausado = localStorage.getItem('foco_pausado') === 'true';
+    let idDisciplinaAtual = localStorage.getItem('foco_disciplina') || "";
 
-        const displayRelogio = document.getElementById('relogio-global');
-        const btnRelogio = document.getElementById('btn-relogio');
-        const selectDisciplina = document.getElementById('select-disciplina');
-        const inputMinutos = document.getElementById('input-minutos');
+    const displayRelogio = document.getElementById('relogio-global');
+    const btnRelogio = document.getElementById('btn-relogio');
+    const selectDisciplina = document.getElementById('select-disciplina');
+    const inputMinutos = document.getElementById('input-minutos');
 
-        async function carregarDisciplinasSelect() {
-            if (!selectDisciplina) return; 
-            try {
-                const res = await fetch('/api/dados');
-                const appData = await res.json();
-                const edital = appData.edital || [];
-                
-                selectDisciplina.innerHTML = '<option value="">Selecione a Disciplina...</option>';
-                edital.forEach((disc, index) => {
-                    const option = document.createElement('option');
-                    option.value = index; 
-                    // Exibe de qual seção é a disciplina para não confundir
-                    const tagCategoria = disc.categoria ? `[${disc.categoria}] ` : '';
-                    option.innerText = tagCategoria + disc.nome;
-                    selectDisciplina.appendChild(option);
-                });
-                if (idDisciplinaAtual) selectDisciplina.value = idDisciplinaAtual;
-            } catch (e) { console.error(e); }
-        }
-
-        function formatarTempo(seg) {
-            if (seg <= 0) return "00:00:00";
-            const h = String(Math.floor(seg / 3600)).padStart(2, '0');
-            const m = String(Math.floor((seg % 3600) / 60)).padStart(2, '0');
-            const s = String(seg % 60).padStart(2, '0');
-            return `${h}:${m}:${s}`;
-        }
-
-        function atualizarTelaRelogio() {
-            if (!estaRodando && tempoTotalDefinido === 0) {
-                if (displayRelogio) displayRelogio.innerText = "00:00:00";
-                return;
-            }
-
-            let tempoRestante = Math.max(0, Math.floor((tempoFim - Date.now()) / 1000));
+    async function carregarDisciplinasSelect() {
+        if (!selectDisciplina) return; 
+        try {
+            const res = await fetch('/api/dados');
+            const appData = await res.json();
+            const edital = appData.edital || [];
             
-            if (displayRelogio && btnRelogio && selectDisciplina && inputMinutos) {
-                displayRelogio.innerText = formatarTempo(tempoRestante);
-                
-                if (estaRodando) {
-                    btnRelogio.innerText = "Em Foco...";
-                    btnRelogio.disabled = true;
-                    btnRelogio.style.opacity = "0.5";
-                    selectDisciplina.disabled = true;
-                    inputMinutos.disabled = true;
-                } else {
-                    btnRelogio.innerText = "▶ Iniciar";
-                    btnRelogio.disabled = false;
-                    btnRelogio.style.opacity = "1";
-                    selectDisciplina.disabled = false;
-                    inputMinutos.disabled = false;
-                }
-            }
+            selectDisciplina.innerHTML = '<option value="">Selecione a Disciplina...</option>';
+            edital.forEach((disc, index) => {
+                const option = document.createElement('option');
+                option.value = index; 
+                const tagCategoria = disc.categoria ? `[${disc.categoria}] ` : '';
+                option.innerText = tagCategoria + disc.nome;
+                selectDisciplina.appendChild(option);
+            });
+            if (idDisciplinaAtual) selectDisciplina.value = idDisciplinaAtual;
+        } catch (e) { console.error(e); }
+    }
 
-            if (estaRodando && tempoRestante <= 0) {
-                estaRodando = false;
-                clearInterval(relogioIntervalo);
-                salvarFocoConcluido();
+    function formatarTempo(seg) {
+        if (seg <= 0) return "00:00:00";
+        const h = String(Math.floor(seg / 3600)).padStart(2, '0');
+        const m = String(Math.floor((seg % 3600) / 60)).padStart(2, '0');
+        const s = String(seg % 60).padStart(2, '0');
+        return `${h}:${m}:${s}`;
+    }
+
+    function atualizarTelaRelogio() {
+        if (!estaRodando && tempoTotalDefinido === 0) {
+            if (displayRelogio) displayRelogio.innerText = "00:00:00";
+            return;
+        }
+
+        let tempoRestante;
+        if (estaPausado) {
+            tempoRestante = tempoRestanteSalvo;
+        } else {
+            tempoRestante = Math.max(0, Math.floor((tempoFim - Date.now()) / 1000));
+            tempoRestanteSalvo = tempoRestante; 
+            localStorage.setItem('foco_tempo_restante', tempoRestante);
+        }
+        
+        if (displayRelogio && btnRelogio && selectDisciplina && inputMinutos) {
+            displayRelogio.innerText = formatarTempo(tempoRestante);
+            
+            selectDisciplina.disabled = estaRodando;
+            inputMinutos.disabled = estaRodando;
+
+            if (estaRodando) {
+                if (estaPausado) {
+                    btnRelogio.innerText = "▶ Retomar";
+                    btnRelogio.style.background = "#ff9800"; 
+                } else {
+                    btnRelogio.innerText = "⏸ Pausar";
+                    btnRelogio.style.background = "var(--texto-puro)";
+                }
+            } else {
+                btnRelogio.innerText = "▶ Iniciar";
+                btnRelogio.style.background = "var(--texto-puro)";
             }
         }
 
-        function alternarRelogio() {
+        if (estaRodando && !estaPausado && tempoRestante <= 0) {
+            estaRodando = false;
+            clearInterval(relogioIntervalo);
+            salvarFocoConcluido();
+        }
+    }
+
+    function alternarRelogio() {
+        if (estaRodando && !estaPausado) {
+            estaPausado = true;
+            localStorage.setItem('foco_pausado', 'true');
+            clearInterval(relogioIntervalo);
+            atualizarTelaRelogio();
+        } else if (estaRodando && estaPausado) {
+            estaPausado = false;
+            localStorage.setItem('foco_pausado', 'false');
+            tempoFim = Date.now() + (tempoRestanteSalvo * 1000);
+            localStorage.setItem('foco_fim_timestamp', tempoFim);
+            relogioIntervalo = setInterval(atualizarTelaRelogio, 1000);
+            atualizarTelaRelogio();
+        } else {
             if (selectDisciplina && !selectDisciplina.value) {
                 alert("Selecione uma disciplina primeiro!");
                 return;
@@ -561,81 +733,91 @@
             }
 
             tempoTotalDefinido = minutos * 60;
+            tempoRestanteSalvo = tempoTotalDefinido; 
             tempoFim = Date.now() + (tempoTotalDefinido * 1000);
             
             localStorage.setItem('foco_total_segundos', tempoTotalDefinido);
             localStorage.setItem('foco_fim_timestamp', tempoFim);
+            localStorage.setItem('foco_tempo_restante', tempoTotalDefinido);
             localStorage.setItem('foco_rodando', 'true');
+            localStorage.setItem('foco_pausado', 'false');
             if (selectDisciplina) localStorage.setItem('foco_disciplina', selectDisciplina.value);
             
             estaRodando = true;
+            estaPausado = false;
             relogioIntervalo = setInterval(atualizarTelaRelogio, 1000);
             atualizarTelaRelogio();
         }
+    }
 
-        function cancelarFoco() {
-            if (!estaRodando) return;
-            if(confirm("Deseja realmente cancelar este foco? O tempo não será salvo.")) {
-                limparFocoLocal();
-            }
+    function cancelarFoco() {
+        if (!estaRodando && !estaPausado) return;
+        if(confirm("Deseja realmente cancelar este foco? O tempo não será salvo.")) {
+            limparFocoLocal();
         }
+    }
 
-        function limparFocoLocal() {
-            estaRodando = false;
-            clearInterval(relogioIntervalo);
-            localStorage.removeItem('foco_total_segundos');
-            localStorage.removeItem('foco_fim_timestamp');
-            localStorage.removeItem('foco_rodando');
-            localStorage.removeItem('foco_disciplina');
-            tempoTotalDefinido = 0;
-            if(btnRelogio) {
-                btnRelogio.innerText = "▶ Iniciar";
-                btnRelogio.disabled = false;
-                btnRelogio.style.opacity = "1";
-            }
-            if(selectDisciplina) selectDisciplina.disabled = false;
-            if(inputMinutos) inputMinutos.disabled = false;
-            atualizarTelaRelogio();
-        }
-
-        async function salvarFocoConcluido() {
-            alert("🎯 Parabéns! Bloco de foco concluído. Salvando dados...");
-            
-            try {
-                const res = await fetch('/api/dados');
-                let dados = await res.json();
-
-                dados.tempo_total = (dados.tempo_total || 0) + tempoTotalDefinido;
-                dados.xp = (dados.xp || 0) + Math.floor(tempoTotalDefinido / 60);
-
-                const indexDisciplina = localStorage.getItem('foco_disciplina');
-                if (indexDisciplina !== null && dados.edital[indexDisciplina]) {
-                    dados.edital[indexDisciplina].tempo_estudado = (dados.edital[indexDisciplina].tempo_estudado || 0) + tempoTotalDefinido;
-                }
-                
-                const hoje = new Date().toLocaleDateString('pt-BR');
-                if (dados.ultimo_acesso !== hoje) {
-                    dados.dias_seguidos = (dados.dias_seguidos || 0) + 1;
-                    dados.ultimo_acesso = hoje;
-                }
-
-                await fetch('/api/dados', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(dados)
-                });
-
-                limparFocoLocal();
-                window.location.reload(); 
-            } catch (e) {
-                console.error("Erro ao salvar:", e);
-                alert("Erro ao salvar o progresso.");
-            }
-        }
-
-        carregarDisciplinasSelect();
-        if (estaRodando) relogioIntervalo = setInterval(atualizarTelaRelogio, 1000);
+    function limparFocoLocal() {
+        estaRodando = false;
+        estaPausado = false;
+        clearInterval(relogioIntervalo);
+        localStorage.removeItem('foco_total_segundos');
+        localStorage.removeItem('foco_fim_timestamp');
+        localStorage.removeItem('foco_tempo_restante');
+        localStorage.removeItem('foco_rodando');
+        localStorage.removeItem('foco_pausado');
+        localStorage.removeItem('foco_disciplina');
+        tempoTotalDefinido = 0;
         atualizarTelaRelogio();
-    </script>
+    }
+
+    async function salvarFocoConcluido() {
+        alert("🎯 Parabéns! Bloco de foco concluído. Salvando dados...");
+        
+        try {
+            const res = await fetch('/api/dados');
+            let dados = await res.json();
+
+            dados.tempo_total = (dados.tempo_total || 0) + tempoTotalDefinido;
+            dados.xp = (dados.xp || 0) + Math.floor(tempoTotalDefinido / 60);
+
+            const d = new Date();
+            const ano = d.getFullYear();
+            const mes = String(d.getMonth() + 1).padStart(2, '0');
+            const dia = String(d.getDate()).padStart(2, '0');
+            const hojeIso = `${ano}-${mes}-${dia}`;
+            
+            if (!dados.historico_diario) dados.historico_diario = {};
+            dados.historico_diario[hojeIso] = (dados.historico_diario[hojeIso] || 0) + tempoTotalDefinido;
+
+            const indexDisciplina = localStorage.getItem('foco_disciplina');
+            if (indexDisciplina !== null && dados.edital[indexDisciplina]) {
+                dados.edital[indexDisciplina].tempo_estudado = (dados.edital[indexDisciplina].tempo_estudado || 0) + tempoTotalDefinido;
+            }
+            
+            const hoje = new Date().toLocaleDateString('pt-BR');
+            if (dados.ultimo_acesso !== hoje) {
+                dados.dias_seguidos = (dados.dias_seguidos || 0) + 1;
+                dados.ultimo_acesso = hoje;
+            }
+
+            await fetch('/api/dados', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(dados)
+            });
+
+            limparFocoLocal();
+            window.location.reload(); 
+        } catch (e) {
+            console.error("Erro ao salvar:", e);
+            alert("Erro ao salvar o progresso.");
+        }
+    }
+
+    carregarDisciplinasSelect();
+    if (estaRodando && !estaPausado) relogioIntervalo = setInterval(atualizarTelaRelogio, 1000);
+    atualizarTelaRelogio();
+</script>
 </body>
 </html>
