@@ -121,7 +121,7 @@
             
             <div class="stat-card">
                 <span class="stat-label">Sequência de Estudos</span>
-                <span class="stat-value">1 Dia</span>
+                <span id="txt-dias-seguidos" class="stat-value">Carregando...</span>
             </div>
             
             <div class="stat-card">
@@ -136,9 +136,17 @@
         try {
             const res = await fetch('/api/dados');
             const data = await res.json();
-            const xpReal = data.xp || 0;
             
+            // Carrega XP
+            const xpReal = data.xp || 0;
             document.getElementById('txt-xp-total').innerText = xpReal;
+            
+            // Carrega Dias Seguidos Dinamicamente
+            const diasSeguidos = data.dias_seguidos || 0;
+            const textoDias = diasSeguidos === 1 ? 'Dia' : 'Dias';
+            document.getElementById('txt-dias-seguidos').innerText = `${diasSeguidos} ${textoDias}`;
+            
+            // Calcula e ajusta o nível
             const nivel = Math.floor(Math.sqrt(xpReal / 50)) + 1; 
             document.getElementById('txt-nivel').innerText = `Nível ${nivel}`;
             

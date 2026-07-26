@@ -54,14 +54,34 @@
         .main-content { flex: 1; padding: 50px; overflow-y: auto; width: 100%; }
         .container-interno { max-width: 1000px; margin: 0 auto; width: 100%; }
         
+        .header-estatisticas {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 40px;
+        }
+
         h1 { 
             font-size: 2.2rem; font-weight: 300; letter-spacing: -1px;
             background: linear-gradient(to right, #ffffff, #777777);
             -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-            margin-bottom: 40px;
+            margin: 0;
         }
 
-        /* Atualizado para 6 cards ficarem bonitos (3 colunas, 2 linhas) */
+        /* FILTRO DE SEÇÃO */
+        .filtro-secao {
+            background: var(--bg-card);
+            color: var(--texto-puro);
+            border: 1px solid var(--borda-sutil);
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 1rem;
+            outline: none;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        .filtro-secao:hover { border-color: var(--borda-hover); }
+
         .grid-stats {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -78,7 +98,7 @@
         .stat-titulo { color: var(--texto-mutado); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
         .stat-valor { font-size: 2.2rem; font-weight: 800; color: var(--texto-puro); }
 
-        /* SISTEMA DE ABAS (TABS) PARA OS GRÁFICOS */
+        /* SISTEMA DE ABAS PARA OS GRÁFICOS */
         .abas-container {
             display: flex; gap: 15px; margin-bottom: 20px; justify-content: flex-start;
         }
@@ -101,17 +121,22 @@
             background: var(--bg-card); border: 1px solid var(--borda-sutil);
             border-radius: 12px; padding: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.3);
             position: relative; height: 450px; width: 100%;
+            display: flex; flex-direction: column; align-items: center;
         }
         .chart-title {
             text-align: center; font-size: 0.95rem; color: var(--texto-mutado);
-            text-transform: uppercase; letter-spacing: 1px; margin-bottom: 20px;
+            text-transform: uppercase; letter-spacing: 1px; margin-bottom: 20px; width: 100%;
+        }
+        
+        .canvas-wrapper {
+            position: relative; height: 100%; width: 100%;
         }
 
     </style>
 </head>
 <body>
     <aside class="sidebar">
-        <!-- Manter sua Sidebar intacta aqui (XP, Relógio, Links) -->
+        <!-- Sidebar XP -->
         <div class="status-panel">
             <div class="xp-label">Pontuação Total</div>
             <div id="xp-display" class="xp-valor">0</div>
@@ -149,20 +174,28 @@
 
     <main class="main-content">
         <div class="container-interno">
-            <h1>Visão Geral do Desempenho</h1>
             
-            <!-- Agora com 6 Cards -->
+            <div class="header-estatisticas">
+                <h1>Visão Geral do Desempenho</h1>
+                <!-- Filtro de Seção -->
+                <select id="filtro-secao" class="filtro-secao" onchange="processarDados()">
+                    <option value="TODAS">Todas as Seções</option>
+                    <!-- Preenchido via JS -->
+                </select>
+            </div>
+            
+            <!-- Cards -->
             <div class="grid-stats">
                 <div class="stat-card">
-                    <div class="stat-titulo">Horas de Foco</div>
+                    <div class="stat-titulo">Horas de Foco (Filtro)</div>
                     <div id="stat-horas" class="stat-valor">0h</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-titulo">Progresso Geral</div>
+                    <div class="stat-titulo">Progresso do Edital</div>
                     <div id="stat-progresso" class="stat-valor">0%</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-titulo">Ofensiva Atual</div>
+                    <div class="stat-titulo">Ofensiva Global</div>
                     <div id="stat-ofensiva" class="stat-valor" style="color: #ff9800;">0 Dias</div>
                 </div>
                 <div class="stat-card">
@@ -174,7 +207,7 @@
                     <div id="stat-disciplinas" class="stat-valor">0</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-titulo">Foco S/ Disciplina</div>
+                    <div class="stat-titulo">Foco S/ Disciplina (Global)</div>
                     <div id="stat-sem-disciplina" class="stat-valor">0h</div>
                 </div>
             </div>
@@ -182,22 +215,31 @@
             <!-- Botões das Abas -->
             <div class="abas-container">
                 <button class="aba-btn active" onclick="mudarAba('aba-horas', this)">⏱️ Tempo Investido</button>
+                <button class="aba-btn" onclick="mudarAba('aba-rosca', this)">🍩 Distribuição de Foco</button>
                 <button class="aba-btn" onclick="mudarAba('aba-topicos', this)">📚 Avanço no Edital</button>
             </div>
 
-            <!-- Gráfico 1: Horas (Aba Padrão) -->
+            <!-- Gráfico 1: Horas (Barras) -->
             <div id="aba-horas" class="secao-grafico active">
                 <div class="chart-container">
                     <div class="chart-title">Horas Estudadas por Disciplina</div>
-                    <canvas id="graficoHoras"></canvas>
+                    <div class="canvas-wrapper"><canvas id="graficoHoras"></canvas></div>
                 </div>
             </div>
 
-            <!-- Gráfico 2: Tópicos (Oculto até clicar) -->
+            <!-- Gráfico 2: Rosca (Doughnut) -->
+            <div id="aba-rosca" class="secao-grafico">
+                <div class="chart-container">
+                    <div class="chart-title">Distribuição de Tempo entre Disciplinas</div>
+                    <div class="canvas-wrapper"><canvas id="graficoRosca"></canvas></div>
+                </div>
+            </div>
+
+            <!-- Gráfico 3: Tópicos (Barras Empilhadas) -->
             <div id="aba-topicos" class="secao-grafico">
                 <div class="chart-container">
                     <div class="chart-title">Status dos Tópicos por Disciplina</div>
-                    <canvas id="graficoTopicos"></canvas>
+                    <div class="canvas-wrapper"><canvas id="graficoTopicos"></canvas></div>
                 </div>
             </div>
 
@@ -206,16 +248,16 @@
 
     <!-- SCRIPT DE DADOS E GRÁFICOS -->
     <script>
-        let meuGrafico = null;
+        let dadosGlobais = {};
+        let graficoHorasApp = null;
+        let graficoRoscaApp = null;
         let graficoTopicosApp = null;
 
-        // Função para alternar as abas
+        // Alternar abas visuais
         function mudarAba(idAlvo, botaoApertado) {
-            // Remove 'active' de todos os botões e seções
             document.querySelectorAll('.aba-btn').forEach(btn => btn.classList.remove('active'));
             document.querySelectorAll('.secao-grafico').forEach(sec => sec.classList.remove('active'));
             
-            // Adiciona 'active' apenas no clicado
             botaoApertado.classList.add('active');
             document.getElementById(idAlvo).classList.add('active');
         }
@@ -223,87 +265,126 @@
         window.onload = async () => {
             try {
                 const res = await fetch('/api/dados');
-                const dadosApp = await res.json();
+                dadosGlobais = await res.json();
                 
                 // Atualiza Sidebar (XP)
-                const xp = dadosApp.xp || 0;
+                const xp = dadosGlobais.xp || 0;
                 document.getElementById('xp-display').innerText = xp;
                 document.getElementById('nivel-display').innerText = `Nível ${Math.floor(Math.sqrt(xp / 50)) + 1}`;
 
-                // Variáveis base
-                let totalSegundos = dadosApp.tempo_total || 0;
-                let diasSeguidos = dadosApp.dias_seguidos || 0;
-                let totalDisciplinas = dadosApp.edital ? dadosApp.edital.length : 0;
-                
-                let topicosConcluidos = 0;
-                let topicosTotaisGerais = 0; // Para calcular a % geral
-                let tempoGastoNasDisciplinas = 0;
-                
-                let nomesGrafico = [];
-                let horasGrafico = [];
-
-                let nomesTopicos = [];
-                let qtdConcluidos = [];
-                let qtdFaltantes = [];
-
-                if(dadosApp.edital) {
-                    dadosApp.edital.forEach(disc => {
-                        // Tópicos
-                        if(disc.topicos && disc.topicos.length > 0) {
-                            let concluidos = disc.topicos.filter(t => t.estudou).length;
-                            let faltantes = disc.topicos.length - concluidos;
-                            
-                            topicosTotaisGerais += disc.topicos.length;
-                            topicosConcluidos += concluidos;
-                            
-                            nomesTopicos.push(disc.nome);
-                            qtdConcluidos.push(concluidos);
-                            qtdFaltantes.push(faltantes);
-                        }
-                        
-                        // Horas
-                        let tempoDiscSegundos = disc.tempo_estudado || 0;
-                        if(tempoDiscSegundos > 0) {
-                            tempoGastoNasDisciplinas += tempoDiscSegundos;
-                            nomesGrafico.push(disc.nome);
-                            horasGrafico.push((tempoDiscSegundos / 3600).toFixed(1));
-                        }
+                // Preenche o Select de Filtro de Seção
+                const selectFiltro = document.getElementById('filtro-secao');
+                if (dadosGlobais.categorias) {
+                    dadosGlobais.categorias.forEach(cat => {
+                        const option = document.createElement('option');
+                        option.value = cat;
+                        option.innerText = `Seção: ${cat}`;
+                        selectFiltro.appendChild(option);
                     });
                 }
 
-                // Cálculos
-                let tempoSemDisciplinaSegundos = totalSegundos - tempoGastoNasDisciplinas;
-                if(tempoSemDisciplinaSegundos < 0) tempoSemDisciplinaSegundos = 0;
-                let horasSemDisciplina = (tempoSemDisciplinaSegundos / 3600).toFixed(1);
-
-                let porcentagemGeral = topicosTotaisGerais > 0 ? ((topicosConcluidos / topicosTotaisGerais) * 100).toFixed(1) : 0;
-
-                if (tempoSemDisciplinaSegundos > 0) {
-                    nomesGrafico.push('Sem Disciplina');
-                    horasGrafico.push(horasSemDisciplina);
-                }
-
-                // Preenchendo os Cards novos e velhos
-                document.getElementById('stat-horas').innerText = `${(totalSegundos / 3600).toFixed(1)}h`;
-                document.getElementById('stat-progresso').innerText = `${porcentagemGeral}%`;
-                document.getElementById('stat-ofensiva').innerText = `${diasSeguidos} Dias`;
-                document.getElementById('stat-topicos').innerText = topicosConcluidos;
-                document.getElementById('stat-disciplinas').innerText = totalDisciplinas;
-                document.getElementById('stat-sem-disciplina').innerText = `${horasSemDisciplina}h`;
-
-                // Desenha Gráficos (ambos já renderizam, mesmo que um fique invisível inicialmente)
-                desenharGraficoHoras(nomesGrafico, horasGrafico);
-                desenharGraficoTopicos(nomesTopicos, qtdConcluidos, qtdFaltantes);
+                processarDados(); // Processa com "TODAS" inicialmente
 
             } catch (erro) {
                 console.error("Erro ao carregar:", erro);
             }
         };
 
+        // Função que processa os dados com base no filtro selecionado
+        function processarDados() {
+            if (!dadosGlobais) return;
+            const filtroAtual = document.getElementById('filtro-secao').value;
+
+            // Dados globais absolutos
+            let totalSegundosGlobal = dadosGlobais.tempo_total || 0;
+            let diasSeguidos = dadosGlobais.dias_seguidos || 0;
+            
+            // Variáveis para o filtro atual
+            let tempoGastoNasDisciplinas = 0;
+            let tempoGastoNoFiltro = 0;
+            let totalDisciplinasFiltro = 0;
+            let topicosConcluidosFiltro = 0;
+            let topicosTotaisFiltro = 0; 
+            
+            let nomesGrafico = [];
+            let horasGrafico = [];
+
+            let nomesTopicos = [];
+            let qtdConcluidos = [];
+            let qtdFaltantes = [];
+
+            if(dadosGlobais.edital) {
+                dadosGlobais.edital.forEach(disc => {
+                    // Calcula o tempo global gasto em TODAS as disciplinas para achar o "Tempo Sem Disciplina"
+                    tempoGastoNasDisciplinas += (disc.tempo_estudado || 0);
+
+                    // Verifica se a disciplina pertence ao filtro selecionado
+                    if (filtroAtual === "TODAS" || disc.categoria === filtroAtual) {
+                        totalDisciplinasFiltro++;
+                        let tempoDiscSegundos = disc.tempo_estudado || 0;
+                        tempoGastoNoFiltro += tempoDiscSegundos;
+
+                        // Dados Tópicos
+                        if(disc.topicos && disc.topicos.length > 0) {
+                            let concluidos = disc.topicos.filter(t => t.estudou).length;
+                            let faltantes = disc.topicos.length - concluidos;
+                            
+                            topicosTotaisFiltro += disc.topicos.length;
+                            topicosConcluidosFiltro += concluidos;
+                            
+                            nomesTopicos.push(disc.nome);
+                            qtdConcluidos.push(concluidos);
+                            qtdFaltantes.push(faltantes);
+                        }
+
+                        // Dados Horas (só adiciona se tiver tempo, ou pode adicionar 0 se preferir ver todas)
+                        if (tempoDiscSegundos > 0) {
+                            nomesGrafico.push(disc.nome);
+                            horasGrafico.push((tempoDiscSegundos / 3600).toFixed(1));
+                        }
+                    }
+                });
+            }
+
+            // Cálculos Finais
+            let tempoSemDisciplinaSegundos = totalSegundosGlobal - tempoGastoNasDisciplinas;
+            if(tempoSemDisciplinaSegundos < 0) tempoSemDisciplinaSegundos = 0;
+            let horasSemDisciplina = (tempoSemDisciplinaSegundos / 3600).toFixed(1);
+
+            // O Card de Horas mostra o Total Global se for "TODAS", ou o total da Seção
+            let horasDisplay = filtroAtual === "TODAS" ? (totalSegundosGlobal / 3600).toFixed(1) : (tempoGastoNoFiltro / 3600).toFixed(1);
+            let porcentagemGeral = topicosTotaisFiltro > 0 ? ((topicosConcluidosFiltro / topicosTotaisFiltro) * 100).toFixed(1) : 0;
+
+            // Se estiver em "TODAS" e houver tempo sem disciplina, adicionamos no gráfico de horas/rosca
+            if (filtroAtual === "TODAS" && tempoSemDisciplinaSegundos > 0) {
+                nomesGrafico.push('Sem Disciplina / Avulso');
+                horasGrafico.push(horasSemDisciplina);
+            }
+
+            // Atualiza os Cards
+            document.getElementById('stat-horas').innerText = `${horasDisplay}h`;
+            document.getElementById('stat-progresso').innerText = `${porcentagemGeral}%`;
+            document.getElementById('stat-ofensiva').innerText = `${diasSeguidos} Dias`;
+            document.getElementById('stat-topicos').innerText = topicosConcluidosFiltro;
+            document.getElementById('stat-disciplinas').innerText = totalDisciplinasFiltro;
+            document.getElementById('stat-sem-disciplina').innerText = `${horasSemDisciplina}h`;
+
+            // Desenha Gráficos
+            desenharGraficoHoras(nomesGrafico, horasGrafico);
+            desenharGraficoRosca(nomesGrafico, horasGrafico);
+            desenharGraficoTopicos(nomesTopicos, qtdConcluidos, qtdFaltantes);
+        }
+
+        // --- PALETA DE CORES PROFISSIONAL (Tons de Cinza/Branco para combinar com o fundo escuro) ---
+        const coresGrafico = [
+            '#ffffff', '#e0e0e0', '#bdbdbd', '#9e9e9e', '#757575', 
+            '#616161', '#424242', '#333333', '#212121', '#111111'
+        ];
+
         function desenharGraficoHoras(nomes, valores) {
             const ctx = document.getElementById('graficoHoras').getContext('2d');
-            if (meuGrafico) meuGrafico.destroy();
-            meuGrafico = new Chart(ctx, {
+            if (graficoHorasApp) graficoHorasApp.destroy();
+            graficoHorasApp = new Chart(ctx, {
                 type: 'bar',
                 data: {
                     labels: nomes,
@@ -319,6 +400,52 @@
                     scales: {
                         y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#888' } },
                         x: { grid: { display: false }, ticks: { color: '#e0e0e0' } }
+                    }
+                }
+            });
+        }
+
+        function desenharGraficoRosca(nomes, valores) {
+            const ctx = document.getElementById('graficoRosca').getContext('2d');
+            if (graficoRoscaApp) graficoRoscaApp.destroy();
+            
+            // Tratamento caso não haja dados
+            if (valores.length === 0) {
+                nomes = ['Sem dados de foco nesta seção'];
+                valores = [1]; // Valor fake só pra desenhar o círculo vazio
+                var corBg = ['rgba(255,255,255,0.05)'];
+            } else {
+                var corBg = coresGrafico.slice(0, valores.length);
+            }
+
+            graficoRoscaApp = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: nomes,
+                    datasets: [{
+                        data: valores,
+                        backgroundColor: corBg,
+                        borderColor: '#1e1e1e', // Cor da borda interna entre as fatias
+                        borderWidth: 2,
+                        hoverOffset: 10
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    cutout: '70%', // Faz o buraco no meio (Rosca)
+                    plugins: { 
+                        legend: { position: 'right', labels: { color: '#e0e0e0', padding: 20, font: { size: 13 } } },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.label || '';
+                                    if (label === 'Sem dados de foco nesta seção') return ' 0h';
+                                    if (label) label += ': ';
+                                    if (context.parsed !== null) label += context.parsed + 'h';
+                                    return label;
+                                }
+                            }
+                        }
                     }
                 }
             });
@@ -348,7 +475,7 @@
         }
     </script>
 
-    <!-- SCRIPT DO RELÓGIO E FOCO (SEU CÓDIGO INTACTO) -->
+    <!-- SCRIPT DO RELÓGIO (SIDEBAR) -->
     <script>
         let relogioIntervalo;
         let tempoTotalDefinido = parseInt(localStorage.getItem('foco_total_segundos')) || 0;
@@ -365,14 +492,16 @@
             if (!selectDisciplina) return; 
             try {
                 const res = await fetch('/api/dados');
-                const dadosApp = await res.json();
-                const edital = dadosApp.edital || [];
+                const appData = await res.json();
+                const edital = appData.edital || [];
                 
                 selectDisciplina.innerHTML = '<option value="">Selecione a Disciplina...</option>';
-                edital.forEach(disc => {
+                edital.forEach((disc, index) => {
                     const option = document.createElement('option');
-                    option.value = disc.id || disc.nome;
-                    option.innerText = disc.nome;
+                    option.value = index; 
+                    // Exibe de qual seção é a disciplina para não confundir
+                    const tagCategoria = disc.categoria ? `[${disc.categoria}] ` : '';
+                    option.innerText = tagCategoria + disc.nome;
                     selectDisciplina.appendChild(option);
                 });
                 if (idDisciplinaAtual) selectDisciplina.value = idDisciplinaAtual;
@@ -478,6 +607,11 @@
 
                 dados.tempo_total = (dados.tempo_total || 0) + tempoTotalDefinido;
                 dados.xp = (dados.xp || 0) + Math.floor(tempoTotalDefinido / 60);
+
+                const indexDisciplina = localStorage.getItem('foco_disciplina');
+                if (indexDisciplina !== null && dados.edital[indexDisciplina]) {
+                    dados.edital[indexDisciplina].tempo_estudado = (dados.edital[indexDisciplina].tempo_estudado || 0) + tempoTotalDefinido;
+                }
                 
                 const hoje = new Date().toLocaleDateString('pt-BR');
                 if (dados.ultimo_acesso !== hoje) {
@@ -492,7 +626,7 @@
                 });
 
                 limparFocoLocal();
-                window.location.reload();
+                window.location.reload(); 
             } catch (e) {
                 console.error("Erro ao salvar:", e);
                 alert("Erro ao salvar o progresso.");
