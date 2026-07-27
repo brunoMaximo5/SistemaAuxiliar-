@@ -36,6 +36,11 @@ def index():
 def nucleo():
     return render_template('nucleo.html')
 
+# --- ROTA NOVA: GESTÃO DE ROTINA ---
+@app.route('/rotina')
+def rotina():
+    return render_template('rotina.html')
+
 @app.route('/estatistica')
 def estatistica():
     return render_template('estatistica.html')

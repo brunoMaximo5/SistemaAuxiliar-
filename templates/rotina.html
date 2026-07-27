@@ -1,0 +1,1006 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestão de Rotina</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        :root {
+            --bg-principal: linear-gradient(135deg, #121212 0%, #000000 100%);
+            --bg-painel: rgba(20, 20, 20, 0.6);
+            --bg-card: rgba(30, 30, 30, 0.4);
+            --borda-sutil: rgba(255, 255, 255, 0.08);
+            --borda-hover: rgba(255, 255, 255, 0.2);
+            --texto-puro: #ffffff;
+            --texto-base: #e0e0e0;
+            --texto-mutado: #888888;
+            --btn-primario-bg: linear-gradient(135deg, #f5f5f5 0%, #c0c0c0 100%);
+            --btn-primario-texto: #000000;
+            --btn-secundario-bg: #2a2a2a;
+            --btn-secundario-hover: #3a3a3a;
+            --btn-excluir: #2b1d1d;
+            --btn-excluir-hover: #4a2525;
+            --texto-excluir: #d99a9a;
+        }
+
+        body, html {
+            height: 100%;
+            font-family: 'Inter', 'Segoe UI', Roboto, Helvetica, sans-serif;
+            background: linear-gradient(135deg, #121212 0%, #000000 100%);
+            color: var(--texto-base);
+            display: flex;
+            overflow: hidden;
+            width: 100vw;
+        }
+
+        /* SIDEBAR */
+        .sidebar {
+            width: 260px;
+            min-width: 260px;
+            background: var(--bg-painel);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-right: 1px solid var(--borda-sutil);
+            display: flex;
+            flex-direction: column;
+            box-shadow: 5px 0 15px rgba(0,0,0,0.5);
+            z-index: 10;
+        }
+
+        .status-panel {
+            padding: 40px 20px;
+            text-align: center;
+            border-bottom: 1px solid var(--borda-sutil);
+            margin-bottom: 20px;
+        }
+
+        .xp-label { font-size: 0.85rem; color: var(--texto-mutado); text-transform: uppercase; letter-spacing: 1px; }
+        
+        .xp-valor { 
+            font-size: 2.5rem; 
+            font-weight: 800; 
+            color: var(--texto-puro); 
+            margin: 10px 0;
+            text-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
+        }
+
+        .nivel-valor { 
+            font-size: 0.9rem; 
+            color: var(--texto-base); 
+            background: rgba(255, 255, 255, 0.1);
+            padding: 4px 12px;
+            border-radius: 20px;
+            display: inline-block;
+        }
+
+        .nav-btn {
+            background: none;
+            border: none;
+            color: var(--texto-mutado);
+            padding: 16px 24px;
+            text-align: left;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: block;
+            border-left: 3px solid transparent;
+        }
+
+        .nav-btn:hover { background: rgba(255, 255, 255, 0.03); color: var(--texto-puro); }
+        .nav-btn.active { 
+            border-left-color: var(--texto-puro); 
+            background: linear-gradient(90deg, rgba(255,255,255,0.05) 0%, transparent 100%);
+            color: var(--texto-puro); 
+            font-weight: 600; 
+        }
+
+        /* MAIN CONTENT */
+        .main-content {
+            flex: 1;
+            padding: 50px;
+            overflow-y: auto;
+            width: 100%;
+        }
+
+        .container-interno {
+            max-width: 1200px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .main-content::-webkit-scrollbar { width: 8px; }
+        .main-content::-webkit-scrollbar-track { background: transparent; }
+        .main-content::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
+
+        .header-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 40px;
+        }
+
+        h1 { 
+            margin-top: 0; 
+            font-size: 2.2rem;
+            font-weight: 300;
+            letter-spacing: -1px;
+            background: linear-gradient(to right, #ffffff, #777777);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0;
+        }
+
+        .data-hoje {
+            font-size: 1rem;
+            color: var(--texto-mutado);
+            text-transform: capitalize;
+        }
+
+        /* LAYOUT GRID */
+        .grid-rotina {
+            display: grid;
+            grid-template-columns: 1fr 340px;
+            gap: 30px;
+        }
+
+        @media (max-width: 900px) {
+            .grid-rotina {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .rotina-card {
+            background: var(--bg-card);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 30px;
+            border: 1px solid var(--borda-sutil);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            transition: border-color 0.3s ease;
+        }
+
+        .rotina-card:hover {
+            border-color: var(--borda-hover);
+        }
+
+        .rotina-card-header {
+            font-size: 1.2rem;
+            font-weight: 500;
+            color: var(--texto-puro);
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--borda-sutil);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .top-bar {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            background: var(--bg-painel);
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid var(--borda-sutil);
+            width: 100%;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            padding: 14px 20px;
+            border-radius: 6px;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid var(--borda-sutil);
+            color: var(--texto-puro);
+            font-size: 1rem;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+        
+        input[type="text"]:focus { 
+            border-color: var(--borda-hover); 
+            background: rgba(0, 0, 0, 0.8); 
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.05); 
+        }
+
+        button, .btn-link {
+            padding: 12px 20px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-primario { background: var(--btn-primario-bg); color: var(--btn-primario-texto); box-shadow: 0 4px 15px rgba(255, 255, 255, 0.1); }
+        .btn-primario:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(255, 255, 255, 0.2); }
+        .btn-secundario { background: var(--btn-secundario-bg); color: var(--texto-base); border: 1px solid var(--borda-sutil); }
+        .btn-secundario:hover { background: var(--btn-secundario-hover); border-color: var(--borda-hover); }
+        .btn-excluir { background: var(--btn-excluir); color: var(--texto-excluir); border: 1px solid rgba(217, 154, 154, 0.1); }
+        .btn-excluir:hover { background: var(--btn-excluir-hover); color: #fff; border-color: rgba(255, 100, 100, 0.3); }
+
+        .item-rotina {
+            background: rgba(10, 10, 10, 0.4);
+            border: 1px solid var(--borda-sutil);
+            border-radius: 8px;
+            padding: 16px 20px;
+            margin-top: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.2s ease;
+        }
+
+        .item-rotina:hover { 
+            background: rgba(20, 20, 20, 0.8); 
+            border-color: var(--borda-hover); 
+        }
+
+        .item-rotina.concluido .texto-item {
+            text-decoration: line-through;
+            color: var(--texto-mutado);
+        }
+
+        .checkbox-custom {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+            border: 1px solid var(--borda-hover);
+            background: rgba(0, 0, 0, 0.5);
+            cursor: pointer;
+            margin-right: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .item-rotina.concluido .checkbox-custom {
+            background: var(--texto-puro);
+            border-color: var(--texto-puro);
+        }
+
+        .item-rotina.concluido .checkbox-custom::after {
+            content: 'V';
+            font-size: 0.75rem;
+            font-weight: bold;
+            color: #000;
+        }
+
+        .item-conteudo {
+            display: flex;
+            align-items: center;
+            flex: 1;
+            cursor: pointer;
+        }
+
+        .texto-item {
+            font-size: 1rem;
+            color: var(--texto-base);
+        }
+
+        .bloco-turno {
+            background: rgba(10, 10, 10, 0.4);
+            border: 1px solid var(--borda-sutil);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 15px;
+        }
+
+        .titulo-turno {
+            font-size: 0.85rem;
+            color: var(--texto-mutado);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+
+        .input-turno {
+            width: 100%;
+            margin-bottom: 8px;
+        }
+
+        .grid-energia {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .btn-energia {
+            background: rgba(10, 10, 10, 0.5);
+            border: 1px solid var(--borda-sutil);
+            color: var(--texto-mutado);
+            padding: 12px 5px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-align: center;
+            transition: all 0.2s ease;
+        }
+
+        .btn-energia:hover {
+            border-color: var(--borda-hover);
+            color: var(--texto-base);
+        }
+
+        .btn-energia.active {
+            background: var(--bg-card);
+            border-color: var(--texto-puro);
+            color: var(--texto-puro);
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.08);
+        }
+
+        /* PAINEL DE HISTÓRICO */
+        .painel-historico {
+            margin-top: 15px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--borda-sutil);
+            border-radius: 8px;
+            padding: 15px;
+            display: none;
+        }
+
+        .historico-dia {
+            margin-bottom: 15px;
+            border-bottom: 1px solid var(--borda-sutil);
+            padding-bottom: 10px;
+        }
+
+        .historico-dia:last-child {
+            margin-bottom: 0;
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        .historico-data {
+            font-size: 0.8rem;
+            color: var(--texto-mutado);
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+        <div class="status-panel">
+            <div class="xp-label">Pontuação Total</div>
+            <div id="xp-display" class="xp-valor">0</div>
+            <div id="nivel-display" class="nivel-valor">Nível 1</div>
+        </div>
+        
+        <!-- MÓDULO DE FOCO DECRESCENTE NA SIDEBAR -->
+        <div style="padding: 20px; border-bottom: 1px solid var(--borda-sutil); background: rgba(0,0,0,0.3);">
+            <div style="font-size: 0.75rem; color: var(--texto-mutado); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; text-align: center;">Modo Foco</div>
+            
+            <select id="select-disciplina" style="width: 100%; padding: 8px; margin-bottom: 10px; background: rgba(0,0,0,0.5); color: var(--texto-puro); border: 1px solid var(--borda-sutil); border-radius: 4px; outline: none;">
+                <option value="">Selecione a Disciplina...</option>
+            </select>
+
+            <div style="display: flex; gap: 5px; margin-bottom: 15px; justify-content: center; align-items: center;">
+                <input type="number" id="input-minutos" placeholder="Min" value="50" style="width: 60px; padding: 5px; text-align: center; background: rgba(0,0,0,0.5); color: var(--texto-puro); border: 1px solid var(--borda-sutil); border-radius: 4px;">
+                <span style="color: var(--texto-mutado); font-size: 0.8rem;">minutos</span>
+            </div>
+
+            <div id="relogio-global" style="font-size: 2.2rem; font-weight: 800; color: var(--texto-puro); font-family: monospace; text-align: center; margin-bottom: 15px; text-shadow: 0 0 10px rgba(255,255,255,0.1);">
+                00:00:00
+            </div>
+            
+            <div style="display: flex; gap: 10px;">
+                <button id="btn-relogio" onclick="alternarRelogio()" style="flex: 1; padding: 10px; border-radius: 6px; border: none; font-weight: bold; cursor: pointer; background: var(--texto-puro); color: #000; transition: 0.3s;">
+                    Iniciar
+                </button>
+                <button onclick="cancelarFoco()" style="padding: 10px; border-radius: 6px; border: 1px solid var(--borda-sutil); font-weight: bold; cursor: pointer; background: transparent; color: #ff4444; transition: 0.3s;">
+                    Cancelar
+                </button>
+            </div>
+        </div>
+
+        <!-- LINKS DE NAVEGAÇÃO -->
+        <a href="/" class="nav-btn">Tela Inicial</a>
+        <a href="/nucleo" class="nav-btn">Meu Núcleo</a>
+        <a href="/rotina" class="nav-btn active">Gestão de Rotina</a>
+        <a href="/estatistica" class="nav-btn">Estatística</a>
+        <a href="/forum" class="nav-btn">Fórum</a>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="main-content">
+        <div class="container-interno">
+            <div class="header-container">
+                <h1>Gestão de Rotina</h1>
+                <div class="data-hoje" id="data-hoje"></div>
+            </div>
+
+            <div class="grid-rotina">
+                <!-- COLUNA PRINCIPAL -->
+                <div>
+                    <!-- PRIORIDADES DO DIA -->
+                    <div class="rotina-card">
+                        <div class="rotina-card-header">
+                            <span>Prioridades do Dia</span>
+                            <button class="btn-secundario" onclick="alternarHistoricoPrioridades()" style="padding: 6px 12px; font-size: 0.8rem;">Ver Histórico</button>
+                        </div>
+                        
+                        <div class="top-bar">
+                            <input type="text" id="input-prioridade" placeholder="Adicionar nova prioridade para hoje...">
+                            <button class="btn-primario" onclick="adicionarPrioridade()">Adicionar</button>
+                        </div>
+
+                        <div id="lista-prioridades"></div>
+
+                        <!-- HISTÓRICO DE PRIORIDADES DE DIAS ANTERIORES -->
+                        <div id="painel-historico-prioridades" class="painel-historico">
+                            <div style="font-weight: 600; color: var(--texto-puro); margin-bottom: 12px; font-size: 0.9rem;">Histórico de Dias Anteriores</div>
+                            <div id="conteudo-historico-prioridades"></div>
+                        </div>
+                    </div>
+
+                    <!-- BLOCOS DE TEMPO -->
+                    <div class="rotina-card">
+                        <div class="rotina-card-header">
+                            <span>Blocos de Tempo (Planejamento)</span>
+                            <button class="btn-secundario" onclick="salvarBlocos()" style="padding: 6px 14px; font-size: 0.8rem;">Salvar Blocos</button>
+                        </div>
+
+                        <div class="bloco-turno">
+                            <div class="titulo-turno">Manhã</div>
+                            <input type="text" id="bloco-manha-1" class="input-turno" placeholder="Ex: Estudo Teórico - Direito Constitucional">
+                            <input type="text" id="bloco-manha-2" class="input-turno" placeholder="Ex: Resolução de 20 questões">
+                        </div>
+
+                        <div class="bloco-turno">
+                            <div class="titulo-turno">Tarde</div>
+                            <input type="text" id="bloco-tarde-1" class="input-turno" placeholder="Ex: Estudo Teórico - Direito Penal">
+                            <input type="text" id="bloco-tarde-2" class="input-turno" placeholder="Ex: Revisão de Anotações">
+                        </div>
+
+                        <div class="bloco-turno">
+                            <div class="titulo-turno">Noite</div>
+                            <input type="text" id="bloco-noite-1" class="input-turno" placeholder="Ex: Leitura da Lei Seca">
+                            <input type="text" id="bloco-noite-2" class="input-turno" placeholder="Ex: Planejamento do dia seguinte">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- COLUNA LATERAL -->
+                <div>
+                    <!-- RASTREADOR DE HÁBITOS -->
+                    <div class="rotina-card">
+                        <div class="rotina-card-header">
+                            <span>Rastreador de Hábitos</span>
+                        </div>
+
+                        <div class="top-bar" style="padding: 8px;">
+                            <input type="text" id="input-habito" placeholder="Novo hábito permanente..." style="padding: 10px 14px; font-size: 0.9rem;">
+                            <button class="btn-primario" onclick="adicionarHabito()" style="padding: 10px 14px;">+</button>
+                        </div>
+
+                        <div id="lista-habitos"></div>
+                    </div>
+
+                    <!-- NÍVEL DE ENERGIA -->
+                    <div class="rotina-card">
+                        <div class="rotina-card-header">
+                            <span>Nível de Energia</span>
+                        </div>
+                        <div style="font-size: 0.85rem; color: var(--texto-mutado); margin-bottom: 10px;">
+                            Como está seu foco e disposição hoje?
+                        </div>
+                        <div class="grid-energia">
+                            <div class="btn-energia" onclick="definirEnergia('Baixa', this)">Baixa</div>
+                            <div class="btn-energia" onclick="definirEnergia('Média', this)">Média</div>
+                            <div class="btn-energia" onclick="definirEnergia('Alta', this)">Alta</div>
+                            <div class="btn-energia" onclick="definirEnergia('Máxima', this)">Máxima</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        let dadosApp = { xp: 0, tempo_total: 0, edital: [], categorias: ['Principal'], rotina: {} };
+
+        window.onload = async () => {
+            exibirDataHoje();
+            await carregarDoBanco();
+            verificarEManusearMudancaDeDia();
+            renderizarRotina();
+        };
+
+        function obterDataAtualIso() {
+            const d = new Date();
+            const ano = d.getFullYear();
+            const mes = String(d.getMonth() + 1).padStart(2, '0');
+            const dia = String(d.getDate()).padStart(2, '0');
+            return `${ano}-${mes}-${dia}`;
+        }
+
+        function exibirDataHoje() {
+            const opcoes = { weekday: 'long', day: 'numeric', month: 'long' };
+            const data = new Date().toLocaleDateString('pt-BR', opcoes);
+            document.getElementById('data-hoje').innerText = data;
+        }
+
+        async function carregarDoBanco() {
+            try {
+                const res = await fetch('/api/dados');
+                const tempDados = await res.json();
+                if (tempDados) dadosApp = Object.assign(dadosApp, tempDados);
+                
+                if (!dadosApp.rotina) {
+                    dadosApp.rotina = {
+                        data_atualizacao: obterDataAtualIso(),
+                        prioridades: [],
+                        historico_prioridades: {},
+                        habitos: [],
+                        blocos: { manha1: '', manha2: '', tarde1: '', tarde2: '', noite1: '', noite2: '' },
+                        energia: 'Média'
+                    };
+                }
+                atualizarStatus();
+            } catch (erro) { 
+                console.error("Erro ao carregar dados:", erro); 
+            }
+        }
+
+        async function salvarNoBanco() {
+            try {
+                await fetch('/api/dados', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(dadosApp)
+                });
+                atualizarStatus();
+            } catch (erro) { 
+                console.error("Erro ao salvar dados:", erro); 
+            }
+        }
+
+        /* LÓGICA DE RESET E HISTÓRICO DIÁRIO */
+        function verificarEManusearMudancaDeDia() {
+            const hojeIso = obterDataAtualIso();
+
+            if (!dadosApp.rotina.data_atualizacao) {
+                dadosApp.rotina.data_atualizacao = hojeIso;
+            }
+
+            if (dadosApp.rotina.data_atualizacao !== hojeIso) {
+                const dataAnterior = dadosApp.rotina.data_atualizacao;
+
+                // 1. Guarda as prioridades do dia que passou no histórico
+                if (!dadosApp.rotina.historico_prioridades) {
+                    dadosApp.rotina.historico_prioridades = {};
+                }
+
+                if (dadosApp.rotina.prioridades && dadosApp.rotina.prioridades.length > 0) {
+                    dadosApp.rotina.historico_prioridades[dataAnterior] = [...dadosApp.rotina.prioridades];
+                }
+
+                // 2. Limpa as prioridades para o novo dia
+                dadosApp.rotina.prioridades = [];
+
+                // 3. Reseta os hábitos (desmarca a caixa concluído)
+                if (dadosApp.rotina.habitos) {
+                    dadosApp.rotina.habitos.forEach(h => h.concluido = false);
+                }
+
+                // 4. Atualiza a data da última modificação
+                dadosApp.rotina.data_atualizacao = hojeIso;
+                salvarNoBanco();
+            }
+        }
+
+        function atualizarStatus() {
+            const xp = dadosApp.xp || 0;
+            document.getElementById('xp-display').innerText = xp;
+            const nivel = Math.floor(Math.sqrt(xp / 50)) + 1; 
+            document.getElementById('nivel-display').innerText = `Nível ${nivel}`;
+        }
+
+        function renderizarRotina() {
+            renderizarPrioridades();
+            renderizarHabitos();
+            carregarBlocos();
+            carregarEnergia();
+        }
+
+        /* PRIORIDADES DO DIA */
+        function renderizarPrioridades() {
+            const container = document.getElementById('lista-prioridades');
+            container.innerHTML = '';
+
+            const prioridades = dadosApp.rotina.prioridades || [];
+            if (prioridades.length === 0) {
+                container.innerHTML = `<div style="color: var(--texto-mutado); font-size: 0.9rem; padding: 10px 0;">Nenhuma prioridade definida para hoje.</div>`;
+            }
+
+            prioridades.forEach((p, index) => {
+                const div = document.createElement('div');
+                div.className = `item-rotina ${p.concluido ? 'concluido' : ''}`;
+                div.innerHTML = `
+                    <div class="item-conteudo" onclick="togglePrioridade(${index})">
+                        <div class="checkbox-custom"></div>
+                        <span class="texto-item">${p.texto}</span>
+                    </div>
+                    <button class="btn-excluir" onclick="removerPrioridade(${index})">Excluir</button>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function adicionarPrioridade() {
+            const input = document.getElementById('input-prioridade');
+            const texto = input.value.trim();
+            if (!texto) return;
+
+            if (!dadosApp.rotina.prioridades) dadosApp.rotina.prioridades = [];
+            dadosApp.rotina.prioridades.push({ texto: texto, concluido: false });
+            input.value = '';
+            salvarNoBanco();
+            renderizarPrioridades();
+        }
+
+        function togglePrioridade(index) {
+            dadosApp.rotina.prioridades[index].concluido = !dadosApp.rotina.prioridades[index].concluido;
+            salvarNoBanco();
+            renderizarPrioridades();
+        }
+
+        function removerPrioridade(index) {
+            dadosApp.rotina.prioridades.splice(index, 1);
+            salvarNoBanco();
+            renderizarPrioridades();
+        }
+
+        function alternarHistoricoPrioridades() {
+            const painel = document.getElementById('painel-historico-prioridades');
+            if (painel.style.display === 'block') {
+                painel.style.display = 'none';
+            } else {
+                renderizarHistoricoPrioridades();
+                painel.style.display = 'block';
+            }
+        }
+
+        function renderizarHistoricoPrioridades() {
+            const container = document.getElementById('conteudo-historico-prioridades');
+            container.innerHTML = '';
+
+            const historico = dadosApp.rotina.historico_prioridades || {};
+            const datas = Object.keys(historico).sort().reverse();
+
+            if (datas.length === 0) {
+                container.innerHTML = `<div style="color: var(--texto-mutado); font-size: 0.85rem;">Nenhum histórico gravado ainda.</div>`;
+                return;
+            }
+
+            datas.forEach(dataIso => {
+                const bloco = document.createElement('div');
+                bloco.className = 'historico-dia';
+                
+                let itensHtml = '';
+                historico[dataIso].forEach(item => {
+                    const statusText = item.concluido ? 'Concluído' : 'Não concluído';
+                    const estiloCor = item.concluido ? 'color: var(--texto-base);' : 'color: var(--texto-mutado); text-decoration: line-through;';
+                    itensHtml += `<div style="font-size: 0.9rem; margin-bottom: 4px; ${estiloCor}">- ${item.texto} (${statusText})</div>`;
+                });
+
+                bloco.innerHTML = `
+                    <div class="historico-data">${dataIso}</div>
+                    ${itensHtml}
+                `;
+                container.appendChild(bloco);
+            });
+        }
+
+        /* HÁBITOS DIÁRIOS */
+        function renderizarHabitos() {
+            const container = document.getElementById('lista-habitos');
+            container.innerHTML = '';
+
+            const habitos = dadosApp.rotina.habitos || [];
+            if (habitos.length === 0) {
+                container.innerHTML = `<div style="color: var(--texto-mutado); font-size: 0.85rem; padding: 10px 0;">Nenhum hábito cadastrado.</div>`;
+            }
+
+            habitos.forEach((h, index) => {
+                const div = document.createElement('div');
+                div.className = `item-rotina ${h.concluido ? 'concluido' : ''}`;
+                div.innerHTML = `
+                    <div class="item-conteudo" onclick="toggleHabito(${index})">
+                        <div class="checkbox-custom"></div>
+                        <span class="texto-item">${h.texto}</span>
+                    </div>
+                    <button class="btn-excluir" onclick="removerHabito(${index})" style="padding: 6px 10px; font-size: 0.75rem;">Excluir</button>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function adicionarHabito() {
+            const input = document.getElementById('input-habito');
+            const texto = input.value.trim();
+            if (!texto) return;
+
+            if (!dadosApp.rotina.habitos) dadosApp.rotina.habitos = [];
+            dadosApp.rotina.habitos.push({ texto: texto, concluido: false });
+            input.value = '';
+            salvarNoBanco();
+            renderizarHabitos();
+        }
+
+        function toggleHabito(index) {
+            dadosApp.rotina.habitos[index].concluido = !dadosApp.rotina.habitos[index].concluido;
+            salvarNoBanco();
+            renderizarHabitos();
+        }
+
+        function removerHabito(index) {
+            dadosApp.rotina.habitos.splice(index, 1);
+            salvarNoBanco();
+            renderizarHabitos();
+        }
+
+        /* BLOCOS DE TEMPO */
+        function carregarBlocos() {
+            const b = dadosApp.rotina.blocos || {};
+            document.getElementById('bloco-manha-1').value = b.manha1 || '';
+            document.getElementById('bloco-manha-2').value = b.manha2 || '';
+            document.getElementById('bloco-tarde-1').value = b.tarde1 || '';
+            document.getElementById('bloco-tarde-2').value = b.tarde2 || '';
+            document.getElementById('bloco-noite-1').value = b.noite1 || '';
+            document.getElementById('bloco-noite-2').value = b.noite2 || '';
+        }
+
+        function salvarBlocos() {
+            dadosApp.rotina.blocos = {
+                manha1: document.getElementById('bloco-manha-1').value,
+                manha2: document.getElementById('bloco-manha-2').value,
+                tarde1: document.getElementById('bloco-tarde-1').value,
+                tarde2: document.getElementById('bloco-tarde-2').value,
+                noite1: document.getElementById('bloco-noite-1').value,
+                noite2: document.getElementById('bloco-noite-2').value
+            };
+            salvarNoBanco();
+        }
+
+        /* ENERGIA DO DIA */
+        function carregarEnergia() {
+            const nivel = dadosApp.rotina.energia || 'Média';
+            const botoes = document.querySelectorAll('.btn-energia');
+            botoes.forEach(btn => {
+                if (btn.innerText.trim() === nivel) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+        }
+
+        function definirEnergia(nivel, elemento) {
+            dadosApp.rotina.energia = nivel;
+            document.querySelectorAll('.btn-energia').forEach(btn => btn.classList.remove('active'));
+            elemento.classList.add('active');
+            salvarNoBanco();
+        }
+    </script>
+
+    <!-- SCRIPT DO RELÓGIO GLOBAL (SIDEBAR) -->
+    <script>
+        let relogioIntervalo;
+        let tempoTotalDefinido = parseInt(localStorage.getItem('foco_total_segundos')) || 0;
+        let tempoFim = parseInt(localStorage.getItem('foco_fim_timestamp')) || 0;
+        let tempoRestanteSalvo = parseInt(localStorage.getItem('foco_tempo_restante')) || 0;
+        let estaRodando = localStorage.getItem('foco_rodando') === 'true';
+        let estaPausado = localStorage.getItem('foco_pausado') === 'true';
+        let idDisciplinaAtual = localStorage.getItem('foco_disciplina') || "";
+
+        const displayRelogio = document.getElementById('relogio-global');
+        const btnRelogio = document.getElementById('btn-relogio');
+        const selectDisciplina = document.getElementById('select-disciplina');
+        const inputMinutos = document.getElementById('input-minutos');
+
+        async function carregarDisciplinasSelect() {
+            if (!selectDisciplina) return; 
+            try {
+                const res = await fetch('/api/dados');
+                const appData = await res.json();
+                const edital = appData.edital || [];
+                
+                selectDisciplina.innerHTML = '<option value="">Selecione a Disciplina...</option>';
+                edital.forEach((disc, index) => {
+                    const option = document.createElement('option');
+                    option.value = index; 
+                    const tagCategoria = disc.categoria ? `[${disc.categoria}] ` : '';
+                    option.innerText = tagCategoria + disc.nome;
+                    selectDisciplina.appendChild(option);
+                });
+                if (idDisciplinaAtual) selectDisciplina.value = idDisciplinaAtual;
+            } catch (e) { console.error(e); }
+        }
+
+        function formatarTempo(seg) {
+            if (seg <= 0) return "00:00:00";
+            const h = String(Math.floor(seg / 3600)).padStart(2, '0');
+            const m = String(Math.floor((seg % 3600) / 60)).padStart(2, '0');
+            const s = String(seg % 60).padStart(2, '0');
+            return `${h}:${m}:${s}`;
+        }
+
+        function atualizarTelaRelogio() {
+            if (!estaRodando && tempoTotalDefinido === 0) {
+                if (displayRelogio) displayRelogio.innerText = "00:00:00";
+                return;
+            }
+
+            let tempoRestante;
+            if (estaPausado) {
+                tempoRestante = tempoRestanteSalvo;
+            } else {
+                tempoRestante = Math.max(0, Math.floor((tempoFim - Date.now()) / 1000));
+                tempoRestanteSalvo = tempoRestante; 
+                localStorage.setItem('foco_tempo_restante', tempoRestante);
+            }
+            
+            if (displayRelogio && btnRelogio && selectDisciplina && inputMinutos) {
+                displayRelogio.innerText = formatarTempo(tempoRestante);
+                
+                selectDisciplina.disabled = estaRodando;
+                inputMinutos.disabled = estaRodando;
+
+                if (estaRodando) {
+                    if (estaPausado) {
+                        btnRelogio.innerText = "Retomar";
+                        btnRelogio.style.background = "#ff9800";
+                    } else {
+                        btnRelogio.innerText = "Pausar";
+                        btnRelogio.style.background = "var(--texto-puro)";
+                    }
+                } else {
+                    btnRelogio.innerText = "Iniciar";
+                    btnRelogio.style.background = "var(--texto-puro)";
+                }
+            }
+
+            if (estaRodando && !estaPausado && tempoRestante <= 0) {
+                estaRodando = false;
+                clearInterval(relogioIntervalo);
+                salvarFocoConcluido();
+            }
+        }
+
+        function alternarRelogio() {
+            if (estaRodando && !estaPausado) {
+                estaPausado = true;
+                localStorage.setItem('foco_pausado', 'true');
+                clearInterval(relogioIntervalo);
+                atualizarTelaRelogio();
+            } else if (estaRodando && estaPausado) {
+                estaPausado = false;
+                localStorage.setItem('foco_pausado', 'false');
+                tempoFim = Date.now() + (tempoRestanteSalvo * 1000);
+                localStorage.setItem('foco_fim_timestamp', tempoFim);
+                relogioIntervalo = setInterval(atualizarTelaRelogio, 1000);
+                atualizarTelaRelogio();
+            } else {
+                if (selectDisciplina && !selectDisciplina.value) {
+                    alert("Selecione uma disciplina primeiro!");
+                    return;
+                }
+                let minutos = parseInt(inputMinutos.value);
+                if (isNaN(minutos) || minutos <= 0) {
+                    alert("Digite um tempo válido em minutos.");
+                    return;
+                }
+
+                tempoTotalDefinido = minutos * 60;
+                tempoRestanteSalvo = tempoTotalDefinido;
+                tempoFim = Date.now() + (tempoTotalDefinido * 1000);
+                
+                localStorage.setItem('foco_total_segundos', tempoTotalDefinido);
+                localStorage.setItem('foco_fim_timestamp', tempoFim);
+                localStorage.setItem('foco_tempo_restante', tempoTotalDefinido);
+                localStorage.setItem('foco_rodando', 'true');
+                localStorage.setItem('foco_pausado', 'false');
+                if (selectDisciplina) localStorage.setItem('foco_disciplina', selectDisciplina.value);
+                
+                estaRodando = true;
+                estaPausado = false;
+                relogioIntervalo = setInterval(atualizarTelaRelogio, 1000);
+                atualizarTelaRelogio();
+            }
+        }
+
+        function cancelarFoco() {
+            if (!estaRodando && !estaPausado) return;
+            if(confirm("Deseja realmente cancelar este foco? O tempo não será salvo.")) {
+                limparFocoLocal();
+            }
+        }
+
+        function limparFocoLocal() {
+            estaRodando = false;
+            estaPausado = false;
+            clearInterval(relogioIntervalo);
+            localStorage.removeItem('foco_total_segundos');
+            localStorage.removeItem('foco_fim_timestamp');
+            localStorage.removeItem('foco_tempo_restante');
+            localStorage.removeItem('foco_rodando');
+            localStorage.removeItem('foco_pausado');
+            localStorage.removeItem('foco_disciplina');
+            tempoTotalDefinido = 0;
+            atualizarTelaRelogio();
+        }
+
+        async function salvarFocoConcluido() {
+            alert("Parabéns! Bloco de foco concluído. Salvando dados...");
+            
+            try {
+                const res = await fetch('/api/dados');
+                let dados = await res.json();
+
+                dados.tempo_total = (dados.tempo_total || 0) + tempoTotalDefinido;
+                dados.xp = (dados.xp || 0) + Math.floor(tempoTotalDefinido / 60);
+
+                const d = new Date();
+                const ano = d.getFullYear();
+                const mes = String(d.getMonth() + 1).padStart(2, '0');
+                const dia = String(d.getDate()).padStart(2, '0');
+                const hojeIso = `${ano}-${mes}-${dia}`;
+                
+                if (!dados.historico_diario) dados.historico_diario = {};
+                dados.historico_diario[hojeIso] = (dados.historico_diario[hojeIso] || 0) + tempoTotalDefinido;
+
+                const indexDisciplina = localStorage.getItem('foco_disciplina');
+                if (indexDisciplina !== null && dados.edital && dados.edital[indexDisciplina]) {
+                    dados.edital[indexDisciplina].tempo_estudado = (dados.edital[indexDisciplina].tempo_estudado || 0) + tempoTotalDefinido;
+                }
+                
+                const hoje = new Date().toLocaleDateString('pt-BR');
+                if (dados.ultimo_acesso !== hoje) {
+                    dados.dias_seguidos = (dados.dias_seguidos || 0) + 1;
+                    dados.ultimo_acesso = hoje;
+                }
+
+                await fetch('/api/dados', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(dados)
+                });
+
+                limparFocoLocal();
+                window.location.reload(); 
+            } catch (e) {
+                console.error("Erro ao salvar:", e);
+                alert("Erro ao salvar o progresso.");
+            }
+        }
+
+        carregarDisciplinasSelect();
+        if (estaRodando && !estaPausado) relogioIntervalo = setInterval(atualizarTelaRelogio, 1000);
+        atualizarTelaRelogio();
+    </script>
+</body>
+</html>

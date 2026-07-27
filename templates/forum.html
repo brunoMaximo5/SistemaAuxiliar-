@@ -33,7 +33,11 @@
             border-right: 1px solid var(--borda-sutil);
             display: flex; flex-direction: column;
             box-shadow: 5px 0 15px rgba(0,0,0,0.5); z-index: 10;
+            overflow-y: auto; overflow-x: hidden;
         }
+        .sidebar::-webkit-scrollbar { width: 5px; }
+        .sidebar::-webkit-scrollbar-thumb { background: var(--borda-hover); border-radius: 5px; }
+        
         .status-panel { padding: 40px 20px; text-align: center; border-bottom: 1px solid var(--borda-sutil); margin-bottom: 20px; }
         .xp-label { font-size: 0.85rem; color: var(--texto-mutado); text-transform: uppercase; letter-spacing: 1px; }
         .xp-valor { font-size: 2.5rem; font-weight: 800; color: var(--texto-puro); margin: 10px 0; text-shadow: 0 0 20px rgba(255, 255, 255, 0.2); }
@@ -107,7 +111,6 @@
             color: #82b1ff; text-decoration: none; font-size: 0.9rem; transition: 0.3s;
         }
         .anexo-box:hover { background: rgba(255,255,255,0.1); border-color: #82b1ff; }
-
     </style>
 </head>
 <body>
@@ -117,7 +120,8 @@
             <div id="xp-display" class="xp-valor">0</div>
             <div id="nivel-display" class="nivel-valor">Nível 1</div>
         </div>
-<!-- MÓDULO DE FOCO DECRESCENTE -->
+        
+        <!-- MÓDULO DE FOCO DECRESCENTE -->
         <div style="padding: 20px; border-bottom: 1px solid var(--borda-sutil); background: rgba(0,0,0,0.3);">
             <div style="font-size: 0.75rem; color: var(--texto-mutado); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; text-align: center;">Modo Foco</div>
             
@@ -143,9 +147,10 @@
                 </button>
             </div>
         </div>
-        <!-- FIM DO MÓDULO DE FOCO -->
+        
         <a href="/" class="nav-btn">Tela Inicial</a>
         <a href="/nucleo" class="nav-btn">Meu Núcleo</a>
+        <a href="/rotina" class="nav-btn">Rotina</a>
         <a href="/estatistica" class="nav-btn">Estatística</a>
         <a href="/forum" class="nav-btn active">Fórum & Repositório</a>
     </aside>
@@ -164,11 +169,11 @@
             </div>
 
             <div id="feed-forum">
-                <!-- Posts serão renderizados aqui -->
             </div>
         </div>
     </main>
 
+    <!-- SCRIPT DO FÓRUM -->
     <script>
         let dadosApp = {};
 
@@ -182,7 +187,6 @@
                 const res = await fetch('/api/dados');
                 dadosApp = await res.json();
                 
-                // Atualiza Sidebar
                 const xp = dadosApp.xp || 0;
                 document.getElementById('xp-display').innerText = xp;
                 document.getElementById('nivel-display').innerText = `Nível ${Math.floor(Math.sqrt(xp / 50)) + 1}`;
@@ -204,7 +208,6 @@
             btn.innerText = "Salvando...";
             btn.disabled = true;
 
-            // Criando o formulário para enviar arquivo + texto pro backend
             const formData = new FormData();
             formData.append('texto', texto);
             formData.append('data', new Date().toLocaleDateString('pt-BR'));
@@ -216,14 +219,12 @@
             try {
                 await fetch('/api/forum', {
                     method: 'POST',
-                    body: formData // Não precisa setar Content-Type, o navegador faz sozinho para arquivos
+                    body: formData
                 });
 
-                // Limpa os campos
                 document.getElementById('texto-post').value = '';
                 arquivoInput.value = '';
                 
-                // Recarrega os dados e mostra na tela
                 await carregarDadosBanco();
                 renderizarPosts();
 
@@ -254,7 +255,6 @@
             forum.forEach(post => {
                 let htmlAnexo = '';
                 
-                // Se o post tiver um arquivo salvo, gera o botão de download/visualização
                 if (post.arquivo) {
                     htmlAnexo = `
                         <div style="margin-top: 15px;">
@@ -278,7 +278,8 @@
             });
         }
     </script>
-<!-- SCRIPT DO RELÓGIO GLOBAL (ATUALIZADO COM PAUSE E HISTÓRICO) -->
+
+<!-- SCRIPT DO RELÓGIO GLOBAL -->
 <script>
     let relogioIntervalo;
     let tempoTotalDefinido = parseInt(localStorage.getItem('foco_total_segundos')) || 0;
@@ -328,11 +329,9 @@
 
         let tempoRestante;
         if (estaPausado) {
-            // Usa a variável congelada perfeitamente
             tempoRestante = tempoRestanteSalvo;
         } else {
             tempoRestante = Math.max(0, Math.floor((tempoFim - Date.now()) / 1000));
-            // AQUI ESTÁ A CORREÇÃO PRINCIPAL: Atualiza a variável global enquanto o relógio roda
             tempoRestanteSalvo = tempoRestante; 
             localStorage.setItem('foco_tempo_restante', tempoRestante);
         }
@@ -346,7 +345,7 @@
             if (estaRodando) {
                 if (estaPausado) {
                     btnRelogio.innerText = "▶ Retomar";
-                    btnRelogio.style.background = "#ff9800"; // Laranja
+                    btnRelogio.style.background = "#ff9800"; 
                 } else {
                     btnRelogio.innerText = "⏸ Pausar";
                     btnRelogio.style.background = "var(--texto-puro)";
@@ -366,13 +365,11 @@
 
     function alternarRelogio() {
         if (estaRodando && !estaPausado) {
-            // Pausar
             estaPausado = true;
             localStorage.setItem('foco_pausado', 'true');
             clearInterval(relogioIntervalo);
             atualizarTelaRelogio();
         } else if (estaRodando && estaPausado) {
-            // Retomar
             estaPausado = false;
             localStorage.setItem('foco_pausado', 'false');
             tempoFim = Date.now() + (tempoRestanteSalvo * 1000);
@@ -380,7 +377,6 @@
             relogioIntervalo = setInterval(atualizarTelaRelogio, 1000);
             atualizarTelaRelogio();
         } else {
-            // Iniciar Novo
             if (selectDisciplina && !selectDisciplina.value) {
                 alert("Selecione uma disciplina primeiro!");
                 return;
@@ -392,7 +388,7 @@
             }
 
             tempoTotalDefinido = minutos * 60;
-            tempoRestanteSalvo = tempoTotalDefinido; // Congela o valor inicial corretamente
+            tempoRestanteSalvo = tempoTotalDefinido;
             tempoFim = Date.now() + (tempoTotalDefinido * 1000);
             
             localStorage.setItem('foco_total_segundos', tempoTotalDefinido);
@@ -440,7 +436,6 @@
             dados.tempo_total = (dados.tempo_total || 0) + tempoTotalDefinido;
             dados.xp = (dados.xp || 0) + Math.floor(tempoTotalDefinido / 60);
 
-            // CORREÇÃO DE FUSO HORÁRIO AQUI TAMBÉM (salvar o foco concluído no dia correto)
             const d = new Date();
             const ano = d.getFullYear();
             const mes = String(d.getMonth() + 1).padStart(2, '0');

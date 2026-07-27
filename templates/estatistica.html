@@ -35,7 +35,11 @@
             border-right: 1px solid var(--borda-sutil);
             display: flex; flex-direction: column;
             box-shadow: 5px 0 15px rgba(0,0,0,0.5); z-index: 10;
+            overflow-y: auto; overflow-x: hidden;
         }
+        .sidebar::-webkit-scrollbar { width: 5px; }
+        .sidebar::-webkit-scrollbar-thumb { background: var(--borda-hover); border-radius: 5px; }
+        
         .status-panel { padding: 40px 20px; text-align: center; border-bottom: 1px solid var(--borda-sutil); margin-bottom: 20px; }
         .xp-label { font-size: 0.85rem; color: var(--texto-mutado); text-transform: uppercase; letter-spacing: 1px; }
         .xp-valor { font-size: 2.5rem; font-weight: 800; color: var(--texto-puro); margin: 10px 0; text-shadow: 0 0 20px rgba(255, 255, 255, 0.2); }
@@ -82,7 +86,6 @@
         }
         .filtro-secao:hover { border-color: var(--borda-hover); }
 
-        /* Força o ícone do calendário a ficar claro no tema escuro */
         input[type="date"] { color-scheme: dark; }
 
         .grid-stats {
@@ -134,7 +137,6 @@
         .canvas-wrapper {
             position: relative; height: 100%; width: 100%;
         }
-
     </style>
 </head>
 <body>
@@ -171,6 +173,7 @@
 
         <a href="/" class="nav-btn">Tela Inicial</a>
         <a href="/nucleo" class="nav-btn">Meu Núcleo</a>
+        <a href="/rotina" class="nav-btn">Rotina</a>
         <a href="/estatistica" class="nav-btn active">Estatística</a>
         <a href="/forum" class="nav-btn">Fórum</a>
     </aside>
@@ -180,14 +183,11 @@
             
             <div class="header-estatisticas">
                 <h1>Visão Geral do Desempenho</h1>
-                <!-- Filtro de Seção -->
                 <select id="filtro-secao" class="filtro-secao" onchange="processarDados()">
                     <option value="TODAS">Todas as Seções</option>
-                    <!-- Preenchido via JS -->
                 </select>
             </div>
             
-            <!-- Cards -->
             <div class="grid-stats">
                 <div class="stat-card">
                     <div class="stat-titulo">Horas de Foco (Filtro)</div>
@@ -215,7 +215,6 @@
                 </div>
             </div>
 
-            <!-- Botões das Abas -->
             <div class="abas-container">
                 <button class="aba-btn active" onclick="mudarAba('aba-horas', this)">⏱️ Tempo Investido</button>
                 <button class="aba-btn" onclick="mudarAba('aba-rosca', this)">🍩 Distribuição de Foco</button>
@@ -223,7 +222,6 @@
                 <button class="aba-btn" onclick="mudarAba('aba-temporal', this)">📅 Histórico de Tempo</button>
             </div>
 
-            <!-- Gráfico 1: Horas (Barras) -->
             <div id="aba-horas" class="secao-grafico active">
                 <div class="chart-container">
                     <div class="chart-title">Horas Estudadas por Disciplina</div>
@@ -231,7 +229,6 @@
                 </div>
             </div>
 
-            <!-- Gráfico 2: Rosca (Doughnut) -->
             <div id="aba-rosca" class="secao-grafico">
                 <div class="chart-container">
                     <div class="chart-title">Distribuição de Tempo entre Disciplinas</div>
@@ -239,7 +236,6 @@
                 </div>
             </div>
 
-            <!-- Gráfico 3: Tópicos (Barras Empilhadas) -->
             <div id="aba-topicos" class="secao-grafico">
                 <div class="chart-container">
                     <div class="chart-title">Status dos Tópicos por Disciplina</div>
@@ -247,7 +243,6 @@
                 </div>
             </div>
 
-            <!-- Gráfico 4: Histórico Temporal (Com Calendário) -->
             <div id="aba-temporal" class="secao-grafico">
                 <div class="chart-container">
                     <div class="chart-title">Evolução do Tempo de Estudo</div>
@@ -259,7 +254,6 @@
                             <option value="custom">Período Personalizado...</option>
                         </select>
 
-                        <!-- Contêiner do calendário oculto por padrão -->
                         <div id="container-calendario" style="display: none; align-items: center; gap: 10px;">
                             <input type="date" id="data-inicio" class="filtro-secao">
                             <span style="color: var(--texto-mutado);">até</span>
@@ -271,7 +265,6 @@
                     <div class="canvas-wrapper"><canvas id="graficoTemporal"></canvas></div>
                 </div>
             </div>
-
         </div>
     </main>
 
@@ -283,7 +276,6 @@
         let graficoTopicosApp = null;
         let graficoTemporalApp = null;
 
-        // Função mágica para converter segundos em texto (ex: 1h 30m)
         function formatarTempoTexto(seg) {
             if (seg <= 0) return "0m";
             const h = Math.floor(seg / 3600);
@@ -294,7 +286,6 @@
             return `${m}m`;
         }
 
-        // Alternar abas visuais
         function mudarAba(idAlvo, botaoApertado) {
             document.querySelectorAll('.aba-btn').forEach(btn => btn.classList.remove('active'));
             document.querySelectorAll('.secao-grafico').forEach(sec => sec.classList.remove('active'));
@@ -308,12 +299,10 @@
                 const res = await fetch('/api/dados');
                 dadosGlobais = await res.json();
                 
-                // Atualiza Sidebar (XP)
                 const xp = dadosGlobais.xp || 0;
                 document.getElementById('xp-display').innerText = xp;
                 document.getElementById('nivel-display').innerText = `Nível ${Math.floor(Math.sqrt(xp / 50)) + 1}`;
 
-                // Preenche o Select de Filtro de Seção
                 const selectFiltro = document.getElementById('filtro-secao');
                 if (dadosGlobais.categorias) {
                     dadosGlobais.categorias.forEach(cat => {
@@ -325,7 +314,6 @@
                 }
 
                 processarDados(); 
-
             } catch (erro) {
                 console.error("Erro ao carregar:", erro);
             }
@@ -390,7 +378,6 @@
                 horasGrafico.push((tempoSemDisciplinaSegundos / 3600).toFixed(2));
             }
 
-            // APLICANDO A NOVA FORMATAÇÃO NOS CARDS
             document.getElementById('stat-horas').innerText = formatarTempoTexto(tempoParaMostrarTopCard);
             document.getElementById('stat-progresso').innerText = `${porcentagemGeral}%`;
             document.getElementById('stat-ofensiva').innerText = `${diasSeguidos} Dias`;
@@ -410,10 +397,10 @@
             const containerCal = document.getElementById('container-calendario');
             
             if (periodo === 'custom') {
-                containerCal.style.display = 'flex'; // Mostra o calendário
+                containerCal.style.display = 'flex';
             } else {
-                containerCal.style.display = 'none'; // Esconde o calendário
-                atualizarGraficoTemporal(); // Atualiza automático se for 7 ou 30
+                containerCal.style.display = 'none';
+                atualizarGraficoTemporal();
             }
         }
 
@@ -421,10 +408,20 @@
             if (!dadosGlobais) return;
             
             const periodo = document.getElementById('filtro-periodo').value;
+            const filtroAtual = document.getElementById('filtro-secao').value;
             const historico = dadosGlobais.historico_diario || {};
+            const historicoSecoes = dadosGlobais.historico_secoes || {};
             
             let labelsX = [];
             let valoresY = [];
+
+            const getTempoDoDia = (iso) => {
+                if (filtroAtual === "TODAS") {
+                    return historico[iso] ? historico[iso] : 0;
+                } else {
+                    return (historicoSecoes[iso] && historicoSecoes[iso][filtroAtual]) ? historicoSecoes[iso][filtroAtual] : 0;
+                }
+            };
             
             if (periodo === '7' || periodo === '30') {
                 const diasSelecionados = parseInt(periodo);
@@ -440,8 +437,7 @@
                     let diaFormatado = `${dia}/${mes}`; 
                     
                     labelsX.push(diaFormatado);
-                    
-                    let seg = historico[iso] ? historico[iso] : 0;
+                    let seg = getTempoDoDia(iso);
                     valoresY.push((seg / 3600).toFixed(2));
                 }
             } 
@@ -454,7 +450,6 @@
                     return;
                 }
 
-                // Ajusta timezone adicionando a hora no formato ISO para evitar pular 1 dia pra trás
                 let dAtual = new Date(dataInicio + 'T00:00:00'); 
                 let dFim = new Date(dataFim + 'T00:00:00');
 
@@ -472,11 +467,9 @@
                     let diaFormatado = `${dia}/${mes}`;
                     
                     labelsX.push(diaFormatado);
-                    
-                    let seg = historico[iso] ? historico[iso] : 0;
+                    let seg = getTempoDoDia(iso);
                     valoresY.push((seg / 3600).toFixed(2));
 
-                    // Avança 1 dia no loop
                     dAtual.setDate(dAtual.getDate() + 1);
                 }
             }
@@ -489,7 +482,6 @@
             '#616161', '#424242', '#333333', '#212121', '#111111'
         ];
 
-        // GRÁFICOS COM TOOLTIP (JANELINHA) FORMATADA
         function desenharGraficoHoras(nomes, valores) {
             const ctx = document.getElementById('graficoHoras').getContext('2d');
             if (graficoHorasApp) graficoHorasApp.destroy();
@@ -790,11 +782,19 @@
             if (!dados.historico_diario) dados.historico_diario = {};
             dados.historico_diario[hojeIso] = (dados.historico_diario[hojeIso] || 0) + tempoTotalDefinido;
 
+            if (!dados.historico_secoes) dados.historico_secoes = {};
+            if (!dados.historico_secoes[hojeIso]) dados.historico_secoes[hojeIso] = {};
+
+            let categoriaAtual = "Sem Categoria";
             const indexDisciplina = localStorage.getItem('foco_disciplina');
+            
             if (indexDisciplina !== null && dados.edital[indexDisciplina]) {
                 dados.edital[indexDisciplina].tempo_estudado = (dados.edital[indexDisciplina].tempo_estudado || 0) + tempoTotalDefinido;
+                categoriaAtual = dados.edital[indexDisciplina].categoria || "Sem Categoria";
             }
             
+            dados.historico_secoes[hojeIso][categoriaAtual] = (dados.historico_secoes[hojeIso][categoriaAtual] || 0) + tempoTotalDefinido;
+
             const hoje = new Date().toLocaleDateString('pt-BR');
             if (dados.ultimo_acesso !== hoje) {
                 dados.dias_seguidos = (dados.dias_seguidos || 0) + 1;
