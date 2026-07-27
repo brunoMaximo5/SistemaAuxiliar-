@@ -1,0 +1,729 @@
+{% extends "base.html" %}
+
+{% block titulo %}Agenda & Calendário{% endblock %}
+
+{% block estilos %}
+<style>
+    .header-agenda {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 25px;
+        flex-wrap: wrap;
+        gap: 15px;
+    }
+
+    /* Layout Principal: Calendário na Esquerda/Topo + Lista na Direita/Abaixo */
+    .grid-layout-agenda {
+        display: grid;
+        grid-template-columns: 340px 1fr;
+        gap: 25px;
+        align-items: start;
+    }
+
+    @media (max-width: 900px) {
+        .grid-layout-agenda {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    /* CARD DO CALENDÁRIO MENSAL */
+    .card-calendario {
+        background: var(--bg-card);
+        border: 1px solid var(--borda-sutil);
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+    }
+
+    .header-cal {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
+    }
+
+    .titulo-mes {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: var(--texto-puro);
+        text-transform: capitalize;
+    }
+
+    .btn-nav-cal {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid var(--borda-sutil);
+        color: var(--texto-puro);
+        width: 32px;
+        height: 32px;
+        border-radius: 6px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: 0.2s;
+    }
+    .btn-nav-cal:hover { background: rgba(255, 255, 255, 0.15); }
+
+    .grid-dias-semana {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        text-align: center;
+        font-weight: 600;
+        font-size: 0.75rem;
+        color: var(--texto-mutado);
+        margin-bottom: 10px;
+    }
+
+    .grid-mes-dias {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 5px;
+    }
+
+    .celula-dia {
+        aspect-ratio: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px;
+        font-size: 0.85rem;
+        cursor: pointer;
+        color: var(--texto-base);
+        background: rgba(0, 0, 0, 0.15);
+        border: 1px solid transparent;
+        position: relative;
+        transition: 0.2s;
+    }
+
+    .celula-dia:hover {
+        border-color: var(--borda-hover);
+        background: rgba(255, 255, 255, 0.05);
+    }
+
+    .celula-dia.fora-mes {
+        opacity: 0.25;
+        cursor: default;
+    }
+
+    .celula-dia.hoje {
+        border-color: var(--texto-puro);
+        font-weight: bold;
+        color: var(--texto-puro);
+    }
+
+    .celula-dia.selecionado {
+        background: var(--texto-puro);
+        color: #000;
+        font-weight: bold;
+    }
+
+    .ponto-evento {
+        width: 5px;
+        height: 5px;
+        background: #ffb74d;
+        border-radius: 50%;
+        position: absolute;
+        bottom: 4px;
+    }
+
+    /* FILTROS E MÉTRICAS */
+    .painel-eventos {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .controles-agenda {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .filtros-grupo {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+
+    .filtro-btn {
+        background: var(--bg-card);
+        border: 1px solid var(--borda-sutil);
+        color: var(--texto-mutado);
+        padding: 7px 14px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: 600;
+        font-size: 0.8rem;
+        transition: 0.2s;
+    }
+    .filtro-btn:hover { border-color: var(--borda-hover); color: var(--texto-base); }
+    .filtro-btn.active { background: var(--texto-puro); color: #000; border-color: var(--texto-puro); }
+
+    /* LISTA DE EVENTOS */
+    .secao-dia {
+        background: var(--bg-card);
+        border: 1px solid var(--borda-sutil);
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+        margin-bottom: 15px;
+    }
+
+    .cabecalho-dia {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid var(--borda-sutil);
+        padding-bottom: 10px;
+        margin-bottom: 12px;
+    }
+
+    .titulo-dia {
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--texto-puro);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .badge-hoje {
+        background: rgba(255, 255, 255, 0.15);
+        color: var(--texto-puro);
+        font-size: 0.7rem;
+        padding: 2px 6px;
+        border-radius: 4px;
+        text-transform: uppercase;
+    }
+
+    .lista-tarefas {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .item-tarefa {
+        background: rgba(0,0,0,0.25);
+        border: 1px solid var(--borda-sutil);
+        border-radius: 8px;
+        padding: 12px 16px;
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 15px;
+        transition: 0.2s;
+    }
+
+    .item-tarefa:hover {
+        border-color: var(--borda-hover);
+        background: rgba(0,0,0,0.4);
+    }
+
+    .item-tarefa.concluida {
+        opacity: 0.5;
+    }
+
+    .item-tarefa.concluida .titulo-tarefa {
+        text-decoration: line-through;
+    }
+
+    .info-tarefa {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+    }
+
+    .checkbox-custom {
+        width: 18px;
+        height: 18px;
+        margin-top: 3px;
+        cursor: pointer;
+        accent-color: var(--texto-puro);
+    }
+
+    .titulo-tarefa {
+        font-weight: 600;
+        color: var(--texto-puro);
+        font-size: 0.95rem;
+    }
+
+    .detalhes-tarefa {
+        font-size: 0.82rem;
+        color: var(--texto-mutado);
+        margin-top: 4px;
+        line-height: 1.3;
+        white-space: pre-line;
+    }
+
+    /* TAGS DE CATEGORIAS */
+    .tag-tipo {
+        padding: 3px 8px;
+        border-radius: 6px;
+        font-size: 0.7rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        white-space: nowrap;
+    }
+
+    .tag-estudo   { background: rgba(33, 150, 243, 0.15); color: #64b5f6; border: 1px solid rgba(33, 150, 243, 0.3); }
+    .tag-prova    { background: rgba(244, 67, 54, 0.15);  color: #ef5350; border: 1px solid rgba(244, 67, 54, 0.3); }
+    .tag-trabalho { background: rgba(156, 39, 176, 0.15); color: #ba68c8; border: 1px solid rgba(156, 39, 176, 0.3); }
+    .tag-pessoal  { background: rgba(233, 30, 99, 0.15);  color: #f06292; border: 1px solid rgba(233, 30, 99, 0.3); }
+    .tag-outro    { background: rgba(158, 158, 158, 0.15); color: #e0e0e0; border: 1px solid rgba(158, 158, 158, 0.3); }
+
+    .btn-deletar {
+        background: transparent;
+        border: none;
+        color: var(--texto-mutado);
+        cursor: pointer;
+        font-size: 1rem;
+        padding: 3px;
+        border-radius: 4px;
+        transition: 0.2s;
+    }
+    .btn-deletar:hover { color: #f44336; background: rgba(244,67,54,0.1); }
+
+    /* MODAL */
+    .modal-overlay {
+        position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+        background: rgba(0,0,0,0.85);
+        backdrop-filter: blur(5px);
+        display: none; justify-content: center; align-items: center; z-index: 100;
+    }
+
+    .modal-box {
+        background: var(--bg-card);
+        border: 1px solid var(--borda-sutil);
+        border-radius: 12px;
+        padding: 25px;
+        width: 480px;
+        max-width: 90%;
+        box-shadow: 0 15px 40px rgba(0,0,0,0.5);
+    }
+
+    .form-group { margin-bottom: 16px; }
+    .form-group label { display: block; margin-bottom: 6px; color: var(--texto-mutado); font-size: 0.85rem; }
+    
+    .input-dark, .select-dark, .textarea-dark {
+        width: 100%; padding: 10px 12px; background: rgba(0,0,0,0.4); border: 1px solid var(--borda-sutil);
+        color: var(--texto-puro); border-radius: 6px; outline: none; font-family: inherit; font-size: 0.9rem;
+    }
+    .textarea-dark { resize: vertical; min-height: 80px; }
+    .input-dark:focus, .select-dark:focus, .textarea-dark:focus { border-color: var(--borda-hover); }
+
+    .botoes-modal { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+    input[type="date"] { color-scheme: dark; }
+</style>
+{% endblock %}
+
+{% block conteudo %}
+<div style="max-width: 1100px; margin: 0 auto; width: 100%;">
+    
+    <!-- HEADER -->
+    <div class="header-agenda">
+        <div>
+            <h1>Agenda & Calendário</h1>
+            <p style="color: var(--texto-mutado); font-size: 0.95rem;">Organize estudos, compromissos pessoais, provas e datas importantes.</p>
+        </div>
+        <button class="btn-primario" onclick="abrirModalAgenda()">+ Novo Compromisso</button>
+    </div>
+
+    <!-- ESTRUTURA EM GRID (CALENDÁRIO + LISTA) -->
+    <div class="grid-layout-agenda">
+        
+        <!-- CALENDÁRIO MENSAL -->
+        <div class="card-calendario">
+            <div class="header-cal">
+                <button class="btn-nav-cal" onclick="mudarMes(-1)">◀</button>
+                <div id="titulo-mes-ano" class="titulo-mes">Mês Ano</div>
+                <button class="btn-nav-cal" onclick="mudarMes(1)">▶</button>
+            </div>
+
+            <div class="grid-dias-semana">
+                <div>DOM</div><div>SEG</div><div>TER</div><div>QUA</div><div>QUI</div><div>SEX</div><div>SÁB</div>
+            </div>
+
+            <div id="grid-calendario-dias" class="grid-mes-dias">
+                <!-- Dias inseridos via JS -->
+            </div>
+        </div>
+
+        <!-- PAINEL DE EVENTOS / TAREFAS -->
+        <div class="painel-eventos">
+            
+            <!-- CONTROLES DE FILTRO -->
+            <div class="controles-agenda">
+                <div class="filtros-grupo">
+                    <button id="btn-filtro-todos" class="filtro-btn active" onclick="filtrarAgenda('todos', this)">Todos</button>
+                    <button class="filtro-btn" onclick="filtrarAgenda('hoje', this)">Hoje</button>
+                    <button class="filtro-btn" onclick="filtrarAgenda('mes', this)">Este Mês</button>
+                </div>
+                <div id="info-filtro-data" style="font-size: 0.85rem; color: var(--texto-mutado); font-weight: 500;"></div>
+            </div>
+
+            <!-- CONTAINER DA LISTA -->
+            <div id="container-agenda">
+                <!-- Compromissos agrupados por dia renderizados via JS -->
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<!-- MODAL NOVO COMPROMISSO -->
+<div id="modal-agenda" class="modal-overlay">
+    <div class="modal-box">
+        <h2 style="color: var(--texto-puro); margin-bottom: 18px; font-size: 1.2rem;">Novo Compromisso</h2>
+        
+        <div class="form-group">
+            <label>Título / Evento</label>
+            <input type="text" id="novo-titulo" class="input-dark" placeholder="Ex: Aniversário de Namoro / Prova Concurso / Estudo Dir. Admin">
+        </div>
+
+        <div class="form-group">
+            <label>Categoria</label>
+            <select id="novo-tipo" class="select-dark">
+                <option value="estudo">📚 Estudo / Revisão</option>
+                <option value="prova">📝 Prova / Concurso</option>
+                <option value="trabalho">💼 Trabalho / Entrevista</option>
+                <option value="pessoal">🎉 Comemoração / Pessoal</option>
+                <option value="outro">📌 Outro</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>Data</label>
+            <input type="date" id="nova-data" class="input-dark">
+        </div>
+
+        <div class="form-group">
+            <label>Detalhes / Observações (Opcional)</label>
+            <textarea id="novo-detalhes" class="textarea-dark" placeholder="Adicione notas, horários, locais ou links úteis..."></textarea>
+        </div>
+
+        <div class="botoes-modal">
+            <button class="btn-secundario" onclick="fecharModalAgenda()">Cancelar</button>
+            <button class="btn-primario" onclick="salvarAgendamento()">Salvar na Agenda</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let dadosGlobais = {};
+    let dataExibicaoCalendario = new Date(); // Mês/Ano atualmente visualizado no calendário
+    let dataSelecionadaFiltro = null; // Se clicou em um dia específico YYYY-MM-DD
+    let filtroTipo = 'todos'; // 'todos', 'hoje', 'mes', 'dia'
+
+    window.onload = async () => {
+        const hojeIso = getIsoHoje();
+        document.getElementById('nova-data').value = hojeIso;
+        await carregarDados();
+    };
+
+    function getIsoHoje() {
+        const hoje = new Date();
+        const ano = hoje.getFullYear();
+        const mes = String(hoje.getMonth() + 1).padStart(2, '0');
+        const dia = String(hoje.getDate()).padStart(2, '0');
+        return `${ano}-${mes}-${dia}`;
+    }
+
+    async function carregarDados() {
+        try {
+            const res = await fetch('/api/dados');
+            dadosGlobais = await res.json();
+            
+            if (!dadosGlobais.agenda) {
+                dadosGlobais.agenda = [];
+            }
+
+            renderizarCalendario();
+            renderizarAgenda();
+        } catch (erro) {
+            console.error("Erro ao carregar dados da agenda:", erro);
+        }
+    }
+
+    /* ----------------------------------------------------
+       LÓGICA DO CALENDÁRIO MENSAL
+    ---------------------------------------------------- */
+    function renderizarCalendario() {
+        const grid = document.getElementById('grid-calendario-dias');
+        const tituloMesAno = document.getElementById('titulo-mes-ano');
+        grid.innerHTML = '';
+
+        const ano = dataExibicaoCalendario.getFullYear();
+        const mes = dataExibicaoCalendario.getMonth();
+
+        // Nome do Mês
+        const nomeMes = dataExibicaoCalendario.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+        tituloMesAno.innerText = nomeMes;
+
+        const primeiroDiaSemana = new Date(ano, mes, 1).getDay();
+        const totalDiasMes = new Date(ano, mes + 1, 0).getDate();
+        const totalDiasMesAnterior = new Date(ano, mes, 0).getDate();
+
+        const hojeIso = getIsoHoje();
+
+        // Mapear datas com eventos
+        const datasComEventos = new Set(dadosGlobais.agenda.map(a => a.data));
+
+        // Dias do mês anterior (preenchimento vazios)
+        for (let i = primeiroDiaSemana - 1; i >= 0; i--) {
+            const diaNum = totalDiasMesAnterior - i;
+            grid.insertAdjacentHTML('beforeend', `<div class="celula-dia fora-mes">${diaNum}</div>`);
+        }
+
+        // Dias do mês atual
+        for (let dia = 1; dia <= totalDiasMes; dia++) {
+            const diaPad = String(dia).padStart(2, '0');
+            const mesPad = String(mes + 1).padStart(2, '0');
+            const dataIso = `${ano}-${mesPad}-${diaPad}`;
+
+            const isHoje = dataIso === hojeIso;
+            const isSelecionado = dataIso === dataSelecionadaFiltro;
+            const temEvento = datasComEventos.has(dataIso);
+
+            let classes = 'celula-dia';
+            if (isHoje) classes += ' hoje';
+            if (isSelecionado) classes += ' selecionado';
+
+            const elemento = document.createElement('div');
+            elemento.className = classes;
+            elemento.innerText = dia;
+            elemento.onclick = () => selecionarDiaCalendario(dataIso);
+
+            if (temEvento) {
+                elemento.insertAdjacentHTML('beforeend', '<div class="ponto-evento"></div>');
+            }
+
+            grid.appendChild(elemento);
+        }
+    }
+
+    function mudarMes(delta) {
+        dataExibicaoCalendario.setMonth(dataExibicaoCalendario.getMonth() + delta);
+        renderizarCalendario();
+    }
+
+    function selecionarDiaCalendario(dataIso) {
+        if (dataSelecionadaFiltro === dataIso) {
+            // Desselecionar se clicar no mesmo
+            dataSelecionadaFiltro = null;
+            filtroTipo = 'todos';
+            document.querySelectorAll('.filtro-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById('btn-filtro-todos').classList.add('active');
+        } else {
+            dataSelecionadaFiltro = dataIso;
+            filtroTipo = 'dia';
+            document.querySelectorAll('.filtro-btn').forEach(btn => btn.classList.remove('active'));
+        }
+        renderizarCalendario();
+        renderizarAgenda();
+    }
+
+    /* ----------------------------------------------------
+       LÓGICA DA LISTA DE COMPROMISSOS
+    ---------------------------------------------------- */
+    function renderizarAgenda() {
+        const container = document.getElementById('container-agenda');
+        const infoData = document.getElementById('info-filtro-data');
+        container.innerHTML = '';
+
+        const hojeIso = getIsoHoje();
+        const anoAtual = dataExibicaoCalendario.getFullYear();
+        const mesAtualPad = String(dataExibicaoCalendario.getMonth() + 1).padStart(2, '0');
+        const prefixoMes = `${anoAtual}-${mesAtualPad}`;
+
+        // Atualizar texto informativo do filtro
+        if (filtroTipo === 'dia' && dataSelecionadaFiltro) {
+            const p = dataSelecionadaFiltro.split('-');
+            infoData.innerText = `Exibindo dia: ${p[2]}/${p[1]}/${p[0]}`;
+        } else if (filtroTipo === 'hoje') {
+            infoData.innerText = 'Exibindo: Hoje';
+        } else if (filtroTipo === 'mes') {
+            infoData.innerText = `Exibindo: ${dataExibicaoCalendario.toLocaleDateString('pt-BR', { month: 'long' })}`;
+        } else {
+            infoData.innerText = 'Exibindo: Todos os compromissos';
+        }
+
+        // Filtragem
+        let tarefasFiltradas = dadosGlobais.agenda.filter(item => {
+            if (filtroTipo === 'dia') return item.data === dataSelecionadaFiltro;
+            if (filtroTipo === 'hoje') return item.data === hojeIso;
+            if (filtroTipo === 'mes') return item.data.startsWith(prefixoMes);
+            return true;
+        });
+
+        // Ordenação por data
+        tarefasFiltradas.sort((a, b) => new Date(a.data) - new Date(b.data));
+
+        // Agrupamento por data
+        const agrupadas = {};
+        tarefasFiltradas.forEach(item => {
+            if (!agrupadas[item.data]) agrupadas[item.data] = [];
+            agrupadas[item.data].push(item);
+        });
+
+        const datas = Object.keys(agrupadas);
+
+        if (datas.length === 0) {
+            container.innerHTML = `
+                <div style="text-align: center; color: var(--texto-mutado); padding: 50px 0; background: var(--bg-card); border-radius: 12px; border: 1px solid var(--borda-sutil);">
+                    Nenhum compromisso encontrado para este filtro.
+                </div>
+            `;
+            return;
+        }
+
+        datas.forEach(dataIso => {
+            const tarefasDoDia = agrupadas[dataIso];
+            
+            const partes = dataIso.split('-');
+            const dataObj = new Date(partes[0], partes[1] - 1, partes[2]);
+            const dataFormatada = dataObj.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' });
+            const isHoje = dataIso === hojeIso;
+
+            let htmlItems = '';
+            tarefasDoDia.forEach(t => {
+                const tagInfo = getTagCategoria(t.tipo);
+
+                htmlItems += `
+                    <div class="item-tarefa ${t.concluida ? 'concluida' : ''}">
+                        <div class="info-tarefa">
+                            <input type="checkbox" class="checkbox-custom" ${t.concluida ? 'checked' : ''} onchange="alternarConcluida(${t.id})">
+                            <div>
+                                <div class="titulo-tarefa">${t.titulo}</div>
+                                ${t.detalhes ? `<div class="detalhes-tarefa">${t.detalhes}</div>` : ''}
+                            </div>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <span class="tag-tipo ${tagInfo.classe}">${tagInfo.texto}</span>
+                            <button class="btn-deletar" onclick="deletarTarefa(${t.id})" title="Excluir">🗑️</button>
+                        </div>
+                    </div>
+                `;
+            });
+
+            container.insertAdjacentHTML('beforeend', `
+                <div class="secao-dia">
+                    <div class="cabecalho-dia">
+                        <div class="titulo-dia">
+                            <span>${dataFormatada.charAt(0).toUpperCase() + dataFormatada.slice(1)}</span>
+                            ${isHoje ? '<span class="badge-hoje">Hoje</span>' : ''}
+                        </div>
+                        <span style="color: var(--texto-mutado); font-size: 0.8rem;">${tarefasDoDia.length} item(s)</span>
+                    </div>
+                    <div class="lista-tarefas">
+                        ${htmlItems}
+                    </div>
+                </div>
+            `);
+        });
+    }
+
+    function getTagCategoria(tipo) {
+        switch (tipo) {
+            case 'estudo':   return { classe: 'tag-estudo', texto: 'Estudo / Revisão' };
+            case 'prova':    return { classe: 'tag-prova', texto: 'Prova / Concurso' };
+            case 'trabalho': return { classe: 'tag-trabalho', texto: 'Trabalho / Entrevista' };
+            case 'pessoal':  return { classe: 'tag-pessoal', texto: 'Comemoração / Pessoal' };
+            default:         return { classe: 'tag-outro', texto: 'Outro' };
+        }
+    }
+
+    function filtrarAgenda(tipo, elementoBtn) {
+        filtroTipo = tipo;
+        dataSelecionadaFiltro = null;
+        document.querySelectorAll('.filtro-btn').forEach(btn => btn.classList.remove('active'));
+        elementoBtn.classList.add('active');
+        renderizarCalendario();
+        renderizarAgenda();
+    }
+
+    async function alternarConcluida(id) {
+        const item = dadosGlobais.agenda.find(t => t.id === id);
+        if (item) {
+            item.concluida = !item.concluida;
+            await salvarNoServidor();
+            renderizarAgenda();
+        }
+    }
+
+    async function deletarTarefa(id) {
+        if (confirm("Tem certeza que deseja excluir este compromisso?")) {
+            dadosGlobais.agenda = dadosGlobais.agenda.filter(t => t.id !== id);
+            await salvarNoServidor();
+            renderizarCalendario();
+            renderizarAgenda();
+        }
+    }
+
+    /* ----------------------------------------------------
+       MODAL DE CADASTRO
+    ---------------------------------------------------- */
+    function abrirModalAgenda() {
+        document.getElementById('novo-titulo').value = '';
+        document.getElementById('novo-detalhes').value = '';
+        if (dataSelecionadaFiltro) {
+            document.getElementById('nova-data').value = dataSelecionadaFiltro;
+        } else {
+            document.getElementById('nova-data').value = getIsoHoje();
+        }
+        document.getElementById('modal-agenda').style.display = 'flex';
+    }
+
+    function fecharModalAgenda() {
+        document.getElementById('modal-agenda').style.display = 'none';
+    }
+
+    async function salvarAgendamento() {
+        const titulo = document.getElementById('novo-titulo').value.trim();
+        const tipo = document.getElementById('novo-tipo').value;
+        const data = document.getElementById('nova-data').value;
+        const detalhes = document.getElementById('novo-detalhes').value.trim();
+
+        if (!titulo || !data) {
+            alert("Preencha o título e a data do compromisso!");
+            return;
+        }
+
+        const novoCompromisso = {
+            id: Date.now(),
+            titulo: titulo,
+            tipo: tipo,
+            data: data,
+            detalhes: detalhes,
+            concluida: false
+        };
+
+        dadosGlobais.agenda.push(novoCompromisso);
+        await salvarNoServidor();
+        
+        fecharModalAgenda();
+        renderizarCalendario();
+        renderizarAgenda();
+    }
+
+    async function salvarNoServidor() {
+        try {
+            await fetch('/api/dados', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(dadosGlobais)
+            });
+        } catch (erro) {
+            console.error("Erro ao salvar dados no servidor:", erro);
+            alert("Erro ao salvar dados na agenda.");
+        }
+    }
+</script>
+{% endblock %}

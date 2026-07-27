@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block titulo %}Meu Sistema{% endblock %}</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg-principal: linear-gradient(135deg, #121212 0%, #000000 100%);
+            --bg-painel: rgba(20, 20, 20, 0.6);
+            --bg-card: rgba(30, 30, 30, 0.4);
+            --borda-sutil: rgba(255, 255, 255, 0.08);
+            --borda-hover: rgba(255, 255, 255, 0.2);
+            --texto-puro: #ffffff;
+            --texto-base: #e0e0e0;
+            --texto-mutado: #888888;
+            --btn-primario-bg: linear-gradient(135deg, #f5f5f5 0%, #c0c0c0 100%);
+            --btn-primario-texto: #000000;
+            --btn-secundario-bg: #2a2a2a;
+            --btn-secundario-hover: #3a3a3a;
+            --btn-excluir: #2b1d1d;
+            --btn-excluir-hover: #4a2525;
+            --texto-excluir: #d99a9a;
+        }
+
+        body, html {
+            height: 100%;
+            font-family: 'Inter', 'Segoe UI', Roboto, Helvetica, sans-serif;
+            background: linear-gradient(135deg, #121212 0%, #000000 100%);
+            color: var(--texto-base);
+            display: flex;
+            overflow: hidden;
+            width: 100vw;
+        }
+
+        /* SIDEBAR COMPARTILHADA */
+        .sidebar {
+            width: 260px;
+            min-width: 260px;
+            background: var(--bg-painel);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-right: 1px solid var(--borda-sutil);
+            display: flex;
+            flex-direction: column;
+            box-shadow: 5px 0 15px rgba(0,0,0,0.5);
+            z-index: 10;
+        }
+
+        .status-panel {
+            padding: 40px 20px;
+            text-align: center;
+            border-bottom: 1px solid var(--borda-sutil);
+            margin-bottom: 20px;
+        }
+
+        .xp-label { font-size: 0.85rem; color: var(--texto-mutado); text-transform: uppercase; letter-spacing: 1px; }
+        .xp-valor { font-size: 2.5rem; font-weight: 800; color: var(--texto-puro); margin: 10px 0; text-shadow: 0 0 20px rgba(255, 255, 255, 0.2); }
+        .nivel-valor { font-size: 0.9rem; color: var(--texto-base); background: rgba(255, 255, 255, 0.1); padding: 4px 12px; border-radius: 20px; display: inline-block; }
+
+        .nav-btn {
+            background: none; border: none; color: var(--texto-mutado); padding: 16px 24px;
+            text-align: left; font-size: 1rem; cursor: pointer; transition: all 0.3s ease;
+            text-decoration: none; display: block; border-left: 3px solid transparent;
+        }
+        .nav-btn:hover { background: rgba(255, 255, 255, 0.03); color: var(--texto-puro); }
+        .nav-btn.active { border-left-color: var(--texto-puro); background: linear-gradient(90deg, rgba(255,255,255,0.05) 0%, transparent 100%); color: var(--texto-puro); font-weight: 600; }
+
+        .main-content { flex: 1; padding: 50px; overflow-y: auto; width: 100%; }
+        .container-interno { max-width: 1200px; margin: 0 auto; width: 100%; }
+    </style>
+    
+    <!-- ÁREA PARA ESTILOS EXTRAS DE CADAS TELA -->
+    {% block estilos %}{% endblock %}
+</head>
+<body>
+
+    <!-- SIDEBAR ÚNICA PARA TODO O SISTEMA -->
+    <aside class="sidebar">
+        <div class="status-panel">
+            <div class="xp-label">Pontuação Total</div>
+            <div id="xp-display" class="xp-valor">0</div>
+            <div id="nivel-display" class="nivel-valor">Nível 1</div>
+        </div>
+        
+        <!-- RELÓGIO / MODO FOCO -->
+        <div style="padding: 20px; border-bottom: 1px solid var(--borda-sutil); background: rgba(0,0,0,0.3);">
+            <div style="font-size: 0.75rem; color: var(--texto-mutado); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; text-align: center;">Modo Foco</div>
+            <select id="select-disciplina" style="width: 100%; padding: 8px; margin-bottom: 10px; background: rgba(0,0,0,0.5); color: var(--texto-puro); border: 1px solid var(--borda-sutil); border-radius: 4px; outline: none;">
+                <option value="">Selecione a Disciplina...</option>
+            </select>
+            <div style="display: flex; gap: 5px; margin-bottom: 15px; justify-content: center; align-items: center;">
+                <input type="number" id="input-minutos" placeholder="Min" value="50" style="width: 60px; padding: 5px; text-align: center; background: rgba(0,0,0,0.5); color: var(--texto-puro); border: 1px solid var(--borda-sutil); border-radius: 4px;">
+                <span style="color: var(--texto-mutado); font-size: 0.8rem;">minutos</span>
+            </div>
+            <div id="relogio-global" style="font-size: 2.2rem; font-weight: 800; color: var(--texto-puro); font-family: monospace; text-align: center; margin-bottom: 15px; text-shadow: 0 0 10px rgba(255,255,255,0.1);">
+                00:00:00
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <button id="btn-relogio" onclick="alternarRelogio()" style="flex: 1; padding: 10px; border-radius: 6px; border: none; font-weight: bold; cursor: pointer; background: var(--texto-puro); color: #000; transition: 0.3s;">Iniciar</button>
+                <button onclick="cancelarFoco()" style="padding: 10px; border-radius: 6px; border: 1px solid var(--borda-sutil); font-weight: bold; cursor: pointer; background: transparent; color: #ff4444; transition: 0.3s;">Cancelar</button>
+            </div>
+        </div>
+
+        <!-- MENU DE NAVEGAÇÃO -->
+        <a href="/" class="nav-btn {% if request.path == '/' %}active{% endif %}">Tela Inicial</a>
+        <a href="/nucleo" class="nav-btn {% if request.path == '/nucleo' %}active{% endif %}">Meu Núcleo</a>
+        <a href="/rotina" class="nav-btn {% if request.path == '/rotina' %}active{% endif %}">Gestão de Rotina</a>
+        <a href="/agenda" class="nav-btn {% if request.path == '/agenda' %}active{% endif %}">Agenda / Calendário</a>
+        <a href="/estatistica" class="nav-btn {% if request.path == '/estatistica' %}active{% endif %}">Estatística</a>
+        <a href="/forum" class="nav-btn {% if request.path == '/forum' %}active{% endif %}">Fórum</a>
+    </aside>
+
+    <!-- CONTEÚDO DA PÁGINA ESPECÍFICA -->
+    <main class="main-content">
+        <div class="container-interno">
+            {% block conteudo %}{% endblock %}
+        </div>
+    </main>
+
+    <!-- SCRIPT DO RELÓGIO (SÓ PRECISA FICAR AQUI!) -->
+    <script>
+        let relogioIntervalo;
+        let tempoTotalDefinido = parseInt(localStorage.getItem('foco_total_segundos')) || 0;
+        let tempoFim = parseInt(localStorage.getItem('foco_fim_timestamp')) || 0;
+        let tempoRestanteSalvo = parseInt(localStorage.getItem('foco_tempo_restante')) || 0;
+        let estaRodando = localStorage.getItem('foco_rodando') === 'true';
+        let estaPausado = localStorage.getItem('foco_pausado') === 'true';
+        let idDisciplinaAtual = localStorage.getItem('foco_disciplina') || "";
+
+        const displayRelogio = document.getElementById('relogio-global');
+        const btnRelogio = document.getElementById('btn-relogio');
+        const selectDisciplina = document.getElementById('select-disciplina');
+        const inputMinutos = document.getElementById('input-minutos');
+
+        async function carregarDisciplinasSelect() {
+            if (!selectDisciplina) return; 
+            try {
+                const res = await fetch('/api/dados');
+                const appData = await res.json();
+                const edital = appData.edital || [];
+                selectDisciplina.innerHTML = '<option value="">Selecione a Disciplina...</option>';
+                edital.forEach((disc, index) => {
+                    const option = document.createElement('option');
+                    option.value = index; 
+                    const tagCategoria = disc.categoria ? `[${disc.categoria}] ` : '';
+                    option.innerText = tagCategoria + disc.nome;
+                    selectDisciplina.appendChild(option);
+                });
+                if (idDisciplinaAtual) selectDisciplina.value = idDisciplinaAtual;
+            } catch (e) { console.error(e); }
+        }
+
+        function formatarTempo(seg) {
+            if (seg <= 0) return "00:00:00";
+            const h = String(Math.floor(seg / 3600)).padStart(2, '0');
+            const m = String(Math.floor((seg % 3600) / 60)).padStart(2, '0');
+            const s = String(seg % 60).padStart(2, '0');
+            return `${h}:${m}:${s}`;
+        }
+
+        function atualizarTelaRelogio() {
+            if (!estaRodando && tempoTotalDefinido === 0) {
+                if (displayRelogio) displayRelogio.innerText = "00:00:00";
+                return;
+            }
+            let tempoRestante;
+            if (estaPausado) {
+                tempoRestante = tempoRestanteSalvo;
+            } else {
+                tempoRestante = Math.max(0, Math.floor((tempoFim - Date.now()) / 1000));
+                tempoRestanteSalvo = tempoRestante; 
+                localStorage.setItem('foco_tempo_restante', tempoRestante);
+            }
+            
+            if (displayRelogio && btnRelogio && selectDisciplina && inputMinutos) {
+                displayRelogio.innerText = formatarTempo(tempoRestante);
+                selectDisciplina.disabled = estaRodando;
+                inputMinutos.disabled = estaRodando;
+
+                if (estaRodando) {
+                    if (estaPausado) {
+                        btnRelogio.innerText = "Retomar";
+                        btnRelogio.style.background = "#ff9800";
+                    } else {
+                        btnRelogio.innerText = "Pausar";
+                        btnRelogio.style.background = "var(--texto-puro)";
+                    }
+                } else {
+                    btnRelogio.innerText = "Iniciar";
+                    btnRelogio.style.background = "var(--texto-puro)";
+                }
+            }
+
+            if (estaRodando && !estaPausado && tempoRestante <= 0) {
+                estaRodando = false;
+                clearInterval(relogioIntervalo);
+                salvarFocoConcluido();
+            }
+        }
+
+        function alternarRelogio() {
+            if (estaRodando && !estaPausado) {
+                estaPausado = true;
+                localStorage.setItem('foco_pausado', 'true');
+                clearInterval(relogioIntervalo);
+                atualizarTelaRelogio();
+            } else if (estaRodando && estaPausado) {
+                estaPausado = false;
+                localStorage.setItem('foco_pausado', 'false');
+                tempoFim = Date.now() + (tempoRestanteSalvo * 1000);
+                localStorage.setItem('foco_fim_timestamp', tempoFim);
+                relogioIntervalo = setInterval(atualizarTelaRelogio, 1000);
+                atualizarTelaRelogio();
+            } else {
+                if (selectDisciplina && !selectDisciplina.value) {
+                    alert("Selecione uma disciplina primeiro!");
+                    return;
+                }
+                let minutos = parseInt(inputMinutos.value);
+                if (isNaN(minutos) || minutos <= 0) {
+                    alert("Digite um tempo válido em minutos.");
+                    return;
+                }
+
+                tempoTotalDefinido = minutos * 60;
+                tempoRestanteSalvo = tempoTotalDefinido;
+                tempoFim = Date.now() + (tempoTotalDefinido * 1000);
+                
+                localStorage.setItem('foco_total_segundos', tempoTotalDefinido);
+                localStorage.setItem('foco_fim_timestamp', tempoFim);
+                localStorage.setItem('foco_tempo_restante', tempoTotalDefinido);
+                localStorage.setItem('foco_rodando', 'true');
+                localStorage.setItem('foco_pausado', 'false');
+                if (selectDisciplina) localStorage.setItem('foco_disciplina', selectDisciplina.value);
+                
+                estaRodando = true;
+                estaPausado = false;
+                relogioIntervalo = setInterval(atualizarTelaRelogio, 1000);
+                atualizarTelaRelogio();
+            }
+        }
+
+        function cancelarFoco() {
+            if (!estaRodando && !estaPausado) return;
+            if(confirm("Deseja realmente cancelar este foco? O tempo não será salvo.")) {
+                limparFocoLocal();
+            }
+        }
+
+        function limparFocoLocal() {
+            estaRodando = false; estaPausado = false;
+            clearInterval(relogioIntervalo);
+            localStorage.removeItem('foco_total_segundos');
+            localStorage.removeItem('foco_fim_timestamp');
+            localStorage.removeItem('foco_tempo_restante');
+            localStorage.removeItem('foco_rodando');
+            localStorage.removeItem('foco_pausado');
+            localStorage.removeItem('foco_disciplina');
+            tempoTotalDefinido = 0;
+            atualizarTelaRelogio();
+        }
+
+        async function salvarFocoConcluido() {
+            alert("Parabéns! Bloco de foco concluído.");
+            try {
+                const res = await fetch('/api/dados');
+                let dados = await res.json();
+                dados.tempo_total = (dados.tempo_total || 0) + tempoTotalDefinido;
+                dados.xp = (dados.xp || 0) + Math.floor(tempoTotalDefinido / 60);
+
+                await fetch('/api/dados', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(dados)
+                });
+                limparFocoLocal();
+                window.location.reload(); 
+            } catch (e) { console.error(e); }
+        }
+
+        carregarDisciplinasSelect();
+        if (estaRodando && !estaPausado) relogioIntervalo = setInterval(atualizarTelaRelogio, 1000);
+        atualizarTelaRelogio();
+    </script>
+
+    {% block scripts %}{% endblock %}
+</body>
+</html>

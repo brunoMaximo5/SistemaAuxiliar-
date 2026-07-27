@@ -1,478 +1,239 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Repositório & Fórum</title>
-    <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        :root {
-            --bg-principal: linear-gradient(135deg, #121212 0%, #000000 100%);
-            --bg-painel: rgba(20, 20, 20, 0.6);
-            --bg-card: rgba(30, 30, 30, 0.4);
-            --borda-sutil: rgba(255, 255, 255, 0.08);
-            --borda-hover: rgba(255, 255, 255, 0.2);
-            --texto-puro: #ffffff;
-            --texto-base: #e0e0e0;
-            --texto-mutado: #888888;
-            --btn-primario-bg: linear-gradient(135deg, #f5f5f5 0%, #c0c0c0 100%);
-            --btn-primario-texto: #000000;
-            --btn-secundario-bg: #2a2a2a;
-        }
+{% extends "base.html" %}
 
-        body, html {
-            height: 100%; font-family: 'Inter', 'Segoe UI', Roboto, sans-serif;
-            background: var(--bg-principal); color: var(--texto-base);
-            display: flex; overflow: hidden; width: 100vw;
-        }
+{% block titulo %}Repositório & Fórum{% endblock %}
 
-        /* SIDEBAR */
-        .sidebar {
-            width: 260px; min-width: 260px;
-            background: var(--bg-painel); backdrop-filter: blur(10px);
-            border-right: 1px solid var(--borda-sutil);
-            display: flex; flex-direction: column;
-            box-shadow: 5px 0 15px rgba(0,0,0,0.5); z-index: 10;
-            overflow-y: auto; overflow-x: hidden;
-        }
-        .sidebar::-webkit-scrollbar { width: 5px; }
-        .sidebar::-webkit-scrollbar-thumb { background: var(--borda-hover); border-radius: 5px; }
+{% block estilos %}
+<style>
+    /* Estilos específicos da tela de Fórum/Repositório */
+    .caixa-postagem {
+        background: var(--bg-card);
+        border: 1px solid var(--borda-sutil);
+        border-radius: 12px;
+        padding: 25px;
+        margin-bottom: 40px;
+    }
+
+    textarea {
+        width: 100%;
+        height: 100px;
+        background: rgba(0,0,0,0.5);
+        border: 1px solid var(--borda-sutil);
+        color: var(--texto-puro);
+        padding: 15px;
+        border-radius: 8px;
+        resize: vertical;
+        outline: none;
+        font-family: inherit;
+        margin-bottom: 15px;
+        font-size: 1rem;
+    }
+    textarea:focus { border-color: var(--borda-hover); }
+
+    .controles-postagem {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 15px;
+    }
+
+    .input-arquivo-custom {
+        color: var(--texto-base);
+        font-size: 0.9rem;
+    }
+    .input-arquivo-custom::file-selector-button {
+        background: var(--btn-secundario-bg);
+        color: var(--texto-puro);
+        border: 1px solid var(--borda-sutil);
+        padding: 8px 15px;
+        border-radius: 6px;
+        cursor: pointer;
+        margin-right: 10px;
+        transition: 0.3s;
+    }
+    .input-arquivo-custom::file-selector-button:hover { 
+        background: #3a3a3a; 
+        border-color: var(--borda-hover); 
+    }
+
+    button {
+        background: var(--btn-primario-bg);
+        color: var(--btn-primario-texto);
+        padding: 10px 24px;
+        border-radius: 6px;
+        border: none;
+        font-weight: bold;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+    button:hover { 
+        transform: translateY(-2px); 
+        box-shadow: 0 4px 15px rgba(255, 255, 255, 0.1); 
+    }
+
+    .post-card {
+        background: rgba(10, 10, 10, 0.5);
+        border: 1px solid var(--borda-sutil);
+        border-radius: 8px;
+        padding: 25px;
+        margin-bottom: 15px;
+    }
+    
+    .post-header { 
+        display: flex; 
+        justify-content: space-between; 
+        margin-bottom: 15px; 
+        color: var(--texto-mutado); 
+        font-size: 0.85rem; 
+        border-bottom: 1px solid var(--borda-sutil); 
+        padding-bottom: 10px;
+    }
+    
+    .post-autor { font-weight: bold; color: var(--texto-puro); }
+    .post-conteudo { line-height: 1.6; white-space: pre-wrap; margin-bottom: 15px; }
+    
+    .anexo-box {
+        display: inline-flex;
+        align-items: center;
+        background: rgba(255,255,255,0.05);
+        padding: 10px 15px;
+        border-radius: 6px;
+        border: 1px dashed var(--borda-sutil);
+        color: #82b1ff;
+        text-decoration: none;
+        font-size: 0.9rem;
+        transition: 0.3s;
+    }
+    .anexo-box:hover { 
+        background: rgba(255,255,255,0.1); 
+        border-color: #82b1ff; 
+    }
+</style>
+{% endblock %}
+
+{% block conteudo %}
+<div style="max-width: 900px; margin: 0 auto; width: 100%;">
+    <h1>Repositório de Estudos</h1>
+    
+    <div class="caixa-postagem">
+        <textarea id="texto-post" placeholder="Faça uma anotação, salve uma questão ou descreva o arquivo anexado..."></textarea>
         
-        .status-panel { padding: 40px 20px; text-align: center; border-bottom: 1px solid var(--borda-sutil); margin-bottom: 20px; }
-        .xp-label { font-size: 0.85rem; color: var(--texto-mutado); text-transform: uppercase; letter-spacing: 1px; }
-        .xp-valor { font-size: 2.5rem; font-weight: 800; color: var(--texto-puro); margin: 10px 0; text-shadow: 0 0 20px rgba(255, 255, 255, 0.2); }
-        .nivel-valor { font-size: 0.9rem; color: var(--texto-base); background: rgba(255, 255, 255, 0.1); padding: 4px 12px; border-radius: 20px; display: inline-block; }
-        
-        .nav-btn {
-            background: none; border: none; color: var(--texto-mutado);
-            padding: 16px 24px; text-align: left; font-size: 1rem;
-            cursor: pointer; transition: all 0.3s ease; text-decoration: none;
-            display: block; border-left: 3px solid transparent;
-        }
-        .nav-btn:hover { background: rgba(255, 255, 255, 0.03); color: var(--texto-puro); }
-        .nav-btn.active { border-left-color: var(--texto-puro); background: linear-gradient(90deg, rgba(255,255,255,0.05) 0%, transparent 100%); color: var(--texto-puro); font-weight: 600; }
-
-        /* MAIN CONTENT */
-        .main-content { flex: 1; padding: 50px; overflow-y: auto; width: 100%; }
-        .container-interno { max-width: 900px; margin: 0 auto; width: 100%; }
-        
-        h1 { 
-            font-size: 2.2rem; font-weight: 300; letter-spacing: -1px;
-            background: linear-gradient(to right, #ffffff, #777777);
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-            margin-bottom: 40px;
-        }
-
-        .caixa-postagem {
-            background: var(--bg-card); border: 1px solid var(--borda-sutil);
-            border-radius: 12px; padding: 25px; margin-bottom: 40px;
-        }
-
-        textarea {
-            width: 100%; height: 100px; background: rgba(0,0,0,0.5);
-            border: 1px solid var(--borda-sutil); color: var(--texto-puro);
-            padding: 15px; border-radius: 8px; resize: vertical; outline: none;
-            font-family: inherit; margin-bottom: 15px; font-size: 1rem;
-        }
-        textarea:focus { border-color: var(--borda-hover); }
-
-        .controles-postagem {
-            display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;
-        }
-
-        .input-arquivo-custom {
-            color: var(--texto-base); font-size: 0.9rem;
-        }
-        .input-arquivo-custom::file-selector-button {
-            background: var(--btn-secundario-bg); color: var(--texto-puro);
-            border: 1px solid var(--borda-sutil); padding: 8px 15px; border-radius: 6px;
-            cursor: pointer; margin-right: 10px; transition: 0.3s;
-        }
-        .input-arquivo-custom::file-selector-button:hover { background: #3a3a3a; border-color: var(--borda-hover); }
-
-        button {
-            background: var(--btn-primario-bg); color: var(--btn-primario-texto);
-            padding: 10px 24px; border-radius: 6px; border: none; font-weight: bold;
-            cursor: pointer; transition: all 0.3s;
-        }
-        button:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(255, 255, 255, 0.1); }
-
-        .post-card {
-            background: rgba(10, 10, 10, 0.5); border: 1px solid var(--borda-sutil);
-            border-radius: 8px; padding: 25px; margin-bottom: 15px;
-        }
-        .post-header { display: flex; justify-content: space-between; margin-bottom: 15px; color: var(--texto-mutado); font-size: 0.85rem; border-bottom: 1px solid var(--borda-sutil); padding-bottom: 10px;}
-        .post-autor { font-weight: bold; color: var(--texto-puro); }
-        .post-conteudo { line-height: 1.6; white-space: pre-wrap; margin-bottom: 15px;}
-        
-        .anexo-box {
-            display: inline-flex; align-items: center; background: rgba(255,255,255,0.05);
-            padding: 10px 15px; border-radius: 6px; border: 1px dashed var(--borda-sutil);
-            color: #82b1ff; text-decoration: none; font-size: 0.9rem; transition: 0.3s;
-        }
-        .anexo-box:hover { background: rgba(255,255,255,0.1); border-color: #82b1ff; }
-    </style>
-</head>
-<body>
-    <aside class="sidebar">
-        <div class="status-panel">
-            <div class="xp-label">Pontuação Total</div>
-            <div id="xp-display" class="xp-valor">0</div>
-            <div id="nivel-display" class="nivel-valor">Nível 1</div>
+        <div class="controles-postagem">
+            <input type="file" id="arquivo-post" class="input-arquivo-custom" accept=".pdf, image/png, image/jpeg, .doc, .docx">
+            <button id="btn-publicar" onclick="enviarPost()">Salvar no Repositório</button>
         </div>
-        
-        <!-- MÓDULO DE FOCO DECRESCENTE -->
-        <div style="padding: 20px; border-bottom: 1px solid var(--borda-sutil); background: rgba(0,0,0,0.3);">
-            <div style="font-size: 0.75rem; color: var(--texto-mutado); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; text-align: center;">Modo Foco</div>
-            
-            <select id="select-disciplina" style="width: 100%; padding: 8px; margin-bottom: 10px; background: rgba(0,0,0,0.5); color: var(--texto-puro); border: 1px solid var(--borda-sutil); border-radius: 4px; outline: none;">
-                <option value="">Selecione a Disciplina...</option>
-            </select>
+    </div>
 
-            <div style="display: flex; gap: 5px; margin-bottom: 15px; justify-content: center; align-items: center;">
-                <input type="number" id="input-minutos" placeholder="Min" value="50" style="width: 60px; padding: 5px; text-align: center; background: rgba(0,0,0,0.5); color: var(--texto-puro); border: 1px solid var(--borda-sutil); border-radius: 4px;">
-                <span style="color: var(--texto-mutado); font-size: 0.8rem;">minutos</span>
-            </div>
+    <div id="feed-forum"></div>
+</div>
+{% endblock %}
 
-            <div id="relogio-global" style="font-size: 2.2rem; font-weight: 800; color: var(--texto-puro); font-family: monospace; text-align: center; margin-bottom: 15px; text-shadow: 0 0 10px rgba(255,255,255,0.1);">
-                00:00:00
-            </div>
-            
-            <div style="display: flex; gap: 10px;">
-                <button id="btn-relogio" onclick="alternarRelogio()" style="flex: 1; padding: 10px; border-radius: 6px; border: none; font-weight: bold; cursor: pointer; background: var(--texto-puro); color: #000; transition: 0.3s;">
-                    ▶ Iniciar
-                </button>
-                <button onclick="cancelarFoco()" style="padding: 10px; border-radius: 6px; border: 1px solid var(--borda-sutil); font-weight: bold; cursor: pointer; background: transparent; color: #ff4444; transition: 0.3s;">
-                    ⏹ Cancelar
-                </button>
-            </div>
-        </div>
-        
-        <a href="/" class="nav-btn">Tela Inicial</a>
-        <a href="/nucleo" class="nav-btn">Meu Núcleo</a>
-        <a href="/rotina" class="nav-btn">Rotina</a>
-        <a href="/estatistica" class="nav-btn">Estatística</a>
-        <a href="/forum" class="nav-btn active">Fórum & Repositório</a>
-    </aside>
-
-    <main class="main-content">
-        <div class="container-interno">
-            <h1>Repositório de Estudos</h1>
-            
-            <div class="caixa-postagem">
-                <textarea id="texto-post" placeholder="Faça uma anotação, salve uma questão ou descreva o arquivo anexado..."></textarea>
-                
-                <div class="controles-postagem">
-                    <input type="file" id="arquivo-post" class="input-arquivo-custom" accept=".pdf, image/png, image/jpeg, .doc, .docx">
-                    <button id="btn-publicar" onclick="enviarPost()">Salvar no Repositório</button>
-                </div>
-            </div>
-
-            <div id="feed-forum">
-            </div>
-        </div>
-    </main>
-
-    <!-- SCRIPT DO FÓRUM -->
-    <script>
-        let dadosApp = {};
-
-        window.onload = async () => {
-            await carregarDadosBanco();
-            renderizarPosts();
-        };
-
-        async function carregarDadosBanco() {
-            try {
-                const res = await fetch('/api/dados');
-                dadosApp = await res.json();
-                
-                const xp = dadosApp.xp || 0;
-                document.getElementById('xp-display').innerText = xp;
-                document.getElementById('nivel-display').innerText = `Nível ${Math.floor(Math.sqrt(xp / 50)) + 1}`;
-            } catch (erro) {
-                console.error("Erro ao carregar dados:", erro);
-            }
-        }
-
-        async function enviarPost() {
-            const texto = document.getElementById('texto-post').value.trim();
-            const arquivoInput = document.getElementById('arquivo-post');
-            
-            if (!texto && arquivoInput.files.length === 0) {
-                alert("Digite uma descrição ou escolha um arquivo para salvar!");
-                return;
-            }
-
-            const btn = document.getElementById('btn-publicar');
-            btn.innerText = "Salvando...";
-            btn.disabled = true;
-
-            const formData = new FormData();
-            formData.append('texto', texto);
-            formData.append('data', new Date().toLocaleDateString('pt-BR'));
-            
-            if (arquivoInput.files.length > 0) {
-                formData.append('arquivo', arquivoInput.files[0]);
-            }
-
-            try {
-                await fetch('/api/forum', {
-                    method: 'POST',
-                    body: formData
-                });
-
-                document.getElementById('texto-post').value = '';
-                arquivoInput.value = '';
-                
-                await carregarDadosBanco();
-                renderizarPosts();
-
-            } catch (erro) {
-                alert("Erro ao enviar para o repositório.");
-                console.error(erro);
-            } finally {
-                btn.innerText = "Salvar no Repositório";
-                btn.disabled = false;
-            }
-        }
-
-        function renderizarPosts() {
-            const feed = document.getElementById('feed-forum');
-            feed.innerHTML = '';
-
-            const forum = dadosApp.forum || [];
-
-            if (forum.length === 0) {
-                feed.innerHTML = `
-                    <div class="post-card" style="text-align: center; color: var(--texto-mutado);">
-                        Seu repositório está vazio. Salve seus primeiros PDFs e anotações acima!
-                    </div>
-                `;
-                return;
-            }
-
-            forum.forEach(post => {
-                let htmlAnexo = '';
-                
-                if (post.arquivo) {
-                    htmlAnexo = `
-                        <div style="margin-top: 15px;">
-                            <a href="/uploads/${post.arquivo}" target="_blank" class="anexo-box">
-                                📎 ${post.arquivo}
-                            </a>
-                        </div>
-                    `;
-                }
-
-                feed.insertAdjacentHTML('beforeend', `
-                    <div class="post-card">
-                        <div class="post-header">
-                            <span class="post-autor">Eu</span>
-                            <span>${post.data}</span>
-                        </div>
-                        <div class="post-conteudo">${post.texto || '<em>Sem descrição.</em>'}</div>
-                        ${htmlAnexo}
-                    </div>
-                `);
-            });
-        }
-    </script>
-
-<!-- SCRIPT DO RELÓGIO GLOBAL -->
+{% block scripts %}
 <script>
-    let relogioIntervalo;
-    let tempoTotalDefinido = parseInt(localStorage.getItem('foco_total_segundos')) || 0;
-    let tempoFim = parseInt(localStorage.getItem('foco_fim_timestamp')) || 0;
-    let tempoRestanteSalvo = parseInt(localStorage.getItem('foco_tempo_restante')) || 0;
-    let estaRodando = localStorage.getItem('foco_rodando') === 'true';
-    let estaPausado = localStorage.getItem('foco_pausado') === 'true';
-    let idDisciplinaAtual = localStorage.getItem('foco_disciplina') || "";
+    let dadosApp = {};
 
-    const displayRelogio = document.getElementById('relogio-global');
-    const btnRelogio = document.getElementById('btn-relogio');
-    const selectDisciplina = document.getElementById('select-disciplina');
-    const inputMinutos = document.getElementById('input-minutos');
+    window.onload = async () => {
+        await carregarDadosBanco();
+        renderizarPosts();
+    };
 
-    async function carregarDisciplinasSelect() {
-        if (!selectDisciplina) return; 
+    async function carregarDadosBanco() {
         try {
             const res = await fetch('/api/dados');
-            const appData = await res.json();
-            const edital = appData.edital || [];
+            dadosApp = await res.json();
             
-            selectDisciplina.innerHTML = '<option value="">Selecione a Disciplina...</option>';
-            edital.forEach((disc, index) => {
-                const option = document.createElement('option');
-                option.value = index; 
-                const tagCategoria = disc.categoria ? `[${disc.categoria}] ` : '';
-                option.innerText = tagCategoria + disc.nome;
-                selectDisciplina.appendChild(option);
-            });
-            if (idDisciplinaAtual) selectDisciplina.value = idDisciplinaAtual;
-        } catch (e) { console.error(e); }
+            const xp = dadosApp.xp || 0;
+            const elemXp = document.getElementById('xp-display');
+            const elemNivel = document.getElementById('nivel-display');
+            
+            if (elemXp) elemXp.innerText = xp;
+            if (elemNivel) elemNivel.innerText = `Nível ${Math.floor(Math.sqrt(xp / 50)) + 1}`;
+        } catch (erro) {
+            console.error("Erro ao carregar dados:", erro);
+        }
     }
 
-    function formatarTempo(seg) {
-        if (seg <= 0) return "00:00:00";
-        const h = String(Math.floor(seg / 3600)).padStart(2, '0');
-        const m = String(Math.floor((seg % 3600) / 60)).padStart(2, '0');
-        const s = String(seg % 60).padStart(2, '0');
-        return `${h}:${m}:${s}`;
-    }
-
-    function atualizarTelaRelogio() {
-        if (!estaRodando && tempoTotalDefinido === 0) {
-            if (displayRelogio) displayRelogio.innerText = "00:00:00";
+    async function enviarPost() {
+        const texto = document.getElementById('texto-post').value.trim();
+        const arquivoInput = document.getElementById('arquivo-post');
+        
+        if (!texto && arquivoInput.files.length === 0) {
+            alert("Digite uma descrição ou escolha um arquivo para salvar!");
             return;
         }
 
-        let tempoRestante;
-        if (estaPausado) {
-            tempoRestante = tempoRestanteSalvo;
-        } else {
-            tempoRestante = Math.max(0, Math.floor((tempoFim - Date.now()) / 1000));
-            tempoRestanteSalvo = tempoRestante; 
-            localStorage.setItem('foco_tempo_restante', tempoRestante);
-        }
+        const btn = document.getElementById('btn-publicar');
+        btn.innerText = "Salvando...";
+        btn.disabled = true;
+
+        const formData = new FormData();
+        formData.append('texto', texto);
+        formData.append('data', new Date().toLocaleDateString('pt-BR'));
         
-        if (displayRelogio && btnRelogio && selectDisciplina && inputMinutos) {
-            displayRelogio.innerText = formatarTempo(tempoRestante);
-            
-            selectDisciplina.disabled = estaRodando;
-            inputMinutos.disabled = estaRodando;
-
-            if (estaRodando) {
-                if (estaPausado) {
-                    btnRelogio.innerText = "▶ Retomar";
-                    btnRelogio.style.background = "#ff9800"; 
-                } else {
-                    btnRelogio.innerText = "⏸ Pausar";
-                    btnRelogio.style.background = "var(--texto-puro)";
-                }
-            } else {
-                btnRelogio.innerText = "▶ Iniciar";
-                btnRelogio.style.background = "var(--texto-puro)";
-            }
+        if (arquivoInput.files.length > 0) {
+            formData.append('arquivo', arquivoInput.files[0]);
         }
 
-        if (estaRodando && !estaPausado && tempoRestante <= 0) {
-            estaRodando = false;
-            clearInterval(relogioIntervalo);
-            salvarFocoConcluido();
-        }
-    }
-
-    function alternarRelogio() {
-        if (estaRodando && !estaPausado) {
-            estaPausado = true;
-            localStorage.setItem('foco_pausado', 'true');
-            clearInterval(relogioIntervalo);
-            atualizarTelaRelogio();
-        } else if (estaRodando && estaPausado) {
-            estaPausado = false;
-            localStorage.setItem('foco_pausado', 'false');
-            tempoFim = Date.now() + (tempoRestanteSalvo * 1000);
-            localStorage.setItem('foco_fim_timestamp', tempoFim);
-            relogioIntervalo = setInterval(atualizarTelaRelogio, 1000);
-            atualizarTelaRelogio();
-        } else {
-            if (selectDisciplina && !selectDisciplina.value) {
-                alert("Selecione uma disciplina primeiro!");
-                return;
-            }
-            let minutos = parseInt(inputMinutos.value);
-            if (isNaN(minutos) || minutos <= 0) {
-                alert("Digite um tempo válido em minutos.");
-                return;
-            }
-
-            tempoTotalDefinido = minutos * 60;
-            tempoRestanteSalvo = tempoTotalDefinido;
-            tempoFim = Date.now() + (tempoTotalDefinido * 1000);
-            
-            localStorage.setItem('foco_total_segundos', tempoTotalDefinido);
-            localStorage.setItem('foco_fim_timestamp', tempoFim);
-            localStorage.setItem('foco_tempo_restante', tempoTotalDefinido);
-            localStorage.setItem('foco_rodando', 'true');
-            localStorage.setItem('foco_pausado', 'false');
-            if (selectDisciplina) localStorage.setItem('foco_disciplina', selectDisciplina.value);
-            
-            estaRodando = true;
-            estaPausado = false;
-            relogioIntervalo = setInterval(atualizarTelaRelogio, 1000);
-            atualizarTelaRelogio();
-        }
-    }
-
-    function cancelarFoco() {
-        if (!estaRodando && !estaPausado) return;
-        if(confirm("Deseja realmente cancelar este foco? O tempo não será salvo.")) {
-            limparFocoLocal();
-        }
-    }
-
-    function limparFocoLocal() {
-        estaRodando = false;
-        estaPausado = false;
-        clearInterval(relogioIntervalo);
-        localStorage.removeItem('foco_total_segundos');
-        localStorage.removeItem('foco_fim_timestamp');
-        localStorage.removeItem('foco_tempo_restante');
-        localStorage.removeItem('foco_rodando');
-        localStorage.removeItem('foco_pausado');
-        localStorage.removeItem('foco_disciplina');
-        tempoTotalDefinido = 0;
-        atualizarTelaRelogio();
-    }
-
-    async function salvarFocoConcluido() {
-        alert("🎯 Parabéns! Bloco de foco concluído. Salvando dados...");
-        
         try {
-            const res = await fetch('/api/dados');
-            let dados = await res.json();
-
-            dados.tempo_total = (dados.tempo_total || 0) + tempoTotalDefinido;
-            dados.xp = (dados.xp || 0) + Math.floor(tempoTotalDefinido / 60);
-
-            const d = new Date();
-            const ano = d.getFullYear();
-            const mes = String(d.getMonth() + 1).padStart(2, '0');
-            const dia = String(d.getDate()).padStart(2, '0');
-            const hojeIso = `${ano}-${mes}-${dia}`;
-            
-            if (!dados.historico_diario) dados.historico_diario = {};
-            dados.historico_diario[hojeIso] = (dados.historico_diario[hojeIso] || 0) + tempoTotalDefinido;
-
-            const indexDisciplina = localStorage.getItem('foco_disciplina');
-            if (indexDisciplina !== null && dados.edital[indexDisciplina]) {
-                dados.edital[indexDisciplina].tempo_estudado = (dados.edital[indexDisciplina].tempo_estudado || 0) + tempoTotalDefinido;
-            }
-            
-            const hoje = new Date().toLocaleDateString('pt-BR');
-            if (dados.ultimo_acesso !== hoje) {
-                dados.dias_seguidos = (dados.dias_seguidos || 0) + 1;
-                dados.ultimo_acesso = hoje;
-            }
-
-            await fetch('/api/dados', {
+            await fetch('/api/forum', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(dados)
+                body: formData
             });
 
-            limparFocoLocal();
-            window.location.reload(); 
-        } catch (e) {
-            console.error("Erro ao salvar:", e);
-            alert("Erro ao salvar o progresso.");
+            document.getElementById('texto-post').value = '';
+            arquivoInput.value = '';
+            
+            await carregarDadosBanco();
+            renderizarPosts();
+
+        } catch (erro) {
+            alert("Erro ao enviar para o repositório.");
+            console.error(erro);
+        } finally {
+            btn.innerText = "Salvar no Repositório";
+            btn.disabled = false;
         }
     }
 
-    carregarDisciplinasSelect();
-    if (estaRodando && !estaPausado) relogioIntervalo = setInterval(atualizarTelaRelogio, 1000);
-    atualizarTelaRelogio();
+    function renderizarPosts() {
+        const feed = document.getElementById('feed-forum');
+        feed.innerHTML = '';
+
+        const forum = dadosApp.forum || [];
+
+        if (forum.length === 0) {
+            feed.innerHTML = `
+                <div class="post-card" style="text-align: center; color: var(--texto-mutado);">
+                    Seu repositório está vazio. Salve seus primeiros PDFs e anotações acima!
+                </div>
+            `;
+            return;
+        }
+
+        forum.forEach(post => {
+            let htmlAnexo = '';
+            
+            if (post.arquivo) {
+                htmlAnexo = `
+                    <div style="margin-top: 15px;">
+                        <a href="/uploads/${post.arquivo}" target="_blank" class="anexo-box">
+                            📎 ${post.arquivo}
+                        </a>
+                    </div>
+                `;
+            }
+
+            feed.insertAdjacentHTML('beforeend', `
+                <div class="post-card">
+                    <div class="post-header">
+                        <span class="post-autor">Eu</span>
+                        <span>${post.data}</span>
+                    </div>
+                    <div class="post-conteudo">${post.texto || '<em>Sem descrição.</em>'}</div>
+                    ${htmlAnexo}
+                </div>
+            `);
+        });
+    }
 </script>
-</body>
-</html>
+{% endblock %}

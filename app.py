@@ -53,6 +53,10 @@ def forum():
 def sala_estudos(id_assunto):
     return render_template('sala_estudos.html', id_assunto=id_assunto)
 
+@app.route('/agenda')
+def agenda():
+    return render_template('agenda.html')
+
 # --- ROTAS DE DADOS (API) ---
 @app.route('/api/dados', methods=['GET', 'POST'])
 def gerenciar_dados():
