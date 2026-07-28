@@ -11,12 +11,13 @@
         border-radius: 12px;
         padding: 25px;
         margin-bottom: 40px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.3);
     }
 
     textarea {
         width: 100%;
-        height: 100px;
-        background: rgba(0,0,0,0.5);
+        height: 110px;
+        background: rgba(0, 0, 0, 0.4);
         border: 1px solid var(--borda-sutil);
         color: var(--texto-puro);
         padding: 15px;
@@ -26,6 +27,7 @@
         font-family: inherit;
         margin-bottom: 15px;
         font-size: 1rem;
+        transition: border-color 0.3s ease;
     }
     textarea:focus { border-color: var(--borda-hover); }
 
@@ -56,7 +58,7 @@
         border-color: var(--borda-hover); 
     }
 
-    button {
+    .btn-publicar {
         background: var(--btn-primario-bg);
         color: var(--btn-primario-texto);
         padding: 10px 24px;
@@ -66,17 +68,26 @@
         cursor: pointer;
         transition: all 0.3s;
     }
-    button:hover { 
+    .btn-publicar:hover:not(:disabled) { 
         transform: translateY(-2px); 
         box-shadow: 0 4px 15px rgba(255, 255, 255, 0.1); 
     }
+    .btn-publicar:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
 
     .post-card {
-        background: rgba(10, 10, 10, 0.5);
+        background: var(--bg-card);
         border: 1px solid var(--borda-sutil);
         border-radius: 8px;
         padding: 25px;
         margin-bottom: 15px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        transition: border-color 0.3s;
+    }
+    .post-card:hover {
+        border-color: var(--borda-hover);
     }
     
     .post-header { 
@@ -90,12 +101,13 @@
     }
     
     .post-autor { font-weight: bold; color: var(--texto-puro); }
-    .post-conteudo { line-height: 1.6; white-space: pre-wrap; margin-bottom: 15px; }
+    .post-conteudo { line-height: 1.6; white-space: pre-wrap; word-break: break-word; color: var(--texto-base); }
     
     .anexo-box {
         display: inline-flex;
         align-items: center;
-        background: rgba(255,255,255,0.05);
+        gap: 8px;
+        background: rgba(255, 255, 255, 0.05);
         padding: 10px 15px;
         border-radius: 6px;
         border: 1px dashed var(--borda-sutil);
@@ -103,9 +115,10 @@
         text-decoration: none;
         font-size: 0.9rem;
         transition: 0.3s;
+        margin-top: 15px;
     }
     .anexo-box:hover { 
-        background: rgba(255,255,255,0.1); 
+        background: rgba(255, 255, 255, 0.1); 
         border-color: #82b1ff; 
     }
 </style>
@@ -113,17 +126,19 @@
 
 {% block conteudo %}
 <div style="max-width: 900px; margin: 0 auto; width: 100%;">
-    <h1>Repositório de Estudos</h1>
+    <h1 style="margin-bottom: 25px;">Repositório de Estudos</h1>
     
+    <!-- CAIXA DE CRIAÇÃO DE POST -->
     <div class="caixa-postagem">
         <textarea id="texto-post" placeholder="Faça uma anotação, salve uma questão ou descreva o arquivo anexado..."></textarea>
         
         <div class="controles-postagem">
             <input type="file" id="arquivo-post" class="input-arquivo-custom" accept=".pdf, image/png, image/jpeg, .doc, .docx">
-            <button id="btn-publicar" onclick="enviarPost()">Salvar no Repositório</button>
+            <button id="btn-publicar" class="btn-publicar" onclick="enviarPost()">Salvar no Repositório</button>
         </div>
     </div>
 
+    <!-- FEED DO REPOSITÓRIO -->
     <div id="feed-forum"></div>
 </div>
 {% endblock %}
@@ -132,37 +147,32 @@
 <script>
     let dadosApp = {};
 
-    window.onload = async () => {
+    document.addEventListener('DOMContentLoaded', async () => {
         await carregarDadosBanco();
-        renderizarPosts();
-    };
+    });
 
     async function carregarDadosBanco() {
         try {
             const res = await fetch('/api/dados');
             dadosApp = await res.json();
-            
-            const xp = dadosApp.xp || 0;
-            const elemXp = document.getElementById('xp-display');
-            const elemNivel = document.getElementById('nivel-display');
-            
-            if (elemXp) elemXp.innerText = xp;
-            if (elemNivel) elemNivel.innerText = `Nível ${Math.floor(Math.sqrt(xp / 50)) + 1}`;
+            renderizarPosts();
         } catch (erro) {
-            console.error("Erro ao carregar dados:", erro);
+            console.error("Erro ao carregar dados do fórum:", erro);
         }
     }
 
     async function enviarPost() {
-        const texto = document.getElementById('texto-post').value.trim();
+        const textoInput = document.getElementById('texto-post');
         const arquivoInput = document.getElementById('arquivo-post');
+        const btn = document.getElementById('btn-publicar');
+
+        const texto = textoInput.value.trim();
         
         if (!texto && arquivoInput.files.length === 0) {
             alert("Digite uma descrição ou escolha um arquivo para salvar!");
             return;
         }
 
-        const btn = document.getElementById('btn-publicar');
         btn.innerText = "Salvando...";
         btn.disabled = true;
 
@@ -175,16 +185,17 @@
         }
 
         try {
-            await fetch('/api/forum', {
+            const res = await fetch('/api/forum', {
                 method: 'POST',
                 body: formData
             });
 
-            document.getElementById('texto-post').value = '';
+            if (!res.ok) throw new Error("Falha na requisição");
+
+            textoInput.value = '';
             arquivoInput.value = '';
             
             await carregarDadosBanco();
-            renderizarPosts();
 
         } catch (erro) {
             alert("Erro ao enviar para o repositório.");
@@ -195,6 +206,13 @@
         }
     }
 
+    function escapeHtml(texto) {
+        if (!texto) return '';
+        const div = document.createElement('div');
+        div.innerText = texto;
+        return div.innerHTML;
+    }
+
     function renderizarPosts() {
         const feed = document.getElementById('feed-forum');
         feed.innerHTML = '';
@@ -203,33 +221,38 @@
 
         if (forum.length === 0) {
             feed.innerHTML = `
-                <div class="post-card" style="text-align: center; color: var(--texto-mutado);">
-                    Seu repositório está vazio. Salve seus primeiros PDFs e anotações acima!
+                <div class="post-card" style="text-align: center; color: var(--texto-mutado); padding: 40px;">
+                    Seu repositório está vazio. Salve seus primeiros PDFs e anotações no formulário acima!
                 </div>
             `;
             return;
         }
 
-        forum.forEach(post => {
+        // Renderiza os posts do mais recente para o mais antigo
+        const postsInvertidos = [...forum].reverse();
+
+        postsInvertidos.forEach(post => {
             let htmlAnexo = '';
             
             if (post.arquivo) {
                 htmlAnexo = `
-                    <div style="margin-top: 15px;">
-                        <a href="/uploads/${post.arquivo}" target="_blank" class="anexo-box">
-                            📎 ${post.arquivo}
+                    <div>
+                        <a href="/uploads/${encodeURIComponent(post.arquivo)}" target="_blank" class="anexo-box">
+                            📎 ${escapeHtml(post.arquivo)}
                         </a>
                     </div>
                 `;
             }
 
+            const textoFormatado = escapeHtml(post.texto) || '<em>Sem descrição.</em>';
+
             feed.insertAdjacentHTML('beforeend', `
                 <div class="post-card">
                     <div class="post-header">
                         <span class="post-autor">Eu</span>
-                        <span>${post.data}</span>
+                        <span>${escapeHtml(post.data)}</span>
                     </div>
-                    <div class="post-conteudo">${post.texto || '<em>Sem descrição.</em>'}</div>
+                    <div class="post-conteudo">${textoFormatado}</div>
                     ${htmlAnexo}
                 </div>
             `);

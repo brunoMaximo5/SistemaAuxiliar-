@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, jsonify, send_from_directory
 from werkzeug.utils import secure_filename
 import json
 import os
+import time
 
 app = Flask(__name__)
 DATA_FILE = 'dados.json'
@@ -12,16 +13,31 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 def carregar_dados():
-    # Se o arquivo não existir, cria a estrutura com o fórum
-    if not os.path.exists(DATA_FILE):
-        return {"xp": 0, "tempo_total": 0, "edital": [], "forum": []}
+    # Estrutura padrão com todas as chaves esperadas pelo sistema
+    dados_padrao = {
+        "xp": 0,
+        "tempo_total": 0,
+        "dias_seguidos": 0,
+        "categorias": ["Principal"],
+        "edital": [],
+        "forum": [],
+        "agenda": []
+    }
     
-    with open(DATA_FILE, 'r', encoding='utf-8') as f:
-        dados = json.load(f)
-        # Garante que a chave 'forum' exista para dados antigos
-        if "forum" not in dados:
-            dados["forum"] = []
-        return dados
+    if not os.path.exists(DATA_FILE):
+        return dados_padrao
+    
+    try:
+        with open(DATA_FILE, 'r', encoding='utf-8') as f:
+            dados = json.load(f)
+            # Garante que chaves novas existam em arquivos salvos anteriormente
+            for chave, valor in dados_padrao.items():
+                if chave not in dados:
+                    dados[chave] = valor
+            return dados
+    except Exception as e:
+        print(f"Erro ao ler {DATA_FILE}: {e}")
+        return dados_padrao
 
 def salvar_dados(dados):
     with open(DATA_FILE, 'w', encoding='utf-8') as f:
@@ -36,7 +52,6 @@ def index():
 def nucleo():
     return render_template('nucleo.html')
 
-# --- ROTA NOVA: GESTÃO DE ROTINA ---
 @app.route('/rotina')
 def rotina():
     return render_template('rotina.html')
@@ -66,35 +81,36 @@ def gerenciar_dados():
         return jsonify({"status": "sucesso"})
     return jsonify(carregar_dados())
 
-# --- ROTA NOVA: RECEBER POSTS E ARQUIVOS DO FÓRUM ---
+# --- RECEBER POSTS E ARQUIVOS DO FÓRUM ---
 @app.route('/api/forum', methods=['POST'])
 def adicionar_post_forum():
-    texto = request.form.get('texto')
-    data_post = request.form.get('data')
+    texto = request.form.get('texto', '')
+    data_post = request.form.get('data', '')
     nome_arquivo = None
 
-    # Verifica se veio algum arquivo junto
     if 'arquivo' in request.files:
         arquivo = request.files['arquivo']
         if arquivo.filename != '':
-            nome_arquivo = secure_filename(arquivo.filename)
+            nome_limpo = secure_filename(arquivo.filename)
+            # Adiciona timestamp prefixado para impedir nomes duplicados de se sobrescreverem
+            nome_arquivo = f"{int(time.time())}_{nome_limpo}"
             caminho_salvar = os.path.join(app.config['UPLOAD_FOLDER'], nome_arquivo)
             arquivo.save(caminho_salvar)
     
-    # Salva no banco de dados
     dados = carregar_dados()
     novo_post = {
         "texto": texto,
         "data": data_post,
         "arquivo": nome_arquivo
     }
-    # Insere no começo da lista (posts mais novos primeiro)
-    dados["forum"].insert(0, novo_post)
+    
+    # Adiciona ao final da lista (o frontend forum.html cuida de inverter para exibir os recentes no topo)
+    dados["forum"].append(novo_post)
     salvar_dados(dados)
     
     return jsonify({"status": "sucesso"})
 
-# --- ROTA NOVA: SERVIR OS ARQUIVOS SALVOS ---
+# --- SERVIR OS ARQUIVOS SALVOS ---
 @app.route('/uploads/<nome_arquivo>')
 def acessar_arquivo(nome_arquivo):
     return send_from_directory(app.config['UPLOAD_FOLDER'], nome_arquivo)

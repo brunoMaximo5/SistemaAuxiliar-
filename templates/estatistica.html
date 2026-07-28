@@ -241,40 +241,42 @@
         document.getElementById(idAlvo).classList.add('active');
     }
 
-    window.onload = async () => {
+    document.addEventListener('DOMContentLoaded', async () => {
         try {
             const res = await fetch('/api/dados');
             dadosGlobais = await res.json();
             
-            const xp = dadosGlobais.xp || 0;
-            const elemXp = document.getElementById('xp-display');
-            const elemNivel = document.getElementById('nivel-display');
-            
-            if (elemXp) elemXp.innerText = xp;
-            if (elemNivel) elemNivel.innerText = `Nível ${Math.floor(Math.sqrt(xp / 50)) + 1}`;
-
             const selectFiltro = document.getElementById('filtro-secao');
+            let categoriasAdicionadas = new Set();
+            
+            // Tenta puxar de 'categorias' se existir, caso contrário extrai do próprio edital
             if (dadosGlobais.categorias) {
-                dadosGlobais.categorias.forEach(cat => {
-                    const option = document.createElement('option');
-                    option.value = cat;
-                    option.innerText = `Seção: ${cat}`;
-                    selectFiltro.appendChild(option);
+                dadosGlobais.categorias.forEach(cat => categoriasAdicionadas.add(cat));
+            } else if (dadosGlobais.edital) {
+                dadosGlobais.edital.forEach(disc => {
+                    if (disc.categoria) categoriasAdicionadas.add(disc.categoria);
                 });
             }
+
+            categoriasAdicionadas.forEach(cat => {
+                const option = document.createElement('option');
+                option.value = cat;
+                option.innerText = `Seção: ${cat}`;
+                selectFiltro.appendChild(option);
+            });
 
             processarDados(); 
         } catch (erro) {
             console.error("Erro ao carregar dados de estatística:", erro);
         }
-    };
+    });
 
     function processarDados() {
         if (!dadosGlobais) return;
         const filtroAtual = document.getElementById('filtro-secao').value;
 
         let totalSegundosGlobal = dadosGlobais.tempo_total || 0;
-        let diasSeguidos = dadosGlobais.dias_seguidos || 0;
+        let diasSeguidos = dadosGlobais.ofensiva || dadosGlobais.dias_seguidos || 0;
         
         let tempoGastoNasDisciplinas = 0;
         let tempoGastoNoFiltro = 0;
@@ -377,6 +379,7 @@
             const diasSelecionados = parseInt(periodo);
             for(let i = diasSelecionados - 1; i >= 0; i--) {
                 let d = new Date();
+                d.setHours(0, 0, 0, 0); // Fuso horário padronizado com o base.html
                 d.setDate(d.getDate() - i);
                 
                 let ano = d.getFullYear();

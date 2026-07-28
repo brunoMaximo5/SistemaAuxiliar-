@@ -12,6 +12,7 @@
         border-bottom: 1px solid var(--borda-sutil);
         margin-bottom: 25px;
         padding-bottom: 10px;
+        gap: 15px;
     }
 
     .tabs-container {
@@ -50,6 +51,7 @@
         cursor: pointer;
         font-weight: 600;
         transition: 0.3s;
+        white-space: nowrap;
     }
     .tab-add-btn:hover { border-color: var(--texto-puro); color: var(--texto-puro); }
     
@@ -59,17 +61,19 @@
         border: none;
         cursor: pointer;
         font-size: 0.85rem;
-        padding: 10px;
+        padding: 8px 12px;
+        border-radius: 6px;
         transition: 0.3s;
-        opacity: 0.7;
+        opacity: 0.8;
+        white-space: nowrap;
     }
-    .btn-apagar-secao:hover { opacity: 1; text-decoration: underline; }
+    .btn-apagar-secao:hover { opacity: 1; background: rgba(255, 100, 100, 0.1); text-decoration: underline; }
 
     .top-bar {
         display: flex;
         gap: 15px;
-        margin-bottom: 40px;
-        background: var(--bg-painel);
+        margin-bottom: 30px;
+        background: var(--bg-card);
         padding: 15px;
         border-radius: 8px;
         border: 1px solid var(--borda-sutil);
@@ -78,24 +82,24 @@
 
     input[type="text"] {
         flex: 1;
-        padding: 14px 20px;
+        padding: 12px 18px;
         border-radius: 6px;
-        background: rgba(0, 0, 0, 0.5);
+        background: rgba(0, 0, 0, 0.4);
         border: 1px solid var(--borda-sutil);
         color: var(--texto-puro);
-        font-size: 1rem;
+        font-size: 0.95rem;
         outline: none;
         transition: all 0.3s ease;
     }
     
     input[type="text"]:focus { 
         border-color: var(--borda-hover); 
-        background: rgba(0, 0, 0, 0.8); 
+        background: rgba(0, 0, 0, 0.7); 
         box-shadow: 0 0 10px rgba(255, 255, 255, 0.05); 
     }
 
     button, .btn-link {
-        padding: 12px 20px;
+        padding: 10px 18px;
         border-radius: 6px;
         border: none;
         cursor: pointer;
@@ -122,11 +126,11 @@
         backdrop-filter: blur(5px);
         -webkit-backdrop-filter: blur(5px);
         border-radius: 12px;
-        padding: 30px;
-        margin-bottom: 30px;
+        padding: 25px;
+        margin-bottom: 25px;
         border: 1px solid var(--borda-sutil);
         box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-        transition: transform 0.3s ease;
+        transition: border-color 0.3s ease;
         width: 100%;
     }
 
@@ -136,19 +140,21 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-bottom: 25px;
-        padding-bottom: 15px;
+        margin-bottom: 20px;
+        padding-bottom: 12px;
         border-bottom: 1px solid var(--borda-sutil);
+        flex-wrap: wrap;
+        gap: 15px;
     }
 
-    .disciplina-header h2 { margin: 0; font-size: 1.4rem; font-weight: 500; color: var(--texto-puro); }
+    .disciplina-header h2 { margin: 0; font-size: 1.3rem; font-weight: 500; color: var(--texto-puro); }
 
     .select-mover {
         background: rgba(0,0,0,0.5);
         color: var(--texto-mutado);
         border: 1px solid var(--borda-sutil);
-        border-radius: 4px;
-        padding: 4px 8px;
+        border-radius: 6px;
+        padding: 6px 10px;
         font-size: 0.8rem;
         outline: none;
         cursor: pointer;
@@ -160,52 +166,52 @@
     }
 
     .assunto-item {
-        background: rgba(10, 10, 10, 0.4);
+        background: rgba(0, 0, 0, 0.25);
         border: 1px solid var(--borda-sutil);
         border-radius: 8px;
-        padding: 18px 24px;
-        margin-top: 12px;
+        padding: 14px 20px;
+        margin-top: 10px;
         display: flex;
         justify-content: space-between;
         align-items: center;
         transition: all 0.2s ease;
+        flex-wrap: wrap;
+        gap: 12px;
     }
 
-    .assunto-item:hover { background: rgba(20, 20, 20, 0.8); transform: translateX(5px); border-color: var(--borda-hover); }
-    .assunto-title { font-weight: 400; font-size: 1.05rem; }
-    .assunto-actions { display: flex; gap: 12px; align-items: center; }
+    .assunto-item:hover { background: rgba(20, 20, 20, 0.6); transform: translateX(4px); border-color: var(--borda-hover); }
+    .assunto-title { font-weight: 400; font-size: 1rem; word-break: break-word; flex: 1; min-width: 200px; }
+    .assunto-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 </style>
 {% endblock %}
 
 {% block conteudo %}
-<h1>Controle Estratégico</h1>
+<h1 style="margin-bottom: 25px;">Controle Estratégico</h1>
 
 <!-- DASHBOARD DA TELA INICIAL -->
-<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 40px;">
-    <div style="background: var(--bg-card); border: 1px solid var(--borda-sutil); border-radius: 12px; padding: 30px; text-align: center;">
-        <div style="color: var(--texto-mutado); font-size: 0.9rem; text-transform: uppercase; margin-bottom: 10px;">Sequência de Estudos</div>
-        <div id="dash-streak" style="font-size: 3.5rem; font-weight: 800; color: #ff9800;">🔥 0</div>
-        <div style="color: var(--texto-mutado); font-size: 0.85rem; margin-top: 10px;">Dias seguidos</div>
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; margin-bottom: 35px;">
+    <div style="background: var(--bg-card); border: 1px solid var(--borda-sutil); border-radius: 12px; padding: 25px; text-align: center;">
+        <div style="color: var(--texto-mutado); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">Sequência de Estudos</div>
+        <div id="dash-streak" style="font-size: 3rem; font-weight: 800; color: #ff9800;">🔥 0</div>
+        <div style="color: var(--texto-mutado); font-size: 0.85rem; margin-top: 5px;">Dias seguidos</div>
     </div>
 
-    <div style="background: var(--bg-card); border: 1px solid var(--borda-sutil); border-radius: 12px; padding: 30px; text-align: center;">
-        <div style="color: var(--texto-mutado); font-size: 0.9rem; text-transform: uppercase; margin-bottom: 10px;">Tempo Total</div>
-        <div id="dash-horas" style="font-size: 3.5rem; font-weight: 800; color: var(--texto-puro);">0h</div>
-        <div style="color: var(--texto-mutado); font-size: 0.85rem; margin-top: 10px;">Foco acumulado</div>
+    <div style="background: var(--bg-card); border: 1px solid var(--borda-sutil); border-radius: 12px; padding: 25px; text-align: center;">
+        <div style="color: var(--texto-mutado); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">Tempo Total</div>
+        <div id="dash-horas" style="font-size: 3rem; font-weight: 800; color: var(--texto-puro);">0h</div>
+        <div style="color: var(--texto-mutado); font-size: 0.85rem; margin-top: 5px;">Foco acumulado</div>
     </div>
 </div>
 
 <!-- CONTROLE DE SEÇÕES (ABAS) -->
 <div class="tabs-wrapper">
-    <div class="tabs-container" id="container-abas">
-        <!-- Abas renderizadas via JS -->
-    </div>
-    <button class="btn-apagar-secao" onclick="apagarCategoriaAtual()">🗑 Apagar Seção Atual</button>
+    <div class="tabs-container" id="container-abas"></div>
+    <button class="btn-apagar-secao" onclick="apagarCategoriaAtual()">🗑 Apagar Seção</button>
 </div>
 
 <!-- CONTROLE DE DISCIPLINAS -->
 <div class="top-bar">
-    <input type="text" id="input-disciplina" placeholder="Nome da Nova Disciplina (Adicionada na seção atual)">
+    <input type="text" id="input-disciplina" placeholder="Nome da Nova Disciplina (Adicionada na seção atual)" onkeydown="seApertaEnter(event, adicionarDisciplina)">
     <button class="btn-primario" onclick="adicionarDisciplina()">Adicionar Disciplina</button>
 </div>
 
@@ -217,10 +223,9 @@
     let dadosApp = { xp: 0, tempo_total: 0, edital: [], categorias: ['Principal'] };
     let abaAtiva = localStorage.getItem('aba_ativa') || 'Principal';
 
-    window.onload = async () => {
+    document.addEventListener('DOMContentLoaded', async () => {
         await carregarDoBanco();
-        renderizarTela();
-    };
+    });
 
     async function carregarDoBanco() {
         try {
@@ -239,7 +244,10 @@
             if (!dadosApp.categorias.includes(abaAtiva)) {
                 abaAtiva = dadosApp.categorias[0];
             }
-        } catch (erro) { console.error("Erro ao carregar dados:", erro); }
+            renderizarTela();
+        } catch (erro) { 
+            console.error("Erro ao carregar dados do banco:", erro); 
+        }
     }
 
     async function salvarNoBanco() {
@@ -250,10 +258,22 @@
                 body: JSON.stringify(dadosApp)
             });
             renderizarTela(); 
-            if (typeof carregarDisciplinasSelect === 'function') {
-                carregarDisciplinasSelect();
-            }
-        } catch (erro) { console.error("Erro ao salvar dados:", erro); }
+        } catch (erro) { 
+            console.error("Erro ao salvar dados:", erro); 
+        }
+    }
+
+    function escapeHtml(texto) {
+        if (!texto) return '';
+        const div = document.createElement('div');
+        div.innerText = texto;
+        return div.innerHTML;
+    }
+
+    function seApertaEnter(evento, funcao) {
+        if (evento.key === 'Enter') {
+            funcao();
+        }
     }
 
     /* ABAS DE CATEGORIA */
@@ -297,7 +317,7 @@
     }
 
     function apagarCategoriaAtual() {
-        if(dadosApp.categorias.length <= 1) {
+        if (dadosApp.categorias.length <= 1) {
             alert("Você não pode apagar a única seção existente.");
             return;
         }
@@ -305,10 +325,10 @@
         
         let mensagem = `Tem certeza que deseja apagar a seção "${abaAtiva}"?`;
         if (temDisciplinas) {
-            mensagem = `CUIDADO! Existem disciplinas salvas em "${abaAtiva}".\nSe você apagar esta seção, todas as disciplinas dela serão APAGADAS DEFINITIVAMENTE.\n(Dica: Você pode mover as disciplinas para outra seção antes de apagar).\n\nDeseja continuar mesmo assim?`;
+            mensagem = `CUIDADO! Existem disciplinas salvas em "${abaAtiva}".\nSe você apagar esta seção, todas as disciplinas dela serão APAGADAS DEFINITIVAMENTE.\n\nDeseja continuar mesmo assim?`;
         }
 
-        if(confirm(mensagem)) {
+        if (confirm(mensagem)) {
             dadosApp.edital = dadosApp.edital.filter(d => d.categoria !== abaAtiva);
             dadosApp.categorias = dadosApp.categorias.filter(c => c !== abaAtiva);
             mudarAba(dadosApp.categorias[0]);
@@ -333,17 +353,28 @@
 
         if (!dadosApp.edital) return;
 
+        const disciplinasDaAba = dadosApp.edital.filter(d => d.categoria === abaAtiva);
+
+        if (disciplinasDaAba.length === 0) {
+            container.innerHTML = `
+                <div class="disciplina-card" style="text-align: center; color: var(--texto-mutado); padding: 40px;">
+                    Nenhuma disciplina cadastrada nesta seção. Adicione a primeira acima!
+                </div>
+            `;
+            return;
+        }
+
         dadosApp.edital.forEach((disciplina, i_disc) => {
             if (disciplina.categoria !== abaAtiva) return;
 
             let optionsMover = '';
             dadosApp.categorias.forEach(cat => {
                 let selected = (cat === disciplina.categoria) ? 'selected' : '';
-                optionsMover += `<option value="${cat}" ${selected}>Mover para: ${cat}</option>`;
+                optionsMover += `<option value="${escapeHtml(cat)}" ${selected}>Mover para: ${escapeHtml(cat)}</option>`;
             });
 
             let htmlTopicos = '';
-            if(disciplina.topicos) {
+            if (disciplina.topicos) {
                 disciplina.topicos.forEach((topico, i_top) => {
                     const idAssunto = `${i_disc}-${i_top}`;
                     let btnEstudarHtml = topico.estudou 
@@ -353,7 +384,7 @@
                     htmlTopicos += `
                         <div class="assunto-item">
                             <span class="assunto-title" style="${topico.estudou ? 'color: var(--texto-mutado); text-decoration: line-through;' : ''}">
-                                ${topico.nome}
+                                ${escapeHtml(topico.nome)}
                             </span>
                             <div class="assunto-actions">
                                 ${btnEstudarHtml}
@@ -368,8 +399,8 @@
             container.insertAdjacentHTML('beforeend', `
                 <div class="disciplina-card">
                     <div class="disciplina-header">
-                        <div style="display: flex; align-items: center; gap: 15px;">
-                            <h2>${disciplina.nome}</h2>
+                        <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
+                            <h2>${escapeHtml(disciplina.nome)}</h2>
                             <select class="select-mover" onchange="moverDisciplina(${i_disc}, this.value)">
                                 ${optionsMover}
                             </select>
@@ -377,7 +408,7 @@
                         <button class="btn-excluir" onclick="removerDisciplina(${i_disc})">Remover Disciplina</button>
                     </div>
                     <div class="top-bar" style="margin-bottom: 15px; border: none; padding: 0; background: transparent;">
-                        <input type="text" id="input_assunto_${i_disc}" placeholder="Adicionar novo assunto à disciplina...">
+                        <input type="text" id="input_assunto_${i_disc}" placeholder="Adicionar novo assunto..." onkeydown="seApertaEnter(event, () => adicionarTopico(${i_disc}))">
                         <button class="btn-secundario" onclick="adicionarTopico(${i_disc})">Adicionar Assunto</button>
                     </div>
                     <div>${htmlTopicos}</div>
@@ -397,9 +428,14 @@
             elemNivel.innerText = `Nível ${nivel}`;
         }
 
-        document.getElementById('dash-streak').innerHTML = `🔥 ${dadosApp.dias_seguidos || 0}`;
-        const horas = ((dadosApp.tempo_total || 0) / 3600).toFixed(1);
-        document.getElementById('dash-horas').innerText = `${horas}h`;
+        const streakElem = document.getElementById('dash-streak');
+        const horasElem = document.getElementById('dash-horas');
+
+        if (streakElem) streakElem.innerHTML = `🔥 ${dadosApp.dias_seguidos || 0}`;
+        if (horasElem) {
+            const horas = ((dadosApp.tempo_total || 0) / 3600).toFixed(1);
+            horasElem.innerText = `${horas}h`;
+        }
     }
 
     /* AÇÕES DE DISCIPLINAS E TÓPICOS */

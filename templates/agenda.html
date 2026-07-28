@@ -441,6 +441,15 @@
             const res = await fetch('/api/dados');
             dadosGlobais = await res.json();
             
+            // --- CÓDIGO ADICIONADO: ATUALIZAR XP E NÍVEL NA SIDEBAR ---
+            const xp = dadosGlobais.xp || 0;
+            const elemXp = document.getElementById('xp-display');
+            const elemNivel = document.getElementById('nivel-display');
+            
+            if (elemXp) elemXp.innerText = xp;
+            if (elemNivel) elemNivel.innerText = `Nível ${Math.floor(Math.sqrt(xp / 50)) + 1}`;
+            // ----------------------------------------------------------
+
             if (!dadosGlobais.agenda) {
                 dadosGlobais.agenda = [];
             }

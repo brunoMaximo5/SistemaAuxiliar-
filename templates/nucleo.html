@@ -3,23 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Desempenho & Gráficos</title>
+    <title>Núcleo de Energia - Desempenho</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
 
         :root { 
-            --bg-principal: linear-gradient(135deg, #0a0a0a 0%, #000000 100%);
-            --bg-painel: rgba(20, 20, 20, 0.75); 
+            --bg-principal: #000000;
+            --bg-painel: rgba(18, 18, 18, 0.75); 
             --texto-puro: #ffffff; 
             --texto-base: #e0e0e0;
             --texto-mutado: #888888;
-            --borda-sutil: rgba(255, 255, 255, 0.08); 
+            --borda-sutil: rgba(255, 255, 255, 0.1); 
+            --borda-hover: rgba(255, 255, 255, 0.25);
         }
 
         body, html { 
             height: 100%; 
             width: 100vw;
-            font-family: 'Inter', 'Segoe UI', Roboto, sans-serif; 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
             background: var(--bg-principal); 
             color: var(--texto-base); 
             overflow: hidden; 
@@ -27,20 +28,30 @@
 
         .btn-voltar { 
             position: absolute; 
-            top: 30px; 
-            left: 30px; 
+            top: 25px; 
+            left: 25px; 
             z-index: 10; 
             background: var(--bg-painel); 
             color: var(--texto-puro); 
-            padding: 12px 24px; 
+            padding: 12px 22px; 
             text-decoration: none; 
-            border-radius: 6px; 
+            border-radius: 8px; 
             border: 1px solid var(--borda-sutil); 
-            transition: 0.3s;
-            font-weight: 600;
-            backdrop-filter: blur(5px);
+            transition: all 0.3s ease;
+            font-weight: 500;
+            font-size: 0.9rem;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
         }
-        .btn-voltar:hover { background: rgba(255,255,255,0.1); }
+        
+        .btn-voltar:hover { 
+            background: rgba(255, 255, 255, 0.12); 
+            border-color: var(--borda-hover);
+            transform: translateY(-1px);
+        }
 
         #canvas-energia { 
             position: absolute; 
@@ -60,96 +71,147 @@
             height: 100vh;
         }
 
-        /* Esfera centralizada corretamente */
+        @media (max-width: 850px) {
+            .main-container {
+                flex-direction: column;
+            }
+        }
+
+        /* Esfera Central */
         .area-nucleo { 
             flex: 1; 
             display: flex; 
             justify-content: center; 
             align-items: center; 
+            position: relative;
         }
 
         .area-stats { 
-            width: 400px; 
+            width: 380px; 
             background: var(--bg-painel); 
-            backdrop-filter: blur(15px); 
-            -webkit-backdrop-filter: blur(15px);
+            backdrop-filter: blur(20px); 
+            -webkit-backdrop-filter: blur(20px);
             border-left: 1px solid var(--borda-sutil); 
-            padding: 50px 40px; 
+            padding: 40px 35px; 
             display: flex; 
             flex-direction: column; 
             justify-content: center; 
-            gap: 2rem; 
-            box-shadow: -10px 0 30px rgba(0,0,0,0.5); 
+            gap: 1.8rem; 
+            box-shadow: -10px 0 40px rgba(0,0,0,0.8); 
         }
 
-        /* Tons de cinza e prata para a esfera de energia */
-        .nucleo { border-radius: 50%; transition: all 1s ease-in-out; position: relative; }
-        .nivel-1 { width: 60px; height: 60px; background: #333333; box-shadow: 0 0 20px rgba(255,255,255,0.2); animation: pulse-suave 3s infinite; }
-        .nivel-2 { width: 100px; height: 100px; background: #666666; box-shadow: 0 0 40px rgba(255,255,255,0.4); animation: pulse-suave 2s infinite; }
-        .nivel-3 { width: 140px; height: 140px; background: #a0a0a0; box-shadow: 0 0 60px rgba(255,255,255,0.6); animation: pulse-cardiaco 1.5s infinite; }
-        .nivel-4 { width: 180px; height: 180px; background: #e0e0e0; box-shadow: 0 0 80px rgba(255,255,255,0.8); animation: pulse-sol 3s infinite alternate; }
-        .nivel-5 { width: 200px; height: 200px; background: #000000; border: 4px solid #ffffff; box-shadow: 0 0 100px #ffffff; animation: pulse-singularidade 4s infinite linear; }
-        
-        @keyframes pulse-suave { 0%, 100% { transform: scale(0.95); opacity: 0.8; } 50% { transform: scale(1.05); opacity: 1; } }
-        @keyframes pulse-cardiaco { 0%, 30%, 100% { transform: scale(0.95); } 15% { transform: scale(1.05); } 45% { transform: scale(1.02); } }
-        @keyframes pulse-sol { 0% { transform: scale(0.98); box-shadow: 0 0 60px rgba(255,255,255,0.5); } 100% { transform: scale(1.02); box-shadow: 0 0 100px rgba(255,255,255,0.9); } }
-        @keyframes pulse-singularidade { 0% { transform: rotate(0deg) scale(1); box-shadow: 0 0 60px rgba(255,255,255,0.7); } 50% { transform: rotate(180deg) scale(1.05); box-shadow: 0 0 120px rgba(255,255,255,1); } 100% { transform: rotate(360deg) scale(1); box-shadow: 0 0 60px rgba(255,255,255,0.7); } }
+        @media (max-width: 850px) {
+            .area-stats {
+                width: 100%;
+                height: 40%;
+                border-left: none;
+                border-top: 1px solid var(--borda-sutil);
+                padding: 25px;
+            }
+        }
 
-        .titulo { font-size: 1.5rem; font-weight: 300; margin: 0; color: var(--texto-mutado); text-transform: uppercase; letter-spacing: 2px;}
-        .nivel-display { font-size: 3.5rem; color: var(--texto-puro); font-weight: 800; margin-bottom: 1rem; text-shadow: 0 0 20px rgba(255,255,255,0.2);}
+        /* Estágios da Esfera de Energia */
+        .nucleo { 
+            border-radius: 50%; 
+            transition: all 1.2s cubic-bezier(0.4, 0, 0.2, 1); 
+            position: relative; 
+        }
+
+        .nivel-1 { width: 70px; height: 70px; background: #333333; box-shadow: 0 0 30px rgba(255,255,255,0.15); animation: pulse-suave 3s infinite ease-in-out; }
+        .nivel-2 { width: 110px; height: 110px; background: #555555; box-shadow: 0 0 50px rgba(255,255,255,0.35); animation: pulse-suave 2.2s infinite ease-in-out; }
+        .nivel-3 { width: 150px; height: 150px; background: #888888; box-shadow: 0 0 70px rgba(255,255,255,0.55); animation: pulse-cardiaco 1.6s infinite ease-in-out; }
+        .nivel-4 { width: 190px; height: 190px; background: #cccccc; box-shadow: 0 0 90px rgba(255,255,255,0.8); animation: pulse-sol 3s infinite alternate ease-in-out; }
+        .nivel-5 { width: 220px; height: 220px; background: #000000; border: 3px solid #ffffff; box-shadow: 0 0 110px #ffffff; animation: pulse-singularidade 4s infinite linear; }
         
-        .stat-card { background: rgba(0,0,0,0.4); border: 1px solid var(--borda-sutil); padding: 20px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; }
-        .stat-label { font-size: 0.9rem; color: var(--texto-mutado); text-transform: uppercase; font-weight: 600;}
-        .stat-value { font-size: 1.4rem; font-weight: bold; color: var(--texto-puro); }
+        @keyframes pulse-suave { 
+            0%, 100% { transform: scale(0.96); opacity: 0.85; } 
+            50% { transform: scale(1.04); opacity: 1; } 
+        }
+        @keyframes pulse-cardiaco { 
+            0%, 30%, 100% { transform: scale(0.95); } 
+            15% { transform: scale(1.05); } 
+            45% { transform: scale(1.02); } 
+        }
+        @keyframes pulse-sol { 
+            0% { transform: scale(0.97); box-shadow: 0 0 60px rgba(255,255,255,0.5); } 
+            100% { transform: scale(1.03); box-shadow: 0 0 110px rgba(255,255,255,0.95); } 
+        }
+        @keyframes pulse-singularidade { 
+            0% { transform: rotate(0deg) scale(1); box-shadow: 0 0 70px rgba(255,255,255,0.7); } 
+            50% { transform: rotate(180deg) scale(1.05); box-shadow: 0 0 130px rgba(255,255,255,1); } 
+            100% { transform: rotate(360deg) scale(1); box-shadow: 0 0 70px rgba(255,255,255,0.7); } 
+        }
+
+        .titulo { font-size: 0.85rem; font-weight: 600; margin-bottom: 5px; color: var(--texto-mutado); text-transform: uppercase; letter-spacing: 2px;}
+        .nivel-display { font-size: 3.2rem; color: var(--texto-puro); font-weight: 800; letter-spacing: -1px; text-shadow: 0 0 20px rgba(255,255,255,0.2);}
+        
+        .stat-card { 
+            background: rgba(0,0,0,0.4); 
+            border: 1px solid var(--borda-sutil); 
+            padding: 18px 22px; 
+            border-radius: 10px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            transition: border-color 0.3s;
+        }
+        .stat-card:hover {
+            border-color: var(--borda-hover);
+        }
+        .stat-label { font-size: 0.85rem; color: var(--texto-mutado); text-transform: uppercase; font-weight: 600;}
+        .stat-value { font-size: 1.3rem; font-weight: 700; color: var(--texto-puro); }
     </style>
 </head>
 <body>
 
-    <a href="/" class="btn-voltar">Voltar ao Edital</a>
+    <a href="/" class="btn-voltar">← Voltar ao Dashboard</a>
     <canvas id="canvas-energia"></canvas>
 
     <div class="main-container">
+        <!-- ÁREA CENTRAL DA ESFERA -->
         <div class="area-nucleo">
             <div id="meu-nucleo" class="nucleo nivel-1"></div>
         </div>
 
+        <!-- PAINEL DE ESTATÍSTICAS -->
         <div class="area-stats">
             <div>
-                <h1 class="titulo">Nível Atual</h1>
+                <div class="titulo">Nível Atual</div>
                 <div id="txt-nivel" class="nivel-display">Nível 1</div>
             </div>
             
             <div class="stat-card">
-                <span class="stat-label">Sequência de Estudos</span>
-                <span id="txt-dias-seguidos" class="stat-value">Carregando...</span>
+                <span class="stat-label">Sequência</span>
+                <span id="txt-dias-seguidos" class="stat-value">...</span>
             </div>
             
             <div class="stat-card">
-                <span class="stat-label">Pontuação Total</span>
-                <span id="txt-xp-total" class="stat-value">Carregando...</span>
+                <span class="stat-label">Pontuação (XP)</span>
+                <span id="txt-xp-total" class="stat-value">...</span>
             </div>
         </div>
     </div>
 
-<script>
+    <script>
     async function carregarDadosReais() {
         try {
             const res = await fetch('/api/dados');
             const data = await res.json();
             
-            // Carrega XP
-            const xpReal = data.xp || 0;
-            document.getElementById('txt-xp-total').innerText = xpReal;
+            // 1. Carrega o XP com o nome correto
+            const xpTotal = data.xp || 0;
+            document.getElementById('txt-xp-total').innerText = xpTotal.toLocaleString('pt-BR');
             
-            // Carrega Dias Seguidos Dinamicamente
+            // 2. Carrega Dias Seguidos
             const diasSeguidos = data.dias_seguidos || 0;
             const textoDias = diasSeguidos === 1 ? 'Dia' : 'Dias';
             document.getElementById('txt-dias-seguidos').innerText = `${diasSeguidos} ${textoDias}`;
             
-            // Calcula e ajusta o nível
-            const nivel = Math.floor(Math.sqrt(xpReal / 50)) + 1; 
+            // 3. Calcula o nível usando 'xpTotal'
+            const nivel = Math.floor(Math.sqrt(xpTotal / 50)) + 1;
             document.getElementById('txt-nivel').innerText = `Nível ${nivel}`;
             
+            // 4. Atualiza a classe da esfera de energia
             const nucleo = document.getElementById('meu-nucleo');
             nucleo.className = 'nucleo'; 
 
@@ -158,119 +220,73 @@
             else if (nivel < 60) nucleo.classList.add('nivel-3');
             else if (nivel < 100) nucleo.classList.add('nivel-4');
             else nucleo.classList.add('nivel-5');
-        } catch(e) { console.error("Erro ao carregar dados:", e); }
-    }
 
-    const canvas = document.getElementById('canvas-energia');
-    const ctx = canvas.getContext('2d');
-    let width, height, particulas = [];
-
-    function resize() { 
-        width = canvas.width = window.innerWidth; 
-        height = canvas.height = window.innerHeight; 
-    }
-    window.addEventListener('resize', resize);
-    resize();
-
-    class Particula {
-        constructor() { 
-            this.x = Math.random() * width; 
-            this.y = Math.random() * height; 
-            this.tamanho = Math.random() * 1.5; 
-            this.vx = (Math.random() - 0.5) * 0.5; 
-            this.vy = (Math.random() - 0.5) * 0.5; 
-        }
-        update() { 
-            this.x += this.vx; 
-            this.y += this.vy; 
-            if(this.x < 0 || this.x > width) this.vx *= -1; 
-            if(this.y < 0 || this.y > height) this.vy *= -1; 
-        }
-        draw() { 
-            ctx.fillStyle = `rgba(255, 255, 255, 0.3)`; 
-            ctx.beginPath(); 
-            ctx.arc(this.x, this.y, this.tamanho, 0, Math.PI * 2); 
-            ctx.fill(); 
+        } catch(e) { 
+            console.error("Erro ao carregar dados:", e); 
         }
     }
-    
-    for(let i = 0; i < 150; i++) particulas.push(new Particula());
 
-    function animarCanvas() {
-        ctx.clearRect(0, 0, width, height);
-        particulas.forEach(p => { p.update(); p.draw(); });
-        requestAnimationFrame(animarCanvas);
-    }
-    
-    animarCanvas();
-    carregarDadosReais();
-</script>
-<script>
-        // === SISTEMA DE FOCO DECRESCENTE (POMODORO) ===
+        /* ANIMAÇÃO DE PARTÍCULAS NO CANVAS */
+        const canvas = document.getElementById('canvas-energia');
+        const ctx = canvas.getContext('2d');
+        let width, height, particulas = [];
+
+        function resize() { 
+            width = canvas.width = window.innerWidth; 
+            height = canvas.height = window.innerHeight; 
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        class Particula {
+            constructor() { 
+                this.reset();
+            }
+            reset() {
+                this.x = Math.random() * width; 
+                this.y = Math.random() * height; 
+                this.tamanho = Math.random() * 1.5 + 0.5; 
+                this.vx = (Math.random() - 0.5) * 0.4; 
+                this.vy = (Math.random() - 0.5) * 0.4; 
+                this.opacidade = Math.random() * 0.4 + 0.1;
+            }
+            update() { 
+                this.x += this.vx; 
+                this.y += this.vy; 
+                if(this.x < 0 || this.x > width) this.vx *= -1; 
+                if(this.y < 0 || this.y > height) this.vy *= -1; 
+            }
+            draw() { 
+                ctx.fillStyle = `rgba(255, 255, 255, ${this.opacidade})`; 
+                ctx.beginPath(); 
+                ctx.arc(this.x, this.y, this.tamanho, 0, Math.PI * 2); 
+                ctx.fill(); 
+            }
+        }
+        
+        for(let i = 0; i < 120; i++) particulas.push(new Particula());
+
+        function animarCanvas() {
+            ctx.clearRect(0, 0, width, height);
+            particulas.forEach(p => { p.update(); p.draw(); });
+            requestAnimationFrame(animarCanvas);
+        }
+        
+        animarCanvas();
+        carregarDadosReais();
+    </script>
+
+    <script>
+        /* SISTEMA DE FOCO (SINCRO EM SEGUNDO PLANO) */
         let relogioIntervalo;
         let tempoTotalDefinido = parseInt(localStorage.getItem('foco_total_segundos')) || 0;
         let tempoFim = parseInt(localStorage.getItem('foco_fim_timestamp')) || 0;
         let estaRodando = localStorage.getItem('foco_rodando') === 'true';
-        let idDisciplinaAtual = localStorage.getItem('foco_disciplina') || "";
-
-        const displayRelogio = document.getElementById('relogio-global');
-        const btnRelogio = document.getElementById('btn-relogio');
-        const selectDisciplina = document.getElementById('select-disciplina');
-        const inputMinutos = document.getElementById('input-minutos');
-
-        async function carregarDisciplinasSelect() {
-            if (!selectDisciplina) return; 
-            try {
-                const res = await fetch('/api/dados');
-                const dadosApp = await res.json();
-                const edital = dadosApp.edital || [];
-                
-                selectDisciplina.innerHTML = '<option value="">Selecione a Disciplina...</option>';
-                edital.forEach(disc => {
-                    const option = document.createElement('option');
-                    option.value = disc.id || disc.nome;
-                    option.innerText = disc.nome;
-                    selectDisciplina.appendChild(option);
-                });
-                if (idDisciplinaAtual) selectDisciplina.value = idDisciplinaAtual;
-            } catch (e) { console.error(e); }
-        }
-
-        function formatarTempo(seg) {
-            if (seg <= 0) return "00:00:00";
-            const h = String(Math.floor(seg / 3600)).padStart(2, '0');
-            const m = String(Math.floor((seg % 3600) / 60)).padStart(2, '0');
-            const s = String(seg % 60).padStart(2, '0');
-            return `${h}:${m}:${s}`;
-        }
 
         function atualizarTelaRelogio() {
-            if (!estaRodando && tempoTotalDefinido === 0) {
-                if (displayRelogio) displayRelogio.innerText = "00:00:00";
-                return;
-            }
-
+            if (!estaRodando && tempoTotalDefinido === 0) return;
             let tempoRestante = Math.max(0, Math.floor((tempoFim - Date.now()) / 1000));
-            
-            if (displayRelogio && btnRelogio && selectDisciplina && inputMinutos) {
-                displayRelogio.innerText = formatarTempo(tempoRestante);
-                
-                if (estaRodando) {
-                    btnRelogio.innerText = "Em Foco...";
-                    btnRelogio.disabled = true;
-                    btnRelogio.style.opacity = "0.5";
-                    selectDisciplina.disabled = true;
-                    inputMinutos.disabled = true;
-                } else {
-                    btnRelogio.innerText = "▶ Iniciar";
-                    btnRelogio.disabled = false;
-                    btnRelogio.style.opacity = "1";
-                    selectDisciplina.disabled = false;
-                    inputMinutos.disabled = false;
-                }
-            }
 
-            // Quando o tempo zera!
             if (estaRodando && tempoRestante <= 0) {
                 estaRodando = false;
                 clearInterval(relogioIntervalo);
@@ -278,67 +294,14 @@
             }
         }
 
-        function alternarRelogio() {
-            if (selectDisciplina && !selectDisciplina.value) {
-                alert("Selecione uma disciplina primeiro!");
-                return;
-            }
-            let minutos = parseInt(inputMinutos.value);
-            if (isNaN(minutos) || minutos <= 0) {
-                alert("Digite um tempo válido em minutos.");
-                return;
-            }
-
-            tempoTotalDefinido = minutos * 60;
-            tempoFim = Date.now() + (tempoTotalDefinido * 1000);
-            
-            localStorage.setItem('foco_total_segundos', tempoTotalDefinido);
-            localStorage.setItem('foco_fim_timestamp', tempoFim);
-            localStorage.setItem('foco_rodando', 'true');
-            if (selectDisciplina) localStorage.setItem('foco_disciplina', selectDisciplina.value);
-            
-            estaRodando = true;
-            relogioIntervalo = setInterval(atualizarTelaRelogio, 1000);
-            atualizarTelaRelogio();
-        }
-
-        function cancelarFoco() {
-            if (!estaRodando) return;
-            if(confirm("Deseja realmente cancelar este foco? O tempo não será salvo.")) {
-                limparFocoLocal();
-            }
-        }
-
-        function limparFocoLocal() {
-            estaRodando = false;
-            clearInterval(relogioIntervalo);
-            localStorage.removeItem('foco_total_segundos');
-            localStorage.removeItem('foco_fim_timestamp');
-            localStorage.removeItem('foco_rodando');
-            localStorage.removeItem('foco_disciplina');
-            tempoTotalDefinido = 0;
-            if(btnRelogio) {
-                btnRelogio.innerText = "▶ Iniciar";
-                btnRelogio.disabled = false;
-                btnRelogio.style.opacity = "1";
-            }
-            if(selectDisciplina) selectDisciplina.disabled = false;
-            if(inputMinutos) inputMinutos.disabled = false;
-            atualizarTelaRelogio();
-        }
-
         async function salvarFocoConcluido() {
-            alert("🎯 Parabéns! Bloco de foco concluído. Salvando dados...");
-            
             try {
                 const res = await fetch('/api/dados');
                 let dados = await res.json();
 
-                // Soma o tempo e XP
                 dados.tempo_total = (dados.tempo_total || 0) + tempoTotalDefinido;
                 dados.xp = (dados.xp || 0) + Math.floor(tempoTotalDefinido / 60);
                 
-                // Lógica de Ofensiva (Dias Seguidos)
                 const hoje = new Date().toLocaleDateString('pt-BR');
                 if (dados.ultimo_acesso !== hoje) {
                     dados.dias_seguidos = (dados.dias_seguidos || 0) + 1;
@@ -351,18 +314,19 @@
                     body: JSON.stringify(dados)
                 });
 
-                limparFocoLocal();
-                window.location.reload(); // Recarrega para atualizar a tela inicial
+                localStorage.removeItem('foco_total_segundos');
+                localStorage.removeItem('foco_fim_timestamp');
+                localStorage.removeItem('foco_rodando');
+                localStorage.removeItem('foco_disciplina');
+
+                // Recarrega os dados na tela para a esfera crescer na hora
+                carregarDadosReais(); 
             } catch (e) {
-                console.error("Erro ao salvar:", e);
-                alert("Erro ao salvar o progresso.");
+                console.error("Erro ao salvar progresso de foco:", e);
             }
         }
 
-        // INICIALIZAÇÃO
-        carregarDisciplinasSelect();
         if (estaRodando) relogioIntervalo = setInterval(atualizarTelaRelogio, 1000);
-        atualizarTelaRelogio();
     </script>
 
 </body>
