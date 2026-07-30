@@ -56,6 +56,10 @@ def nucleo():
 def rotina():
     return render_template('rotina.html')
 
+@app.route('/cadernos')
+def cadernos():
+    return render_template('cadernos.html')
+
 @app.route('/estatistica')
 def estatistica():
     return render_template('estatistica.html')

@@ -47,6 +47,21 @@
             flex-direction: column;
             box-shadow: 5px 0 15px rgba(0,0,0,0.5);
             z-index: 10;
+            overflow-y: auto;
+        }
+        /* ESTILIZAÇÃO DO SCROLLBAR DA SIDEBAR */
+        .sidebar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .sidebar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .sidebar::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 10px;
+        }
+        .sidebar::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.3);
         }
 
         .status-panel {
@@ -111,6 +126,8 @@
         <a href="/agenda" class="nav-btn {% if request.path == '/agenda' %}active{% endif %}">Agenda / Calendário</a>
         <a href="/estatistica" class="nav-btn {% if request.path == '/estatistica' %}active{% endif %}">Estatística</a>
         <a href="/forum" class="nav-btn {% if request.path == '/forum' %}active{% endif %}">Fórum</a>
+        <a href="/cadernos" class="nav-btn {% if request.path == '/cadernos' %}active{% endif %}">Cadernos de Questões</a>
+        
     </aside>
 
     <!-- CONTEÚDO DA PÁGINA ESPECÍFICA -->
@@ -306,6 +323,7 @@
             if (!xp || xp < 0) return 1;
             return Math.floor(Math.sqrt(xp / 50)) + 1; // Ou a fórmula padrão que preferir
         };
+        
         async function salvarFocoConcluido() {
             alert("Parabéns! Bloco de foco concluído.");
             try {

@@ -1,0 +1,519 @@
+{% extends "base.html" %}
+
+{% block titulo %}Cadernos de Questões{% endblock %}
+
+{% block estilos %}
+<style>
+    /* Estilos baseados no seu design */
+    .header-topo { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+    .header-topo h1 { font-size: 1.8rem; color: var(--texto-puro); }
+    
+    /* Biblioteca de Cadernos */
+    .grid-biblioteca {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 20px;
+        margin-bottom: 40px;
+    }
+    
+    .card-biblioteca {
+        background: var(--bg-card);
+        border: 1px solid var(--borda-sutil);
+        border-radius: 12px;
+        padding: 20px;
+        transition: 0.3s;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .card-biblioteca:hover {
+        border-color: var(--borda-hover);
+        transform: translateY(-3px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+    }
+    
+    .tag-assunto {
+        background: rgba(255, 255, 255, 0.1);
+        color: var(--texto-mutado);
+        font-size: 0.75rem;
+        padding: 4px 8px;
+        border-radius: 4px;
+        align-self: flex-start;
+        margin-bottom: 10px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+    
+    .titulo-card { color: var(--texto-puro); font-size: 1.2rem; margin-bottom: 15px; font-weight: bold; }
+    .arquivo-info { color: var(--texto-mutado); font-size: 0.85rem; margin-bottom: 20px; font-family: monospace; }
+    
+    .botoes-card {
+        display: flex;
+        gap: 10px;
+        margin-top: auto;
+    }
+    
+    /* Botões Gerais */
+    .btn-primario { background: var(--btn-primario-bg); color: var(--btn-primario-texto); padding: 10px 16px; border-radius: 6px; border: none; font-weight: bold; cursor: pointer; transition: 0.3s; flex: 1; text-align: center; }
+    .btn-primario:hover:not(:disabled) { transform: translateY(-2px); }
+    .btn-primario:disabled { opacity: 0.5; cursor: not-allowed; }
+    
+    .btn-secundario { background: transparent; color: var(--texto-base); padding: 10px 16px; border-radius: 6px; border: 1px solid var(--borda-sutil); font-weight: bold; cursor: pointer; transition: 0.3s; flex: 1; text-align: center; }
+    .btn-secundario:hover { background: rgba(255,255,255,0.05); color: var(--texto-puro); }
+    
+    .btn-icone { background: transparent; border: 1px solid var(--borda-sutil); color: var(--texto-mutado); padding: 10px; border-radius: 6px; cursor: pointer; transition: 0.3s; }
+    .btn-icone:hover { color: var(--texto-puro); border-color: var(--borda-hover); background: rgba(255,255,255,0.05); }
+    .btn-icone.excluir:hover { color: #f44336; border-color: #f44336; background: rgba(244, 67, 54, 0.1); }
+
+    /* Modal de Cadastro */
+    .modal-overlay {
+        position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+        background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(5px);
+        display: none; align-items: center; justify-content: center; z-index: 100;
+    }
+    .modal-content {
+        background: #1a1a1a; border: 1px solid var(--borda-sutil); border-radius: 12px;
+        padding: 30px; width: 100%; max-width: 450px;
+    }
+    .input-form {
+        width: 100%; padding: 12px; margin-bottom: 15px; border-radius: 6px;
+        background: rgba(0,0,0,0.5); border: 1px solid var(--borda-sutil); color: white;
+    }
+    .input-form:focus { outline: none; border-color: var(--texto-puro); }
+
+    /* O restante do CSS da Questão */
+    .header-caderno { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; flex-wrap: wrap; gap: 15px; }
+    .header-caderno h1 { font-size: 1.6rem; color: var(--texto-puro); }
+    .badge-progresso { background: rgba(255, 255, 255, 0.1); padding: 6px 12px; border-radius: 8px; font-weight: 600; color: var(--texto-mutado); border: 1px solid var(--borda-sutil); }
+    .card-questao { background: var(--bg-card); border: 1px solid var(--borda-sutil); border-radius: 12px; padding: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); margin-bottom: 30px; }
+    .enunciado { font-size: 1.1rem; line-height: 1.6; color: var(--texto-puro); margin-bottom: 25px; white-space: pre-wrap; }
+    .lista-opcoes { display: flex; flex-direction: column; gap: 12px; margin-bottom: 25px; }
+    .opcao-item { background: rgba(0, 0, 0, 0.4); border: 1px solid var(--borda-sutil); border-radius: 8px; padding: 15px; cursor: pointer; display: flex; align-items: center; gap: 15px; transition: all 0.2s ease; color: var(--texto-base); }
+    .opcao-item:hover { background: rgba(255, 255, 255, 0.05); border-color: var(--borda-hover); }
+    .opcao-item.selecionada { border-color: var(--texto-puro); background: rgba(255, 255, 255, 0.1); }
+    .opcao-item.correta { border-color: #4caf50; background: rgba(76, 175, 80, 0.15); }
+    .opcao-item.errada { border-color: #f44336; background: rgba(244, 67, 54, 0.15); }
+    .letra-opcao { background: var(--bg-painel); color: var(--texto-mutado); width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; border: 1px solid var(--borda-sutil); }
+    .opcao-item.selecionada .letra-opcao { background: var(--texto-puro); color: #000; border-color: var(--texto-puro); }
+    .feedback-box { margin-top: 20px; padding: 15px; border-radius: 8px; display: none; font-size: 0.95rem; line-height: 1.5; }
+    .feedback-box.sucesso { background: rgba(76, 175, 80, 0.1); border: 1px solid rgba(76, 175, 80, 0.3); color: #81c784; }
+    .feedback-box.erro { background: rgba(244, 67, 54, 0.1); border: 1px solid rgba(244, 67, 54, 0.3); color: #e57373; }
+    .controles-questao { display: flex; justify-content: space-between; gap: 15px; border-top: 1px solid var(--borda-sutil); padding-top: 20px; }
+    .grupo-botoes-nav { display: flex; gap: 10px; }
+    .grid-estatisticas { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 15px; margin: 30px 0; }
+    .stat-box { background: rgba(0,0,0,0.3); border: 1px solid var(--borda-sutil); padding: 20px; border-radius: 10px; }
+    .stat-box .valor { font-size: 2rem; font-weight: bold; margin-bottom: 5px; }
+</style>
+{% endblock %}
+
+{% block conteudo %}
+<div style="max-width: 1000px; margin: 0 auto; width: 100%;">
+    
+    <!-- TELA 1: Biblioteca de Cadernos -->
+    <div id="tela-biblioteca">
+        <div class="header-topo">
+            <h1>📚 Meus Cadernos</h1>
+            <button class="btn-primario" style="flex: none; width: auto;" onclick="abrirModal()">+ Novo Caderno</button>
+        </div>
+        
+        <div id="grid-cadernos" class="grid-biblioteca">
+            <!-- Os cadernos serão injetados aqui via JS -->
+        </div>
+    </div>
+
+    <!-- Modal para Cadastrar/Editar Caderno -->
+    <div id="modal-caderno" class="modal-overlay">
+        <div class="modal-content">
+            <h2 id="modal-titulo" style="margin-bottom: 20px; color: white;">Registrar Caderno</h2>
+            <input type="hidden" id="form-id">
+            
+            <label style="color: var(--texto-mutado); font-size: 0.85rem; margin-bottom: 5px; display: block;">Nome do Arquivo JSON (ex: const.json)</label>
+            <input type="text" id="form-arquivo" class="input-form" placeholder="Nome exato do arquivo na pasta static/cadernos">
+            
+            <label style="color: var(--texto-mutado); font-size: 0.85rem; margin-bottom: 5px; display: block;">Título do Caderno</label>
+            <input type="text" id="form-titulo" class="input-form" placeholder="Ex: Direitos e Garantias Fundamentais">
+            
+            <label style="color: var(--texto-mutado); font-size: 0.85rem; margin-bottom: 5px; display: block;">Assunto / Disciplina</label>
+            <input type="text" id="form-assunto" class="input-form" placeholder="Ex: Direito Constitucional">
+            
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button class="btn-secundario" onclick="fecharModal()">Cancelar</button>
+                <button class="btn-primario" onclick="salvarCaderno()">Salvar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TELA 2: Interface da Questão -->
+    <div id="tela-questoes" style="display: none;">
+        <div class="header-caderno">
+            <div>
+                <button class="btn-secundario" style="padding: 5px 10px; font-size: 0.8rem; margin-bottom: 10px;" onclick="location.reload()">⬅ Sair do Caderno</button>
+                <h1 id="titulo-caderno-resolucao">Carregando...</h1>
+            </div>
+            <div id="progresso-texto" class="badge-progresso">0 / 0</div>
+        </div>
+
+        <div class="card-questao">
+            <div id="enunciado-questao" class="enunciado"></div>
+            <div id="container-opcoes" class="lista-opcoes"></div>
+            
+            <div id="box-feedback" class="feedback-box"></div>
+
+            <div class="controles-questao">
+                <div class="grupo-botoes-nav">
+                    <button id="btn-anterior" class="btn-secundario" onclick="questaoAnterior()" style="display: none;">⬅ Anterior</button>
+                    <button id="btn-proxima" class="btn-secundario" onclick="proximaQuestao()">Próxima ➔</button>
+                </div>
+                
+                <div class="grupo-botoes-nav">
+                    <button id="btn-responder" class="btn-primario" onclick="responderQuestao()" disabled>Responder</button>
+                    <button id="btn-finalizar" class="btn-primario" style="background: #4caf50; display: none;" onclick="finalizarCaderno()">Finalizar Caderno 🏁</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TELA 3: Tela de Resultados Final -->
+    <div id="tela-resultado" class="card-questao" style="display: none; text-align: center; padding: 40px 20px;">
+        <h1 style="color: var(--texto-puro); margin-bottom: 10px;">Desempenho Final 🎉</h1>
+        
+        <div class="grid-estatisticas">
+            <div class="stat-box">
+                <div id="res-porcentagem" class="valor" style="color: #2196f3;">0%</div>
+                <div style="color: var(--texto-mutado); font-size: 0.9rem;">Precisão</div>
+            </div>
+            <div class="stat-box">
+                <div id="res-acertos" class="valor" style="color: #4caf50;">0</div>
+                <div style="color: var(--texto-mutado); font-size: 0.9rem;">Acertos</div>
+            </div>
+            <div class="stat-box">
+                <div id="res-erros" class="valor" style="color: #f44336;">0</div>
+                <div style="color: var(--texto-mutado); font-size: 0.9rem;">Erros</div>
+            </div>
+            <div class="stat-box">
+                <div id="res-pulos" class="valor" style="color: #ff9800;">0</div>
+                <div style="color: var(--texto-mutado); font-size: 0.9rem;">Em Branco</div>
+            </div>
+        </div>
+
+        <div style="background: rgba(255,255,255,0.05); padding: 20px; border-radius: 8px; display: inline-block; margin-bottom: 30px;">
+            <span style="color: var(--texto-mutado); text-transform: uppercase; font-size: 0.8rem;">XP Adquirido</span>
+            <div id="resultado-xp" style="font-size: 2rem; font-weight: bold; color: #ff9800; margin-top: 5px;">+0 XP</div>
+        </div>
+        <br>
+        <button class="btn-primario" onclick="location.reload()">Voltar à Biblioteca</button>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let dadosUsuario = {};
+    let cadernoAtual = null;
+    let indiceAtual = 0;
+    let opcaoSelecionada = null;
+
+    window.onload = async () => {
+        try {
+            const res = await fetch('/api/dados');
+            dadosUsuario = await res.json();
+            
+            if (!dadosUsuario.cadernos_salvos) {
+                dadosUsuario.cadernos_salvos = [];
+            }
+            
+            atualizarStatusSidebar(dadosUsuario.xp || 0);
+            renderizarBiblioteca();
+            
+        } catch (erro) {
+            console.error("Erro ao carregar dados:", erro);
+        }
+    };
+
+    function atualizarStatusSidebar(xp) {
+        const elemXp = document.getElementById('xp-display');
+        const elemNivel = document.getElementById('nivel-display');
+        if (elemXp) elemXp.innerText = xp;
+        if (elemNivel) elemNivel.innerText = `Nível ${Math.floor(Math.sqrt(xp / 50)) + 1}`;
+    }
+
+    // --- Lógica da Biblioteca ---
+    function renderizarBiblioteca() {
+        const grid = document.getElementById('grid-cadernos');
+        grid.innerHTML = '';
+        
+        if (dadosUsuario.cadernos_salvos.length === 0) {
+            grid.innerHTML = `<p style="color: var(--texto-mutado); grid-column: 1 / -1; text-align: center; padding: 40px;">Você ainda não registrou nenhum caderno. Clique em "+ Novo Caderno".</p>`;
+            return;
+        }
+
+        dadosUsuario.cadernos_salvos.forEach((cad, index) => {
+            const card = document.createElement('div');
+            card.className = 'card-biblioteca';
+            card.innerHTML = `
+                <div class="tag-assunto">${cad.assunto || 'Sem Assunto'}</div>
+                <div class="titulo-card">${cad.titulo || 'Caderno Sem Título'}</div>
+                <div class="arquivo-info">📄 ${cad.arquivo}</div>
+                <div class="botoes-card">
+                    <button class="btn-primario" onclick="iniciarCaderno('${cad.arquivo}', '${cad.titulo}')">▶ Iniciar</button>
+                    <button class="btn-icone" title="Editar" onclick="abrirModal(${index})">✏️</button>
+                    <button class="btn-icone excluir" title="Excluir" onclick="excluirCaderno(${index})">🗑️</button>
+                </div>
+            `;
+            grid.appendChild(card);
+        });
+    }
+
+    function abrirModal(index = null) {
+        document.getElementById('modal-caderno').style.display = 'flex';
+        if (index !== null) {
+            const cad = dadosUsuario.cadernos_salvos[index];
+            document.getElementById('modal-titulo').innerText = "Editar Caderno";
+            document.getElementById('form-id').value = index;
+            document.getElementById('form-arquivo').value = cad.arquivo;
+            document.getElementById('form-titulo').value = cad.titulo;
+            document.getElementById('form-assunto').value = cad.assunto;
+        } else {
+            document.getElementById('modal-titulo').innerText = "Registrar Caderno";
+            document.getElementById('form-id').value = "";
+            document.getElementById('form-arquivo').value = "";
+            document.getElementById('form-titulo').value = "";
+            document.getElementById('form-assunto').value = "";
+        }
+    }
+
+    function fecharModal() {
+        document.getElementById('modal-caderno').style.display = 'none';
+    }
+
+    async function salvarCaderno() {
+        const index = document.getElementById('form-id').value;
+        const arquivo = document.getElementById('form-arquivo').value.trim();
+        const titulo = document.getElementById('form-titulo').value.trim();
+        const assunto = document.getElementById('form-assunto').value.trim();
+
+        if (!arquivo) return alert("O nome do arquivo é obrigatório!");
+
+        const novoCaderno = { arquivo, titulo, assunto };
+        if (index === "") dadosUsuario.cadernos_salvos.push(novoCaderno);
+        else dadosUsuario.cadernos_salvos[index] = novoCaderno;
+
+        fecharModal();
+        renderizarBiblioteca();
+        await salvarDadosNoServidor();
+    }
+
+    async function excluirCaderno(index) {
+        if (confirm("Deseja remover este caderno do catálogo?")) {
+            dadosUsuario.cadernos_salvos.splice(index, 1);
+            renderizarBiblioteca();
+            await salvarDadosNoServidor();
+        }
+    }
+
+    async function salvarDadosNoServidor() {
+        try {
+            await fetch('/api/dados', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(dadosUsuario)
+            });
+        } catch (erro) {
+            console.error("Erro ao salvar:", erro);
+        }
+    }
+
+    // --- Lógica de Resolução e Navegação ---
+    async function iniciarCaderno(nomeArquivo, tituloPersonalizado) {
+        try {
+            const resposta = await fetch(`/static/cadernos/${nomeArquivo}`);
+            if (!resposta.ok) throw new Error("Arquivo não encontrado.");
+            
+            let dadosBrutos = await resposta.json();
+            
+            // Garantir que temos um array de questões e resetar status
+            let arrayQuestoes = Array.isArray(dadosBrutos) ? dadosBrutos : dadosBrutos.questoes || [];
+            
+            arrayQuestoes = arrayQuestoes.map(q => ({
+                ...q,
+                respondida: false,
+                acertou: null,
+                opcaoMarcada: null
+            }));
+
+            cadernoAtual = { 
+                titulo: tituloPersonalizado || (dadosBrutos.titulo || "Caderno de Questões"), 
+                questoes: arrayQuestoes 
+            };
+            
+            document.getElementById('tela-biblioteca').style.display = 'none';
+            document.getElementById('tela-questoes').style.display = 'block';
+            document.getElementById('titulo-caderno-resolucao').innerText = cadernoAtual.titulo;
+            
+            indiceAtual = 0;
+            renderizarQuestaoAtual();
+
+        } catch (erro) {
+            alert(`Erro ao carregar "${nomeArquivo}". Verifique se o arquivo está na pasta static/cadernos.`);
+            console.error(erro);
+        }
+    }
+
+    function renderizarQuestaoAtual() {
+        const questao = cadernoAtual.questoes[indiceAtual];
+        opcaoSelecionada = null; // Reseta seleção atual temporária
+        
+        document.getElementById('progresso-texto').innerText = `${indiceAtual + 1} / ${cadernoAtual.questoes.length}`;
+        const textoEnunciado = questao.enunciado || questao.pergunta || "Sem enunciado";
+        document.getElementById('enunciado-questao').innerText = `ID: ${questao.id || 'N/A'}\n\n${textoEnunciado}`;
+        
+        const containerOpcoes = document.getElementById('container-opcoes');
+        containerOpcoes.innerHTML = '';
+        
+        let opcoesFormatadas = [];
+        if (questao.alternativas) {
+            if (Array.isArray(questao.alternativas)) {
+                const letrasBase = ['A', 'B', 'C', 'D', 'E'];
+                questao.alternativas.forEach((alt, index) => {
+                    let letra = letrasBase[index];
+                    let texto = alt;
+                    const match = alt.match(/^([A-E])[\)\-]\s*(.*)/i);
+                    if (match) { letra = match[1].toUpperCase(); texto = match[2]; }
+                    opcoesFormatadas.push({ letra, texto });
+                });
+            } else {
+                for (const [letra, texto] of Object.entries(questao.alternativas)) {
+                    opcoesFormatadas.push({ letra: letra.toUpperCase(), texto });
+                }
+            }
+        } else if (questao.opcoes) {
+            opcoesFormatadas = questao.opcoes;
+        }
+        
+        opcoesFormatadas.forEach(opcao => {
+            const div = document.createElement('div');
+            div.className = 'opcao-item';
+            div.onclick = () => selecionarOpcao(div, opcao.letra);
+            div.innerHTML = `
+                <div class="letra-opcao">${opcao.letra}</div>
+                <div style="flex: 1;">${opcao.texto}</div>
+            `;
+            containerOpcoes.appendChild(div);
+        });
+
+        // Visibilidade de Botões de Navegação
+        document.getElementById('btn-anterior').style.display = (indiceAtual > 0) ? 'inline-block' : 'none';
+        document.getElementById('btn-proxima').style.display = (indiceAtual < cadernoAtual.questoes.length - 1) ? 'inline-block' : 'none';
+        document.getElementById('btn-finalizar').style.display = (indiceAtual === cadernoAtual.questoes.length - 1) ? 'inline-block' : 'none';
+        
+        const boxFeedback = document.getElementById('box-feedback');
+        const btnResponder = document.getElementById('btn-responder');
+
+        // Restaura estado se já foi respondida
+        if (questao.respondida) {
+            opcaoSelecionada = questao.opcaoMarcada;
+            const respostaCerta = (questao.gabarito || questao.correta || "").toUpperCase();
+
+            document.querySelectorAll('.opcao-item').forEach(el => {
+                const letra = el.querySelector('.letra-opcao').innerText;
+                if (letra === questao.opcaoMarcada) el.classList.add('selecionada');
+                
+                if (letra === respostaCerta) {
+                    el.classList.add('correta');
+                } else if (letra === questao.opcaoMarcada && !questao.acertou) {
+                    el.classList.add('errada');
+                }
+            });
+
+            boxFeedback.style.display = 'block';
+            boxFeedback.className = `feedback-box ${questao.acertou ? 'sucesso' : 'erro'}`;
+            boxFeedback.innerHTML = `
+                <strong>${questao.acertou ? '✅ Resposta Correta!' : '❌ Resposta Incorreta.'}</strong><br><br>
+                ${questao.comentario ? questao.comentario : 'Sem comentários adicionais.'}
+            `;
+            
+            btnResponder.style.display = 'none';
+        } else {
+            // Estado virgem
+            boxFeedback.style.display = 'none';
+            btnResponder.style.display = 'inline-block';
+            btnResponder.disabled = true;
+        }
+    }
+
+    function selecionarOpcao(elementoClicado, letra) {
+        // Bloqueia clique se já foi respondida
+        if (cadernoAtual.questoes[indiceAtual].respondida) return;
+
+        document.querySelectorAll('.opcao-item').forEach(el => el.classList.remove('selecionada'));
+        elementoClicado.classList.add('selecionada');
+        opcaoSelecionada = letra;
+        document.getElementById('btn-responder').disabled = false;
+    }
+
+    function responderQuestao() {
+        const questao = cadernoAtual.questoes[indiceAtual];
+        const respostaCerta = (questao.gabarito || questao.correta || "").toUpperCase();
+        const acertou = (opcaoSelecionada === respostaCerta);
+        
+        // Salva estado na questão
+        questao.respondida = true;
+        questao.acertou = acertou;
+        questao.opcaoMarcada = opcaoSelecionada;
+
+        // Re-renderiza para aplicar feedback e travar a tela
+        renderizarQuestaoAtual();
+    }
+
+    function questaoAnterior() {
+        if (indiceAtual > 0) {
+            indiceAtual--;
+            renderizarQuestaoAtual();
+        }
+    }
+
+    function proximaQuestao() {
+        if (indiceAtual < cadernoAtual.questoes.length - 1) {
+            indiceAtual++;
+            renderizarQuestaoAtual();
+        }
+    }
+
+    async function finalizarCaderno() {
+        // Cálculo final vasculhando o array de questões
+        let totaisAcertos = 0;
+        let totaisErros = 0;
+        let totaisEmBranco = 0;
+
+        cadernoAtual.questoes.forEach(q => {
+            if (q.respondida) {
+                if (q.acertou) totaisAcertos++;
+                else totaisErros++;
+            } else {
+                totaisEmBranco++;
+            }
+        });
+
+        document.getElementById('tela-questoes').style.display = 'none';
+        document.getElementById('tela-resultado').style.display = 'block';
+        
+        const totalRespondidas = totaisAcertos + totaisErros;
+        let precisao = totalRespondidas > 0 ? Math.round((totaisAcertos / totalRespondidas) * 100) : 0;
+
+        document.getElementById('res-acertos').innerText = totaisAcertos;
+        document.getElementById('res-erros').innerText = totaisErros;
+        document.getElementById('res-pulos').innerText = totaisEmBranco;
+        document.getElementById('res-porcentagem').innerText = `${precisao}%`;
+        
+        const xpGanho = totaisAcertos * 5;
+        document.getElementById('resultado-xp').innerText = `+${xpGanho} XP`;
+
+        if (xpGanho > 0) {
+            dadosUsuario.xp = (dadosUsuario.xp || 0) + xpGanho;
+            atualizarStatusSidebar(dadosUsuario.xp);
+            await salvarDadosNoServidor();
+        }
+    }
+</script>
+{% endblock %}
