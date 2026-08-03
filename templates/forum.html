@@ -10,7 +10,7 @@
         border: 1px solid var(--borda-sutil);
         border-radius: 12px;
         padding: 25px;
-        margin-bottom: 40px;
+        margin-bottom: 30px;
         box-shadow: 0 10px 30px rgba(0,0,0,0.3);
     }
 
@@ -37,6 +37,27 @@
         align-items: center;
         flex-wrap: wrap;
         gap: 15px;
+    }
+
+    /* Estilos para Select e Input de Seções */
+    .select-secao, .input-nova-secao, .select-filtro {
+        background: rgba(0, 0, 0, 0.4);
+        border: 1px solid var(--borda-sutil);
+        color: var(--texto-puro);
+        padding: 8px 12px;
+        border-radius: 6px;
+        font-size: 0.9rem;
+        outline: none;
+    }
+    .select-secao:focus, .input-nova-secao:focus, .select-filtro:focus {
+        border-color: var(--borda-hover);
+    }
+
+    .linha-arquivo-secao {
+        display: flex;
+        gap: 15px;
+        align-items: center;
+        flex-wrap: wrap;
     }
 
     .input-arquivo-custom {
@@ -77,6 +98,14 @@
         cursor: not-allowed;
     }
 
+    .barra-filtro {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        padding: 0 5px;
+    }
+
     .post-card {
         background: var(--bg-card);
         border: 1px solid var(--borda-sutil);
@@ -85,6 +114,7 @@
         margin-bottom: 15px;
         box-shadow: 0 4px 15px rgba(0,0,0,0.2);
         transition: border-color 0.3s;
+        position: relative;
     }
     .post-card:hover {
         border-color: var(--borda-hover);
@@ -93,6 +123,7 @@
     .post-header { 
         display: flex; 
         justify-content: space-between; 
+        align-items: center;
         margin-bottom: 15px; 
         color: var(--texto-mutado); 
         font-size: 0.85rem; 
@@ -103,6 +134,17 @@
     .post-autor { font-weight: bold; color: var(--texto-puro); }
     .post-conteudo { line-height: 1.6; white-space: pre-wrap; word-break: break-word; color: var(--texto-base); }
     
+    .badge-secao {
+        background: rgba(255, 255, 255, 0.1);
+        color: var(--texto-base);
+        padding: 3px 8px;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        margin-left: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
     .anexo-box {
         display: inline-flex;
         align-items: center;
@@ -121,6 +163,18 @@
         background: rgba(255, 255, 255, 0.1); 
         border-color: #82b1ff; 
     }
+
+    .btn-editar {
+        background: transparent;
+        border: none;
+        color: var(--texto-mutado);
+        cursor: pointer;
+        font-size: 0.8rem;
+        transition: color 0.3s;
+    }
+    .btn-editar:hover {
+        color: var(--texto-puro);
+    }
 </style>
 {% endblock %}
 
@@ -133,8 +187,30 @@
         <textarea id="texto-post" placeholder="Faça uma anotação, salve uma questão ou descreva o arquivo anexado..."></textarea>
         
         <div class="controles-postagem">
-            <input type="file" id="arquivo-post" class="input-arquivo-custom" accept=".pdf, image/png, image/jpeg, .doc, .docx">
+            <div class="linha-arquivo-secao">
+                <!-- Select de Seção -->
+                <select id="secao-post" class="select-secao" onchange="verificarNovaSecao()">
+                    <option value="Geral">Geral</option>
+                    <option value="nova_secao">+ Criar Nova Seção</option>
+                </select>
+                <!-- Input oculto para digitar o nome da nova seção -->
+                <input type="text" id="input-nova-secao" class="input-nova-secao" placeholder="Nome da nova seção..." style="display: none;">
+                
+                <input type="file" id="arquivo-post" class="input-arquivo-custom" accept=".pdf, image/png, image/jpeg, .doc, .docx">
+            </div>
+
             <button id="btn-publicar" class="btn-publicar" onclick="enviarPost()">Salvar no Repositório</button>
+        </div>
+    </div>
+
+    <!-- BARRA DE FILTRO -->
+    <div class="barra-filtro">
+        <h3 style="font-size: 1.1rem; font-weight: normal; color: var(--texto-mutado);">Meus Arquivos e Anotações</h3>
+        <div>
+            <span style="color: var(--texto-mutado); font-size: 0.9rem; margin-right: 8px;">Filtrar:</span>
+            <select id="filtro-secao" class="select-filtro" onchange="renderizarPosts()">
+                <option value="Todas">Todas as Seções</option>
+            </select>
         </div>
     </div>
 
@@ -146,6 +222,7 @@
 {% block scripts %}
 <script>
     let dadosApp = {};
+    let listaSecoes = ['Geral'];
 
     document.addEventListener('DOMContentLoaded', async () => {
         await carregarDadosBanco();
@@ -155,15 +232,65 @@
         try {
             const res = await fetch('/api/dados');
             dadosApp = await res.json();
+            extrairSecoes();
             renderizarPosts();
         } catch (erro) {
             console.error("Erro ao carregar dados do fórum:", erro);
         }
     }
 
+    // Extrai todas as seções únicas dos posts salvos
+    function extrairSecoes() {
+        const forum = dadosApp.forum || [];
+        const secoesSet = new Set(['Geral']);
+        
+        forum.forEach(post => {
+            if (post.secao && post.secao.trim() !== '') {
+                secoesSet.add(post.secao);
+            }
+        });
+        
+        listaSecoes = Array.from(secoesSet);
+        atualizarSelectsSecoes();
+    }
+
+    // Preenche os selects (Postagem e Filtro) com as seções atualizadas
+    function atualizarSelectsSecoes() {
+        const selectPost = document.getElementById('secao-post');
+        const selectFiltro = document.getElementById('filtro-secao');
+        
+        const valorFiltroAtual = selectFiltro.value;
+
+        selectPost.innerHTML = listaSecoes.map(s => `<option value="${s}">${s}</option>`).join('');
+        selectPost.innerHTML += `<option value="nova_secao" style="font-weight:bold; color:#82b1ff;">+ Criar Nova Seção</option>`;
+        
+        document.getElementById('input-nova-secao').style.display = 'none';
+
+        selectFiltro.innerHTML = `<option value="Todas">Todas as Seções</option>`;
+        selectFiltro.innerHTML += listaSecoes.map(s => `<option value="${s}">${s}</option>`).join('');
+        
+        if(listaSecoes.includes(valorFiltroAtual) || valorFiltroAtual === 'Todas') {
+            selectFiltro.value = valorFiltroAtual;
+        }
+    }
+
+    function verificarNovaSecao() {
+        const select = document.getElementById('secao-post');
+        const input = document.getElementById('input-nova-secao');
+        if (select.value === 'nova_secao') {
+            input.style.display = 'block';
+            input.focus();
+        } else {
+            input.style.display = 'none';
+            input.value = '';
+        }
+    }
+
     async function enviarPost() {
         const textoInput = document.getElementById('texto-post');
         const arquivoInput = document.getElementById('arquivo-post');
+        const selectSecao = document.getElementById('secao-post');
+        const inputNovaSecao = document.getElementById('input-nova-secao');
         const btn = document.getElementById('btn-publicar');
 
         const texto = textoInput.value.trim();
@@ -173,12 +300,23 @@
             return;
         }
 
+        let secaoFinal = selectSecao.value;
+        if (secaoFinal === 'nova_secao') {
+            secaoFinal = inputNovaSecao.value.trim();
+            if (!secaoFinal) {
+                alert("Por favor, digite o nome da nova seção.");
+                inputNovaSecao.focus();
+                return;
+            }
+        }
+
         btn.innerText = "Salvando...";
         btn.disabled = true;
 
         const formData = new FormData();
         formData.append('texto', texto);
         formData.append('data', new Date().toLocaleDateString('pt-BR'));
+        formData.append('secao', secaoFinal); 
         
         if (arquivoInput.files.length > 0) {
             formData.append('arquivo', arquivoInput.files[0]);
@@ -194,6 +332,7 @@
 
             textoInput.value = '';
             arquivoInput.value = '';
+            inputNovaSecao.value = '';
             
             await carregarDadosBanco();
 
@@ -206,6 +345,44 @@
         }
     }
 
+    // --- FUNÇÕES DE EDIÇÃO ---
+    function abrirEdicao(index) {
+        document.getElementById(`view-${index}`).style.display = 'none';
+        document.getElementById(`edit-${index}`).style.display = 'block';
+    }
+
+    function cancelarEdicao(index) {
+        document.getElementById(`edit-${index}`).style.display = 'none';
+        document.getElementById(`view-${index}`).style.display = 'block';
+    }
+
+    async function salvarEdicao(index) {
+        const novoTexto = document.getElementById(`input-edit-texto-${index}`).value;
+        const novaSecao = document.getElementById(`input-edit-secao-${index}`).value.trim();
+
+        if (!novaSecao) {
+            alert("A seção não pode ficar vazia.");
+            return;
+        }
+
+        try {
+            const res = await fetch(`/api/forum/editar/${index}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ texto: novoTexto, secao: novaSecao })
+            });
+
+            if (res.ok) {
+                await carregarDadosBanco(); // Recarrega os dados e a interface atualizada
+            } else {
+                alert("Erro ao salvar edição.");
+            }
+        } catch (erro) {
+            console.error(erro);
+            alert("Erro de conexão ao editar.");
+        }
+    }
+
     function escapeHtml(texto) {
         if (!texto) return '';
         const div = document.createElement('div');
@@ -215,23 +392,33 @@
 
     function renderizarPosts() {
         const feed = document.getElementById('feed-forum');
+        const filtroSelecionado = document.getElementById('filtro-secao').value;
         feed.innerHTML = '';
 
         const forum = dadosApp.forum || [];
 
-        if (forum.length === 0) {
+        // Mapeia os posts com seu índice original (necessário para editar a posição correta no Backend)
+        const postsComIndex = forum.map((post, index) => ({ ...post, originalIndex: index }));
+
+        let postsParaExibir = postsComIndex;
+        if (filtroSelecionado !== 'Todas') {
+            postsParaExibir = postsComIndex.filter(p => (p.secao || 'Geral') === filtroSelecionado);
+        }
+
+        if (postsParaExibir.length === 0) {
             feed.innerHTML = `
                 <div class="post-card" style="text-align: center; color: var(--texto-mutado); padding: 40px;">
-                    Seu repositório está vazio. Salve seus primeiros PDFs e anotações no formulário acima!
+                    Nenhum item encontrado.
                 </div>
             `;
             return;
         }
 
         // Renderiza os posts do mais recente para o mais antigo
-        const postsInvertidos = [...forum].reverse();
+        const postsInvertidos = [...postsParaExibir].reverse();
 
         postsInvertidos.forEach(post => {
+            const idx = post.originalIndex;
             let htmlAnexo = '';
             
             if (post.arquivo) {
@@ -244,16 +431,47 @@
                 `;
             }
 
-            const textoFormatado = escapeHtml(post.texto) || '<em>Sem descrição.</em>';
+            const textoBruto = post.texto || '';
+            const textoFormatado = escapeHtml(textoBruto) || '<em>Sem descrição.</em>';
+            const nomeSecao = escapeHtml(post.secao || 'Geral');
 
             feed.insertAdjacentHTML('beforeend', `
-                <div class="post-card">
-                    <div class="post-header">
-                        <span class="post-autor">Eu</span>
-                        <span>${escapeHtml(post.data)}</span>
+                <div class="post-card" id="post-card-${idx}">
+                    
+                    <!-- MODO VISUALIZAÇÃO -->
+                    <div id="view-${idx}">
+                        <div class="post-header">
+                            <div>
+                                <span class="post-autor">Eu</span>
+                                <span class="badge-secao">${nomeSecao}</span>
+                            </div>
+                            <div>
+                                <span style="margin-right: 15px;">${escapeHtml(post.data)}</span>
+                                <button onclick="abrirEdicao(${idx})" class="btn-editar">✏️ Editar</button>
+                            </div>
+                        </div>
+                        <div class="post-conteudo">${textoFormatado}</div>
+                        ${htmlAnexo}
                     </div>
-                    <div class="post-conteudo">${textoFormatado}</div>
-                    ${htmlAnexo}
+
+                    <!-- MODO EDIÇÃO (Oculto por padrão) -->
+                    <div id="edit-${idx}" style="display: none;">
+                        <div style="margin-bottom: 15px;">
+                            <label style="font-size: 0.85rem; color: var(--texto-mutado); display: block; margin-bottom: 5px;">Editar Seção:</label>
+                            <input type="text" id="input-edit-secao-${idx}" value="${nomeSecao}" class="input-nova-secao" style="display: block; width: 100%;" placeholder="Nome da Seção">
+                        </div>
+                        
+                        <div style="margin-bottom: 15px;">
+                            <label style="font-size: 0.85rem; color: var(--texto-mutado); display: block; margin-bottom: 5px;">Editar Anotação:</label>
+                            <textarea id="input-edit-texto-${idx}" style="height: 90px;">${textoBruto}</textarea>
+                        </div>
+                        
+                        <div style="display: flex; gap: 10px;">
+                            <button onclick="salvarEdicao(${idx})" class="btn-publicar" style="padding: 8px 16px;">Salvar Alterações</button>
+                            <button onclick="cancelarEdicao(${idx})" class="btn-publicar" style="background: transparent; border: 1px solid var(--borda-sutil); color: var(--texto-puro); padding: 8px 16px;">Cancelar</button>
+                        </div>
+                    </div>
+
                 </div>
             `);
         });

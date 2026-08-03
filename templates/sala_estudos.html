@@ -34,9 +34,6 @@
             overflow: hidden;
         }
 
-        /* =========================================
-           TOP BAR
-           ========================================= */
         .top-bar {
             display: flex;
             justify-content: space-between;
@@ -53,9 +50,6 @@
             color: var(--texto-puro);
         }
 
-        /* =========================================
-           BOTÕES
-           ========================================= */
         button, .btn-link {
             padding: 10px 18px;
             border-radius: 6px;
@@ -75,16 +69,12 @@
         .btn-secundario { background: var(--btn-secundario-bg); color: var(--texto-puro); border: 1px solid var(--borda-sutil); }
         .btn-secundario:hover { background: var(--btn-secundario-hover); border-color: var(--borda-hover); }
 
-        /* =========================================
-           LAYOUT PRINCIPAL (2 COLUNAS)
-           ========================================= */
         .workspace {
             display: flex;
             flex: 1;
             overflow: hidden;
         }
 
-        /* LADO ESQUERDO: EDITOR DARK */
         .area-editor {
             flex: 2;
             display: flex;
@@ -99,6 +89,7 @@
             border-bottom: 1px solid var(--borda-sutil);
             display: flex;
             gap: 5px;
+            align-items: center;
         }
 
         .toolbar-btn {
@@ -108,6 +99,7 @@
             padding: 5px 10px;
             border-radius: 4px;
             font-weight: bold;
+            cursor: pointer;
         }
         .toolbar-btn:hover { background: rgba(255,255,255,0.1); }
 
@@ -120,8 +112,15 @@
             line-height: 1.6;
             color: var(--texto-base);
         }
+        
+        /* Estilização para imagens coladas no editor */
+        #editor-resumo img {
+            max-width: 100%;
+            border-radius: 6px;
+            margin: 10px 0;
+            border: 1px solid var(--borda-sutil);
+        }
 
-        /* LADO DIREITO: QUIZ E PEGADINHAS */
         .area-ferramentas {
             flex: 1;
             min-width: 350px;
@@ -166,9 +165,6 @@
 
         .ferramenta-status { font-size: 2rem; font-weight: bold; color: var(--texto-puro); margin: 10px 0; }
 
-        /* =========================================
-           MODAIS (SOBREPOSIÇÃO)
-           ========================================= */
         .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
             background: rgba(0,0,0,0.85);
@@ -189,7 +185,6 @@
         }
 
         .modal-box h2 { margin-top: 0; color: var(--texto-puro); margin-bottom: 20px; }
-        
         .form-group { margin-bottom: 15px; text-align: left; }
         .form-group label { display: block; margin-bottom: 5px; color: var(--texto-mutado); font-size: 0.9rem; }
         
@@ -198,7 +193,6 @@
             color: var(--texto-puro); border-radius: 6px; outline: none;
         }
 
-        /* Itens do Quiz rodando */
         .questao-box {
             background: rgba(0,0,0,0.3); border: 1px solid var(--borda-sutil);
             border-radius: 8px; padding: 20px; margin-bottom: 20px; text-align: left;
@@ -216,7 +210,6 @@
         
         .botoes-modal { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
 
-        /* Estilos do Cartão de Flashcard (Revisão) */
         .flashcard-viewer {
             background: var(--bg-card); min-height: 250px; padding: 30px; 
             border-radius: 12px; border: 1px solid var(--borda-sutil); 
@@ -234,15 +227,18 @@
     </header>
 
     <div class="workspace">
-        <!-- LADO ESQUERDO: Resumo -->
+        <!-- LADO ESQUERDO: Resumo + Prints -->
         <main class="area-editor">
             <div class="toolbar-custom">
                 <button class="toolbar-btn" onclick="formatar('bold')">B</button>
                 <button class="toolbar-btn" onclick="formatar('italic')">I</button>
                 <button class="toolbar-btn" onclick="formatar('underline')">U</button>
                 <button class="toolbar-btn" onclick="formatar('insertUnorderedList')">• Lista</button>
+                <span style="border-left: 1px solid var(--borda-sutil); height: 20px; margin: 0 5px;"></span>
+                <button class="toolbar-btn" onclick="document.getElementById('input-arquivo-img').click()">📷 Inserir Print</button>
+                <input type="file" id="input-arquivo-img" accept="image/*" style="display: none;" onchange="tratarUploadImagem(event)">
             </div>
-            <div id="editor-resumo" contenteditable="true" placeholder="Digite seu resumo aqui..."></div>
+            <div id="editor-resumo" contenteditable="true" placeholder="Digite seu resumo ou cole seus prints aqui (Ctrl + V)..."></div>
         </main>
 
         <!-- LADO DIREITO: Ferramentas -->
@@ -252,7 +248,7 @@
                 <textarea id="texto-erros" class="input-dark" placeholder="Anote aqui as cascas de banana da banca..."></textarea>
             </div>
 
-            <!-- CARD DE FLASHCARDS (NOVO) -->
+            <!-- CARD DE FLASHCARDS -->
             <div class="card-ferramenta">
                 <h3 class="secao-titulo" style="border:none; margin-bottom: 0;">Flashcards</h3>
                 <div class="ferramenta-status" id="qtd-flashcards">0</div>
@@ -279,7 +275,6 @@
     </div>
 
     <!-- MODAIS DO QUIZ -->
-    <!-- Modal Add Questão -->
     <div id="modal-add-questao" class="modal-overlay">
         <div class="modal-box">
             <h2>Nova Questão</h2>
@@ -304,7 +299,6 @@
         </div>
     </div>
 
-    <!-- Modal Resolver Quiz -->
     <div id="modal-quiz" class="modal-overlay">
         <div class="modal-box" style="width: 800px;">
             <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--borda-sutil); padding-bottom: 15px; margin-bottom: 20px;">
@@ -319,11 +313,7 @@
         </div>
     </div>
 
-    <!-- ==========================================
-         NOVOS MODAIS: FLASHCARDS 
-         ========================================== -->
-    
-    <!-- Modal Add Flashcard -->
+    <!-- MODAIS: FLASHCARDS -->
     <div id="modal-add-flashcard" class="modal-overlay">
         <div class="modal-box">
             <h2>Novo Flashcard</h2>
@@ -342,7 +332,6 @@
         </div>
     </div>
 
-    <!-- Modal Estudar Flashcards -->
     <div id="modal-revisao-flashcard" class="modal-overlay">
         <div class="modal-box" style="width: 600px; text-align: center;">
             <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--borda-sutil); padding-bottom: 15px; margin-bottom: 20px;">
@@ -374,7 +363,6 @@
         let i_top = 0;
         let topicoAtual = null;
 
-        // 1. CARREGAMENTO INICIAL
         window.onload = async () => {
             const path = window.location.pathname.split('/');
             const ids = path[path.length - 1].split('-');
@@ -386,13 +374,11 @@
             try {
                 const res = await fetch('/api/dados');
                 dadosApp = await res.json();
-                
                 topicoAtual = dadosApp.edital[i_disc].topicos[i_top];
                 
-                // Garantir existência das chaves
                 if(!topicoAtual.erros) topicoAtual.erros = "";
                 if(!topicoAtual.quiz) topicoAtual.quiz = [];
-                if(!topicoAtual.flashcards) topicoAtual.flashcards = []; // <-- NOVO
+                if(!topicoAtual.flashcards) topicoAtual.flashcards = [];
 
                 renderizarDados();
             } catch (erro) {
@@ -401,22 +387,53 @@
             }
         };
 
-        // 2. RENDERIZAÇÃO
         function renderizarDados() {
             document.getElementById('nome-assunto').innerText = topicoAtual.nome;
             document.getElementById('editor-resumo').innerHTML = topicoAtual.resumo || "";
             document.getElementById('texto-erros').value = topicoAtual.erros || "";
             document.getElementById('qtd-questoes').innerText = topicoAtual.quiz.length;
-            document.getElementById('qtd-flashcards').innerText = topicoAtual.flashcards.length; // <-- NOVO
+            document.getElementById('qtd-flashcards').innerText = topicoAtual.flashcards.length;
         }
 
-        // Editor
         function formatar(comando) {
             document.execCommand(comando, false, null);
             document.getElementById('editor-resumo').focus();
         }
 
-        // 3. SALVAR TUDO
+        // --- SUPORTE A IMAGENS NO EDITOR (Upload e Ctrl+V) ---
+        function inserirImagemNoEditor(urlBase64) {
+            const imgHtml = `<img src="${urlBase64}" alt="Print de Estudo">`;
+            document.execCommand('insertHTML', false, imgHtml);
+        }
+
+        function tratarUploadImagem(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    inserirImagemNoEditor(e.target.result);
+                };
+                reader.readAsDataURL(file);
+            }
+            event.target.value = ''; // Limpa o input
+        }
+
+        // Listener para capturar colar prints diretamente com Ctrl + V
+        document.getElementById('editor-resumo').addEventListener('paste', function(e) {
+            const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+            for (let item of items) {
+                if (item.type.indexOf('image') === 0) {
+                    e.preventDefault();
+                    const blob = item.getAsFile();
+                    const reader = new FileReader();
+                    reader.onload = function(event) {
+                        inserirImagemNoEditor(event.target.result);
+                    };
+                    reader.readAsDataURL(blob);
+                }
+            }
+        });
+
         async function salvarTudo() {
             topicoAtual.resumo = document.getElementById('editor-resumo').innerHTML;
             topicoAtual.erros = document.getElementById('texto-erros').value;
@@ -435,9 +452,6 @@
 
         function fecharModal(id) { document.getElementById(id).style.display = 'none'; }
 
-        // ==========================================
-        // 4. LÓGICA DE FLASHCARDS (NOVO)
-        // ==========================================
         let indexFlashcardAtual = 0;
 
         function abrirModalAddFlashcard() {
@@ -457,7 +471,6 @@
 
             topicoAtual.flashcards.push({ pergunta: frente, resposta: verso });
             document.getElementById('qtd-flashcards').innerText = topicoAtual.flashcards.length;
-            
             fecharModal('modal-add-flashcard');
             salvarTudo();
         }
@@ -474,19 +487,11 @@
 
         function atualizarUIFlashcard() {
             const card = topicoAtual.flashcards[indexFlashcardAtual];
-            
-            // Textos
             document.getElementById('flashcard-frente-texto').innerText = card.pergunta;
             document.getElementById('flashcard-verso-texto').innerText = card.resposta;
-            
-            // Esconde resposta ao trocar de card
             document.getElementById('flashcard-verso-texto').style.display = 'none';
             document.getElementById('btn-flash-virar').style.display = 'inline-flex';
-            
-            // Status do contador
             document.getElementById('flashcard-contador').innerText = `${indexFlashcardAtual + 1} / ${topicoAtual.flashcards.length}`;
-            
-            // Controles de botão
             document.getElementById('btn-flash-ant').disabled = (indexFlashcardAtual === 0);
             document.getElementById('btn-flash-prox').disabled = (indexFlashcardAtual === topicoAtual.flashcards.length - 1);
         }
@@ -504,9 +509,6 @@
             }
         }
 
-        // ==========================================
-        // 5. LÓGICA DO QUIZ (MANTIDO DO ORIGINAL)
-        // ==========================================
         let qtdAlternativasAtuais = 4;
 
         function renderizarInputsAlternativas() {

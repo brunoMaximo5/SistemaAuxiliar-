@@ -85,11 +85,30 @@ def gerenciar_dados():
         return jsonify({"status": "sucesso"})
     return jsonify(carregar_dados())
 
+# --- EDITAR POST DO FÓRUM ---
+@app.route('/api/forum/editar/<int:post_index>', methods=['POST'])
+def editar_post_forum(post_index):
+    dados_recebidos = request.json
+    novo_texto = dados_recebidos.get('texto')
+    nova_secao = dados_recebidos.get('secao')
+    
+    banco = carregar_dados()
+    
+    # Verifica se o índice existe na lista do fórum
+    if 0 <= post_index < len(banco["forum"]):
+        banco["forum"][post_index]["texto"] = novo_texto
+        banco["forum"][post_index]["secao"] = nova_secao
+        salvar_dados(banco)
+        return jsonify({"status": "sucesso"})
+    else:
+        return jsonify({"status": "erro", "mensagem": "Post não encontrado"}), 404
+    
 # --- RECEBER POSTS E ARQUIVOS DO FÓRUM ---
 @app.route('/api/forum', methods=['POST'])
 def adicionar_post_forum():
     texto = request.form.get('texto', '')
     data_post = request.form.get('data', '')
+    secao_post = request.form.get('secao', 'Geral') # <-- CAPTURA A SEÇÃO ENVIADA PELO FRONT (Padrão: 'Geral')
     nome_arquivo = None
 
     if 'arquivo' in request.files:
@@ -105,8 +124,11 @@ def adicionar_post_forum():
     novo_post = {
         "texto": texto,
         "data": data_post,
+        "secao": secao_post, # <-- SALVA A SEÇÃO NO JSON
         "arquivo": nome_arquivo
     }
+
+
     
     # Adiciona ao final da lista (o frontend forum.html cuida de inverter para exibir os recentes no topo)
     dados["forum"].append(novo_post)

@@ -37,7 +37,7 @@
         gap: 30px;
     }
 
-    @media (max-width: 900px) {
+    @media (max-width: 1000px) {
         .grid-rotina {
             grid-template-columns: 1fr;
         }
@@ -82,10 +82,10 @@
         border-radius: 8px;
         border: 1px solid var(--borda-sutil);
         width: 100%;
+        flex-wrap: wrap;
     }
 
-    input[type="text"] {
-        flex: 1;
+    input[type="text"], input[type="time"] {
         padding: 12px 18px;
         border-radius: 6px;
         background: rgba(0, 0, 0, 0.5);
@@ -94,9 +94,10 @@
         font-size: 0.95rem;
         outline: none;
         transition: all 0.3s ease;
+        font-family: inherit;
     }
     
-    input[type="text"]:focus { 
+    input[type="text"]:focus, input[type="time"]:focus { 
         border-color: var(--borda-hover); 
         background: rgba(0, 0, 0, 0.8); 
         box-shadow: 0 0 10px rgba(255, 255, 255, 0.05); 
@@ -121,7 +122,7 @@
     .btn-primario:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(255, 255, 255, 0.2); }
     .btn-secundario { background: var(--btn-secundario-bg); color: var(--texto-base); border: 1px solid var(--borda-sutil); }
     .btn-secundario:hover { background: var(--btn-secundario-hover); border-color: var(--borda-hover); }
-    .btn-excluir { background: var(--btn-excluir); color: var(--texto-excluir); border: 1px solid rgba(217, 154, 154, 0.1); }
+    .btn-excluir { background: var(--btn-excluir); color: var(--texto-excluir); border: 1px solid rgba(217, 154, 154, 0.1); padding: 6px 12px; font-size: 0.8rem;}
     .btn-excluir:hover { background: var(--btn-excluir-hover); color: #fff; border-color: rgba(255, 100, 100, 0.3); }
 
     .item-rotina {
@@ -187,28 +188,119 @@
         color: var(--texto-base);
     }
 
-    .bloco-turno {
+    /* Linha do Tempo (Planejamento Diário) */
+    .timeline-item {
         background: rgba(10, 10, 10, 0.4);
         border: 1px solid var(--borda-sutil);
         border-radius: 8px;
-        padding: 18px;
+        padding: 12px 18px;
+        margin-bottom: 10px;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+    
+    .timeline-hora {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: var(--texto-puro);
+        min-width: 65px;
+        border-right: 2px solid var(--borda-sutil);
+        padding-right: 10px;
+    }
+
+    .timeline-texto {
+        flex: 1;
+        font-size: 0.95rem;
+        color: var(--texto-base);
+    }
+
+    /* Multiplas Grades de Horários (Formato Tabela/Planilha) */
+    .grade-card {
+        background: rgba(0, 0, 0, 0.2);
+        border: 1px solid var(--borda-sutil);
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 20px;
+    }
+
+    .grade-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
         margin-bottom: 15px;
     }
 
-    .titulo-turno {
-        font-size: 0.85rem;
-        color: var(--texto-mutado);
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        margin-bottom: 12px;
+    .grade-titulo {
         font-weight: 600;
+        color: var(--texto-puro);
+        font-size: 1.05rem;
     }
 
-    .input-turno {
+    .table-responsive {
         width: 100%;
-        margin-bottom: 8px;
+        overflow-x: auto;
+        border-radius: 6px;
+        border: 1px solid var(--borda-sutil);
     }
 
+    .tabela-grade {
+        width: 100%;
+        border-collapse: collapse;
+        min-width: 700px;
+    }
+
+    .tabela-grade th {
+        background: rgba(0, 0, 0, 0.5);
+        color: var(--texto-mutado);
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        padding: 12px 8px;
+        text-align: left;
+        border-bottom: 1px solid var(--borda-sutil);
+        border-right: 1px solid var(--borda-sutil);
+    }
+
+    .tabela-grade th:last-child {
+        border-right: none;
+    }
+
+    .tabela-grade td {
+        border-bottom: 1px solid var(--borda-sutil);
+        border-right: 1px solid var(--borda-sutil);
+        padding: 0;
+        position: relative;
+    }
+
+    .tabela-grade td:last-child {
+        border-right: none;
+    }
+
+    .tabela-grade tr:last-child td {
+        border-bottom: none;
+    }
+
+    .input-tabela {
+        width: 100%;
+        height: 100%;
+        min-height: 40px;
+        border: none;
+        background: rgba(10, 10, 10, 0.2);
+        padding: 8px;
+        color: var(--texto-base);
+        font-size: 0.85rem;
+        border-radius: 0;
+        outline: none;
+        box-sizing: border-box;
+        text-align: center;
+    }
+
+    .input-tabela:focus {
+        background: rgba(20, 20, 20, 0.8);
+        box-shadow: inset 0 0 5px rgba(255, 255, 255, 0.05);
+    }
+
+    /* Grid Energia */
     .grid-energia {
         display: grid;
         grid-template-columns: repeat(4, 1fr);
@@ -269,6 +361,68 @@
         margin-bottom: 8px;
         font-weight: 600;
     }
+
+    /* --- NOVOS ESTILOS ADICIONADOS PARA HÁBITOS E ENERGIA --- */
+    .item-rotina-habito {
+        margin-bottom: 0;
+        transition: all 0.2s;
+    }
+    .item-rotina-habito.open {
+        border-bottom-left-radius: 0;
+        border-bottom-right-radius: 0;
+        border-bottom: 1px dashed rgba(255,255,255,0.1);
+    }
+
+    .habito-detalhes {
+        display: none;
+        background: rgba(10, 10, 10, 0.6);
+        padding: 12px 18px;
+        font-size: 0.85rem;
+        color: var(--texto-mutado);
+        border-bottom-left-radius: 8px;
+        border-bottom-right-radius: 8px;
+        border: 1px solid var(--borda-sutil);
+        border-top: none;
+        justify-content: space-between;
+        animation: fadeIn 0.3s ease;
+        margin-bottom: 10px;
+    }
+    .habito-detalhes.show {
+        display: flex;
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(-5px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .historico-energia-container {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 25px;
+        padding-top: 15px;
+        border-top: 1px solid var(--borda-sutil);
+    }
+    .dia-energia {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.75rem;
+        color: var(--texto-mutado);
+        font-weight: 600;
+    }
+    .dot-energia {
+        width: 14px; 
+        height: 14px; 
+        border-radius: 50%;
+        background: rgba(255,255,255,0.1);
+        border: 1px solid rgba(255,255,255,0.2);
+    }
+    .dot-baixa { background: #ff4d4d; box-shadow: 0 0 8px rgba(255, 77, 77, 0.4); border-color: #ff4d4d; }
+    .dot-media { background: #ffd11a; box-shadow: 0 0 8px rgba(255, 209, 26, 0.4); border-color: #ffd11a; }
+    .dot-alta { background: #00cc66; box-shadow: 0 0 8px rgba(0, 204, 102, 0.4); border-color: #00cc66; }
+    .dot-maxima { background: #0099ff; box-shadow: 0 0 8px rgba(0, 153, 255, 0.4); border-color: #0099ff; }
 </style>
 {% endblock %}
 
@@ -289,7 +443,7 @@
             </div>
             
             <div class="top-bar">
-                <input type="text" id="input-prioridade" placeholder="Adicionar nova prioridade para hoje..." onkeydown="seApertaEnter(event, adicionarPrioridade)">
+                <input type="text" id="input-prioridade" placeholder="Adicionar nova prioridade para hoje..." style="flex: 1;" onkeydown="seApertaEnter(event, adicionarPrioridade)">
                 <button class="btn-primario" onclick="adicionarPrioridade()">Adicionar</button>
             </div>
 
@@ -301,30 +455,35 @@
             </div>
         </div>
 
-        <!-- BLOCOS DE TEMPO -->
+        <!-- PLANEJAMENTO DIÁRIO COMPLETO -->
         <div class="rotina-card">
             <div class="rotina-card-header">
-                <span>Blocos de Tempo (Planejamento)</span>
-                <button id="btn-salvar-blocos" class="btn-secundario" onclick="salvarBlocos()" style="padding: 6px 14px; font-size: 0.8rem;">Salvar Blocos</button>
+                <span>Planejamento Diário</span>
+            </div>
+            <div style="font-size: 0.85rem; color: var(--texto-mutado); margin-bottom: 15px;">
+                Organize seu dia atual. Adicione horários para acordar, pegar ônibus, treinar, etc.
             </div>
 
-            <div class="bloco-turno">
-                <div class="titulo-turno">Manhã</div>
-                <input type="text" id="bloco-manha-1" class="input-turno" placeholder="Ex: Estudo Teórico - Direito Constitucional">
-                <input type="text" id="bloco-manha-2" class="input-turno" placeholder="Ex: Resolução de 20 questões">
+            <div class="top-bar">
+                <input type="time" id="input-hora-diaria" style="width: 120px;">
+                <input type="text" id="input-texto-diaria" placeholder="O que você vai fazer neste horário?" style="flex: 1;" onkeydown="seApertaEnter(event, adicionarItemDiario)">
+                <button class="btn-primario" onclick="adicionarItemDiario()">Adicionar</button>
             </div>
 
-            <div class="bloco-turno">
-                <div class="titulo-turno">Tarde</div>
-                <input type="text" id="bloco-tarde-1" class="input-turno" placeholder="Ex: Estudo Teórico - Direito Penal">
-                <input type="text" id="bloco-tarde-2" class="input-turno" placeholder="Ex: Revisão de Anotações">
-            </div>
+            <div id="lista-planejamento-diario"></div>
+        </div>
 
-            <div class="bloco-turno">
-                <div class="titulo-turno">Noite</div>
-                <input type="text" id="bloco-noite-1" class="input-turno" placeholder="Ex: Leitura da Lei Seca">
-                <input type="text" id="bloco-noite-2" class="input-turno" placeholder="Ex: Planejamento do dia seguinte">
+        <!-- GRADES DE HORÁRIOS (Planilhas Semanais) -->
+        <div class="rotina-card">
+            <div class="rotina-card-header">
+                <span>Minhas Grades de Horários</span>
+                <button class="btn-secundario" onclick="criarNovaGrade()">+ Nova Grade</button>
             </div>
+            <div style="font-size: 0.85rem; color: var(--texto-mutado); margin-bottom: 15px;">
+                Crie planilhas semanais fixas para faculdade, treinos ou estudos para concurso.
+            </div>
+            
+            <div id="lista-grades"></div>
         </div>
     </div>
 
@@ -337,7 +496,7 @@
             </div>
 
             <div class="top-bar" style="padding: 8px;">
-                <input type="text" id="input-habito" placeholder="Novo hábito permanente..." style="padding: 10px 14px; font-size: 0.85rem;" onkeydown="seApertaEnter(event, adicionarHabito)">
+                <input type="text" id="input-habito" placeholder="Novo hábito permanente..." style="padding: 10px 14px; font-size: 0.85rem; flex: 1;" onkeydown="seApertaEnter(event, adicionarHabito)">
                 <button class="btn-primario" onclick="adicionarHabito()" style="padding: 10px 14px;">+</button>
             </div>
 
@@ -357,6 +516,11 @@
                 <div class="btn-energia" onclick="definirEnergia('Média', this)">Média</div>
                 <div class="btn-energia" onclick="definirEnergia('Alta', this)">Alta</div>
                 <div class="btn-energia" onclick="definirEnergia('Máxima', this)">Máxima</div>
+            </div>
+
+            <!-- Visão geral da semana (Últimos 7 dias) adicionado -->
+            <div id="historico-energia-semana" class="historico-energia-container">
+                <!-- Preenchido via JavaScript -->
             </div>
         </div>
     </div>
@@ -395,6 +559,24 @@
         return `${ano}-${mes}-${dia}`;
     }
 
+    // Novas funções auxiliares de data para hábitos e energia
+    function subtrairDias(dataIso, dias) {
+        const partes = dataIso.split('-');
+        const data = new Date(partes[0], partes[1] - 1, partes[2]);
+        data.setDate(data.getDate() - dias);
+        const ano = data.getFullYear();
+        const mes = String(data.getMonth() + 1).padStart(2, '0');
+        const dia = String(data.getDate()).padStart(2, '0');
+        return `${ano}-${mes}-${dia}`;
+    }
+
+    function nomeDiaSemana(dataIso) {
+        const partes = dataIso.split('-');
+        const data = new Date(partes[0], partes[1] - 1, partes[2]);
+        const dias = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+        return dias[data.getDay()];
+    }
+
     function exibirDataHoje() {
         const opcoes = { weekday: 'long', day: 'numeric', month: 'long' };
         const data = new Date().toLocaleDateString('pt-BR', opcoes);
@@ -407,16 +589,17 @@
             const tempDados = await res.json();
             if (tempDados) dadosApp = Object.assign(dadosApp, tempDados);
             
-            if (!dadosApp.rotina) {
-                dadosApp.rotina = {
-                    data_atualizacao: obterDataAtualIso(),
-                    prioridades: [],
-                    historico_prioridades: {},
-                    habitos: [],
-                    blocos: { manha1: '', manha2: '', tarde1: '', tarde2: '', noite1: '', noite2: '' },
-                    energia: 'Média'
-                };
-            }
+            if (!dadosApp.rotina) dadosApp.rotina = {};
+
+            // Estrutura padrão
+            dadosApp.rotina.data_atualizacao = dadosApp.rotina.data_atualizacao || obterDataAtualIso();
+            dadosApp.rotina.prioridades = dadosApp.rotina.prioridades || [];
+            dadosApp.rotina.historico_prioridades = dadosApp.rotina.historico_prioridades || {};
+            dadosApp.rotina.habitos = dadosApp.rotina.habitos || [];
+            dadosApp.rotina.historico_energia = dadosApp.rotina.historico_energia || {}; // Novo
+            dadosApp.rotina.planejamento_diario = dadosApp.rotina.planejamento_diario || [];
+            dadosApp.rotina.grades = dadosApp.rotina.grades || [];
+
             atualizarStatus();
         } catch (erro) { 
             console.error("Erro ao carregar dados:", erro); 
@@ -438,27 +621,15 @@
 
     function verificarEManusearMudancaDeDia() {
         const hojeIso = obterDataAtualIso();
-
-        if (!dadosApp.rotina.data_atualizacao) {
-            dadosApp.rotina.data_atualizacao = hojeIso;
-        }
-
         if (dadosApp.rotina.data_atualizacao !== hojeIso) {
             const dataAnterior = dadosApp.rotina.data_atualizacao;
-
-            if (!dadosApp.rotina.historico_prioridades) {
-                dadosApp.rotina.historico_prioridades = {};
-            }
 
             if (dadosApp.rotina.prioridades && dadosApp.rotina.prioridades.length > 0) {
                 dadosApp.rotina.historico_prioridades[dataAnterior] = [...dadosApp.rotina.prioridades];
             }
 
             dadosApp.rotina.prioridades = [];
-
-            if (dadosApp.rotina.habitos) {
-                dadosApp.rotina.habitos.forEach(h => h.concluido = false);
-            }
+            // A lógica de apagar hábitos foi removida, pois agora eles dependem do histórico (historico_datas)
 
             dadosApp.rotina.data_atualizacao = hojeIso;
             salvarNoBanco();
@@ -480,16 +651,17 @@
     function renderizarRotina() {
         renderizarPrioridades();
         renderizarHabitos();
-        carregarBlocos();
+        renderizarPlanejamentoDiario();
+        renderizarGrades();
         carregarEnergia();
     }
 
-    /* PRIORIDADES */
+    /* ================= PRIORIDADES ================= */
     function renderizarPrioridades() {
         const container = document.getElementById('lista-prioridades');
         container.innerHTML = '';
-
         const prioridades = dadosApp.rotina.prioridades || [];
+        
         if (prioridades.length === 0) {
             container.innerHTML = `<div style="color: var(--texto-mutado); font-size: 0.9rem; padding: 10px 0;">Nenhuma prioridade definida para hoje.</div>`;
             return;
@@ -514,7 +686,6 @@
         const texto = input.value.trim();
         if (!texto) return;
 
-        if (!dadosApp.rotina.prioridades) dadosApp.rotina.prioridades = [];
         dadosApp.rotina.prioridades.push({ texto: texto, concluido: false });
         input.value = '';
         salvarNoBanco();
@@ -546,7 +717,6 @@
     function renderizarHistoricoPrioridades() {
         const container = document.getElementById('conteudo-historico-prioridades');
         container.innerHTML = '';
-
         const historico = dadosApp.rotina.historico_prioridades || {};
         const datas = Object.keys(historico).sort().reverse();
 
@@ -558,45 +728,270 @@
         datas.forEach(dataIso => {
             const bloco = document.createElement('div');
             bloco.className = 'historico-dia';
-            
             let itensHtml = '';
             historico[dataIso].forEach(item => {
                 const statusText = item.concluido ? 'Concluído' : 'Não concluído';
                 const estiloCor = item.concluido ? 'color: var(--texto-base);' : 'color: var(--texto-mutado); text-decoration: line-through;';
                 itensHtml += `<div style="font-size: 0.85rem; margin-bottom: 4px; ${estiloCor}">• ${escapeHtml(item.texto)} (${statusText})</div>`;
             });
-
-            bloco.innerHTML = `
-                <div class="historico-data">${dataIso}</div>
-                ${itensHtml}
-            `;
+            bloco.innerHTML = `<div class="historico-data">${dataIso}</div>${itensHtml}`;
             container.appendChild(bloco);
         });
     }
 
-    /* HÁBITOS */
+    /* ================= PLANEJAMENTO DIÁRIO ================= */
+    function renderizarPlanejamentoDiario() {
+        const container = document.getElementById('lista-planejamento-diario');
+        container.innerHTML = '';
+        
+        let planejamento = dadosApp.rotina.planejamento_diario || [];
+        planejamento.sort((a, b) => a.hora.localeCompare(b.hora));
+
+        if (planejamento.length === 0) {
+            container.innerHTML = `<div style="color: var(--texto-mutado); font-size: 0.9rem; padding: 10px 0;">Nenhum evento adicionado ao seu dia ainda.</div>`;
+            return;
+        }
+
+        planejamento.forEach((item, index) => {
+            const div = document.createElement('div');
+            div.className = 'timeline-item';
+            div.innerHTML = `
+                <div class="timeline-hora">${escapeHtml(item.hora)}</div>
+                <div class="timeline-texto">${escapeHtml(item.texto)}</div>
+                <button class="btn-excluir" onclick="removerItemDiario(${index})" title="Remover">X</button>
+            `;
+            container.appendChild(div);
+        });
+    }
+
+    function adicionarItemDiario() {
+        const inputHora = document.getElementById('input-hora-diaria');
+        const inputTexto = document.getElementById('input-texto-diaria');
+        
+        const hora = inputHora.value;
+        const texto = inputTexto.value.trim();
+
+        if (!hora || !texto) return alert("Por favor, preencha a hora e a atividade!");
+
+        if (!dadosApp.rotina.planejamento_diario) dadosApp.rotina.planejamento_diario = [];
+        
+        dadosApp.rotina.planejamento_diario.push({ hora: hora, texto: texto });
+        
+        inputHora.value = '';
+        inputTexto.value = '';
+        
+        salvarNoBanco();
+        renderizarPlanejamentoDiario();
+    }
+
+    function removerItemDiario(index) {
+        const arrayOrdenado = [...dadosApp.rotina.planejamento_diario].sort((a, b) => a.hora.localeCompare(b.hora));
+        const itemParaRemover = arrayOrdenado[index];
+        const indexReal = dadosApp.rotina.planejamento_diario.indexOf(itemParaRemover);
+        
+        if (indexReal > -1) {
+            dadosApp.rotina.planejamento_diario.splice(indexReal, 1);
+            salvarNoBanco();
+            renderizarPlanejamentoDiario();
+        }
+    }
+
+    /* ================= GRADES DE HORÁRIOS (Planilha) ================= */
+    function criarLinhaVaziaGrade() {
+        return { horario: '', seg: '', ter: '', qua: '', qui: '', sex: '', sab: '', dom: '' };
+    }
+
+    function renderizarGrades() {
+        const container = document.getElementById('lista-grades');
+        container.innerHTML = '';
+        
+        const grades = dadosApp.rotina.grades || [];
+
+        if (grades.length === 0) {
+            container.innerHTML = `<div style="color: var(--texto-mutado); font-size: 0.9rem; padding: 10px 0;">Nenhuma grade criada ainda. Clique em "+ Nova Grade" para criar uma.</div>`;
+            return;
+        }
+
+        grades.forEach((grade, indexGrade) => {
+            if (!grade.linhas || !Array.isArray(grade.linhas)) {
+                grade.linhas = [ criarLinhaVaziaGrade() ];
+            }
+
+            const div = document.createElement('div');
+            div.className = 'grade-card';
+            
+            let htmlTabela = `
+                <div class="grade-header">
+                    <span class="grade-titulo">${escapeHtml(grade.titulo)}</span>
+                    <button class="btn-excluir" onclick="removerGrade(${indexGrade})">Excluir Grade</button>
+                </div>
+                <div class="table-responsive">
+                    <table class="tabela-grade">
+                        <thead>
+                            <tr>
+                                <th style="width: 80px; text-align: center;">Horário</th>
+                                <th>Seg</th><th>Ter</th><th>Qua</th><th>Qui</th><th>Sex</th><th>Sáb</th><th>Dom</th>
+                                <th style="width: 40px; text-align: center;">Ação</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+
+            grade.linhas.forEach((linha, indexLinha) => {
+                htmlTabela += `
+                    <tr>
+                        <td><input type="text" class="input-tabela" style="font-weight: 600;" value="${escapeHtml(linha.horario)}" onchange="atualizarCelulaGrade(${indexGrade}, ${indexLinha}, 'horario', this.value)" placeholder="08:00"></td>
+                        <td><input type="text" class="input-tabela" value="${escapeHtml(linha.seg)}" onchange="atualizarCelulaGrade(${indexGrade}, ${indexLinha}, 'seg', this.value)"></td>
+                        <td><input type="text" class="input-tabela" value="${escapeHtml(linha.ter)}" onchange="atualizarCelulaGrade(${indexGrade}, ${indexLinha}, 'ter', this.value)"></td>
+                        <td><input type="text" class="input-tabela" value="${escapeHtml(linha.qua)}" onchange="atualizarCelulaGrade(${indexGrade}, ${indexLinha}, 'qua', this.value)"></td>
+                        <td><input type="text" class="input-tabela" value="${escapeHtml(linha.qui)}" onchange="atualizarCelulaGrade(${indexGrade}, ${indexLinha}, 'qui', this.value)"></td>
+                        <td><input type="text" class="input-tabela" value="${escapeHtml(linha.sex)}" onchange="atualizarCelulaGrade(${indexGrade}, ${indexLinha}, 'sex', this.value)"></td>
+                        <td><input type="text" class="input-tabela" value="${escapeHtml(linha.sab)}" onchange="atualizarCelulaGrade(${indexGrade}, ${indexLinha}, 'sab', this.value)"></td>
+                        <td><input type="text" class="input-tabela" value="${escapeHtml(linha.dom)}" onchange="atualizarCelulaGrade(${indexGrade}, ${indexLinha}, 'dom', this.value)"></td>
+                        <td style="text-align: center; vertical-align: middle;">
+                            <button class="btn-excluir" style="padding: 4px 8px; font-size: 0.75rem;" onclick="removerLinhaGrade(${indexGrade}, ${indexLinha})" title="Remover Linha">X</button>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            htmlTabela += `
+                        </tbody>
+                    </table>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px;">
+                    <button class="btn-secundario" style="padding: 6px 14px; font-size: 0.85rem;" onclick="adicionarLinhaGrade(${indexGrade})">+ Adicionar Linha</button>
+                    <span style="font-size: 0.75rem; color: var(--texto-mutado);">Salva automaticamente ao digitar</span>
+                </div>
+            `;
+            
+            div.innerHTML = htmlTabela;
+            container.appendChild(div);
+        });
+    }
+
+    function criarNovaGrade() {
+        const titulo = prompt("Digite o nome da nova grade (Ex: Faculdade, Treino, Estudos):");
+        if (!titulo || titulo.trim() === "") return;
+
+        if (!dadosApp.rotina.grades) dadosApp.rotina.grades = [];
+        
+        dadosApp.rotina.grades.push({ 
+            titulo: titulo.trim(), 
+            linhas: [ criarLinhaVaziaGrade() ] 
+        });
+        
+        salvarNoBanco();
+        renderizarGrades();
+    }
+
+    function adicionarLinhaGrade(indexGrade) {
+        dadosApp.rotina.grades[indexGrade].linhas.push(criarLinhaVaziaGrade());
+        salvarNoBanco();
+        renderizarGrades();
+    }
+
+    function removerLinhaGrade(indexGrade, indexLinha) {
+        dadosApp.rotina.grades[indexGrade].linhas.splice(indexLinha, 1);
+        salvarNoBanco();
+        renderizarGrades();
+    }
+
+    function atualizarCelulaGrade(indexGrade, indexLinha, campo, valor) {
+        dadosApp.rotina.grades[indexGrade].linhas[indexLinha][campo] = valor;
+        salvarNoBanco();
+    }
+
+    function removerGrade(index) {
+        if(confirm("Tem certeza que deseja excluir esta grade inteira?")) {
+            dadosApp.rotina.grades.splice(index, 1);
+            salvarNoBanco();
+            renderizarGrades();
+        }
+    }
+
+    /* ================= HÁBITOS (Com Histórico e Frequência) ================= */
     function renderizarHabitos() {
         const container = document.getElementById('lista-habitos');
         container.innerHTML = '';
-
         const habitos = dadosApp.rotina.habitos || [];
+        
         if (habitos.length === 0) {
             container.innerHTML = `<div style="color: var(--texto-mutado); font-size: 0.85rem; padding: 10px 0;">Nenhum hábito cadastrado.</div>`;
             return;
         }
 
+        const hojeIso = obterDataAtualIso();
+
         habitos.forEach((h, index) => {
+            if (!h.historico_datas) h.historico_datas = []; // Garante que array de datas existe
+            
+            h.concluido = h.historico_datas.includes(hojeIso);
+
+            // Calcula sequência
+            let sequencia = 0;
+            let diaChecagem = hojeIso;
+            
+            if (!h.concluido) {
+                diaChecagem = subtrairDias(hojeIso, 1);
+            }
+            
+            while (h.historico_datas.includes(diaChecagem)) {
+                sequencia++;
+                diaChecagem = subtrairDias(diaChecagem, 1);
+            }
+
+            // Calcula últimos 7 dias
+            let feitosUltimos7 = 0;
+            for(let i = 0; i < 7; i++) {
+                if(h.historico_datas.includes(subtrairDias(hojeIso, i))) {
+                    feitosUltimos7++;
+                }
+            }
+
             const div = document.createElement('div');
-            div.className = `item-rotina ${h.concluido ? 'concluido' : ''}`;
             div.innerHTML = `
-                <div class="item-conteudo" onclick="toggleHabito(${index})">
-                    <div class="checkbox-custom"></div>
-                    <span class="texto-item">${escapeHtml(h.texto)}</span>
+                <div id="habito-item-${index}" class="item-rotina item-rotina-habito ${h.concluido ? 'concluido' : ''}">
+                    <div class="item-conteudo">
+                        <div class="checkbox-custom" onclick="toggleHabito(${index}, event)"></div>
+                        <span class="texto-item" style="flex:1" onclick="toggleDetalhesHabito(${index})">${escapeHtml(h.texto)}</span>
+                    </div>
+                    <button class="btn-excluir" onclick="removerHabito(${index})" style="padding: 6px 10px; font-size: 0.75rem;">Excluir</button>
                 </div>
-                <button class="btn-excluir" onclick="removerHabito(${index})" style="padding: 6px 10px; font-size: 0.75rem;">Excluir</button>
+                <div id="detalhes-habito-${index}" class="habito-detalhes">
+                    <span>🔥 Sequência: <strong style="color: #ff9900;">${sequencia} dias</strong></span>
+                    <span>📊 Últimos 7 dias: <strong>${feitosUltimos7}/7</strong></span>
+                </div>
             `;
             container.appendChild(div);
         });
+    }
+
+    function toggleDetalhesHabito(index) {
+        const detalhes = document.getElementById(`detalhes-habito-${index}`);
+        const item = document.getElementById(`habito-item-${index}`);
+        detalhes.classList.toggle('show');
+        item.classList.toggle('open');
+    }
+
+    function toggleHabito(index, event) {
+        event.stopPropagation(); // Evita que clique no checkbox abra as opções
+        
+        const hojeIso = obterDataAtualIso();
+        const habito = dadosApp.rotina.habitos[index];
+        
+        if (!habito.historico_datas) habito.historico_datas = [];
+
+        const indexData = habito.historico_datas.indexOf(hojeIso);
+        
+        if (indexData > -1) {
+            habito.historico_datas.splice(indexData, 1);
+        } else {
+            habito.historico_datas.push(hojeIso);
+        }
+
+        salvarNoBanco();
+        renderizarHabitos();
     }
 
     function adicionarHabito() {
@@ -604,78 +999,75 @@
         const texto = input.value.trim();
         if (!texto) return;
 
-        if (!dadosApp.rotina.habitos) dadosApp.rotina.habitos = [];
-        dadosApp.rotina.habitos.push({ texto: texto, concluido: false });
+        dadosApp.rotina.habitos.push({ texto: texto, historico_datas: [] });
         input.value = '';
         salvarNoBanco();
         renderizarHabitos();
     }
 
-    function toggleHabito(index) {
-        dadosApp.rotina.habitos[index].concluido = !dadosApp.rotina.habitos[index].concluido;
-        salvarNoBanco();
-        renderizarHabitos();
-    }
-
     function removerHabito(index) {
-        dadosApp.rotina.habitos.splice(index, 1);
-        salvarNoBanco();
-        renderizarHabitos();
-    }
-
-    /* BLOCOS DE TEMPO */
-    function carregarBlocos() {
-        const b = dadosApp.rotina.blocos || {};
-        document.getElementById('bloco-manha-1').value = b.manha1 || '';
-        document.getElementById('bloco-manha-2').value = b.manha2 || '';
-        document.getElementById('bloco-tarde-1').value = b.tarde1 || '';
-        document.getElementById('bloco-tarde-2').value = b.tarde2 || '';
-        document.getElementById('bloco-noite-1').value = b.noite1 || '';
-        document.getElementById('bloco-noite-2').value = b.noite2 || '';
-    }
-
-    function salvarBlocos() {
-        dadosApp.rotina.blocos = {
-            manha1: document.getElementById('bloco-manha-1').value,
-            manha2: document.getElementById('bloco-manha-2').value,
-            tarde1: document.getElementById('bloco-tarde-1').value,
-            tarde2: document.getElementById('bloco-tarde-2').value,
-            noite1: document.getElementById('bloco-noite-1').value,
-            noite2: document.getElementById('bloco-noite-2').value
-        };
-        salvarNoBanco();
-
-        // Feedback visual no botão
-        const btn = document.getElementById('btn-salvar-blocos');
-        if (btn) {
-            const textoOriginal = btn.innerText;
-            btn.innerText = 'Salvo! ✓';
-            btn.style.borderColor = 'var(--texto-puro)';
-            setTimeout(() => {
-                btn.innerText = textoOriginal;
-                btn.style.borderColor = '';
-            }, 1500);
+        if(confirm("Deseja realmente excluir este hábito? O histórico dele será perdido.")) {
+            dadosApp.rotina.habitos.splice(index, 1);
+            salvarNoBanco();
+            renderizarHabitos();
         }
     }
 
-    /* ENERGIA */
+    /* ================= ENERGIA (Com Histórico Semanal) ================= */
     function carregarEnergia() {
-        const nivel = dadosApp.rotina.energia || 'Média';
+        if (!dadosApp.rotina.historico_energia) dadosApp.rotina.historico_energia = {};
+        
+        const hojeIso = obterDataAtualIso();
+        const nivelDeHoje = dadosApp.rotina.historico_energia[hojeIso];
+
         const botoes = document.querySelectorAll('.btn-energia');
         botoes.forEach(btn => {
-            if (btn.innerText.trim() === nivel) {
+            if (btn.innerText.trim() === nivelDeHoje) {
                 btn.classList.add('active');
             } else {
                 btn.classList.remove('active');
             }
         });
+
+        renderizarHistoricoEnergia(hojeIso);
+    }
+
+    function renderizarHistoricoEnergia(hojeIso) {
+        const container = document.getElementById('historico-energia-semana');
+        container.innerHTML = '';
+
+        for (let i = 6; i >= 0; i--) {
+            const diaChecado = subtrairDias(hojeIso, i);
+            const energiaDoDia = dadosApp.rotina.historico_energia[diaChecado];
+            
+            let classePonto = '';
+            if (energiaDoDia === 'Baixa') classePonto = 'dot-baixa';
+            else if (energiaDoDia === 'Média') classePonto = 'dot-media';
+            else if (energiaDoDia === 'Alta') classePonto = 'dot-alta';
+            else if (energiaDoDia === 'Máxima') classePonto = 'dot-maxima';
+
+            const textoDia = i === 0 ? 'Hoje' : nomeDiaSemana(diaChecado);
+            const div = document.createElement('div');
+            div.className = 'dia-energia';
+            div.innerHTML = `
+                <div class="dot-energia ${classePonto}" title="${diaChecado}: ${energiaDoDia || 'Não registrado'}"></div>
+                <span>${textoDia}</span>
+            `;
+            container.appendChild(div);
+        }
     }
 
     function definirEnergia(nivel, elemento) {
-        dadosApp.rotina.energia = nivel;
+        const hojeIso = obterDataAtualIso();
+        if (!dadosApp.rotina.historico_energia) dadosApp.rotina.historico_energia = {};
+        
+        dadosApp.rotina.historico_energia[hojeIso] = nivel;
+        
         document.querySelectorAll('.btn-energia').forEach(btn => btn.classList.remove('active'));
         elemento.classList.add('active');
+        
         salvarNoBanco();
+        renderizarHistoricoEnergia(hojeIso);
     }
 </script>
 {% endblock %}
