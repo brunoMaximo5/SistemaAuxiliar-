@@ -182,6 +182,57 @@
     .assunto-item:hover { background: rgba(20, 20, 20, 0.6); transform: translateX(4px); border-color: var(--borda-hover); }
     .assunto-title { font-weight: 400; font-size: 1rem; word-break: break-word; flex: 1; min-width: 200px; }
     .assunto-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+    /* =========================================
+       NOVOS ESTILOS: EFEITO SANFONA E TAGS 
+       ========================================= */
+    .card-header-clicavel {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        cursor: pointer;
+        user-select: none;
+        border-bottom: 1px solid transparent; 
+        transition: all 0.2s;
+    }
+    
+    .card-header-clicavel:hover h3 { color: #ffffff; }
+
+    .seta-toggle {
+        font-size: 0.8rem;
+        transition: transform 0.3s ease;
+        color: var(--texto-mutado);
+    }
+
+    .seta-toggle.aberta { transform: rotate(180deg); }
+
+    .conteudo-colapsavel {
+        display: none; 
+        margin-top: 15px;
+        padding-top: 15px;
+        border-top: 1px solid var(--borda-sutil);
+        animation: fadeIn 0.3s ease;
+    }
+
+    .conteudo-colapsavel.aberto { display: block; }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(-5px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Tags estilizadas para horários/turnos */
+    .tag-horario {
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        color: var(--texto-puro);
+        padding: 4px 12px;
+        border-radius: 20px; /* Deixa bem arredondado (pílula) */
+        font-size: 0.8rem;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+        display: inline-block;
+    }
 </style>
 {% endblock %}
 
@@ -189,7 +240,7 @@
 <h1 style="margin-bottom: 25px;">Controle Estratégico</h1>
 
 <!-- DASHBOARD DA TELA INICIAL -->
-<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; margin-bottom: 35px;">
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; margin-bottom: 20px;">
     <div style="background: var(--bg-card); border: 1px solid var(--borda-sutil); border-radius: 12px; padding: 25px; text-align: center;">
         <div style="color: var(--texto-mutado); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">Sequência de Estudos</div>
         <div id="dash-streak" style="font-size: 3rem; font-weight: 800; color: #ff9800;">🔥 0</div>
@@ -200,6 +251,38 @@
         <div style="color: var(--texto-mutado); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">Tempo Total</div>
         <div id="dash-horas" style="font-size: 3rem; font-weight: 800; color: var(--texto-puro);">0h</div>
         <div style="color: var(--texto-mutado); font-size: 0.85rem; margin-top: 5px;">Foco acumulado</div>
+    </div>
+</div>
+
+<!-- RESUMO DO DIA (AGENDA E ROTINA) -->
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-bottom: 35px; align-items: start;">
+        
+    <!-- Card da Agenda de Hoje (Agora Clicável/Sanfona) -->
+    <div style="background: var(--bg-card); border: 1px solid var(--borda-sutil); border-radius: 12px; padding: 20px;">
+        <div class="card-header-clicavel" onclick="toggleCard('conteudo-agenda', 'seta-agenda')">
+            <h3 style="color: var(--texto-puro); margin: 0; font-size: 1.1rem; transition: 0.2s;">Agenda de Hoje</h3>
+            <span id="seta-agenda" class="seta-toggle aberta">▼</span>
+        </div>
+        
+        <div id="conteudo-agenda" class="conteudo-colapsavel aberto">
+            <div id="resumo-agenda-hoje" style="display: flex; flex-direction: column; gap: 10px;">
+                <span style="color: var(--texto-mutado); font-size: 0.9rem;">Carregando compromissos...</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Card da Grade de Horários (Agora Clicável/Sanfona) -->
+    <div style="background: var(--bg-card); border: 1px solid var(--borda-sutil); border-radius: 12px; padding: 20px;">
+        <div class="card-header-clicavel" onclick="toggleCard('conteudo-horarios', 'seta-horarios')">
+            <h3 style="color: var(--texto-puro); margin: 0; font-size: 1.1rem; transition: 0.2s;">Horários de Hoje (<span id="nome-dia-semana">...</span>)</h3>
+            <span id="seta-horarios" class="seta-toggle aberta">▼</span>
+        </div>
+        
+        <div id="conteudo-horarios" class="conteudo-colapsavel aberto">
+            <div id="resumo-grade-hoje" style="display: flex; flex-direction: column; gap: 15px;">
+                <span style="color: var(--texto-mutado); font-size: 0.9rem;">Carregando grade...</span>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -276,6 +359,15 @@
         }
     }
 
+    /* FUNÇÃO DO EFEITO SANFONA */
+    function toggleCard(idConteudo, idSeta) {
+        const conteudo = document.getElementById(idConteudo);
+        const seta = document.getElementById(idSeta);
+        
+        conteudo.classList.toggle('aberto');
+        seta.classList.toggle('aberta');
+    }
+
     /* ABAS DE CATEGORIA */
     function renderizarAbas() {
         const container = document.getElementById('container-abas');
@@ -346,6 +438,7 @@
     /* RENDERIZAÇÃO DA TELA */
     function renderizarTela() {
         atualizarStatus();
+        renderizarResumoDoDia(); 
         renderizarAbas();
 
         const container = document.getElementById('lista-disciplinas');
@@ -415,6 +508,89 @@
                 </div>
             `);
         });
+    }
+
+    /* FUNÇÃO DO RESUMO DO DIA (Agenda e Rotina) */
+    function renderizarResumoDoDia() {
+        const d = new Date();
+        const ano = d.getFullYear();
+        const mes = String(d.getMonth() + 1).padStart(2, '0');
+        const dia = String(d.getDate()).padStart(2, '0');
+        const hojeIso = `${ano}-${mes}-${dia}`;
+        
+        const diasMapa = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sab'];
+        const nomesDias = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
+        
+        const indiceDia = d.getDay();
+        const diaSigla = diasMapa[indiceDia]; 
+        const nomeDia = nomesDias[indiceDia]; 
+        
+        // Atualiza Título
+        const spanNomeDia = document.getElementById('nome-dia-semana');
+        if(spanNomeDia) spanNomeDia.innerText = nomeDia;
+
+        // 1. Renderizar Agenda
+        const containerAgenda = document.getElementById('resumo-agenda-hoje');
+        const agenda = dadosApp.agenda || [];
+        const agendaHoje = agenda.filter(item => item.data === hojeIso);
+        
+        if (agendaHoje.length === 0) {
+            containerAgenda.innerHTML = `<span style="color: var(--texto-mutado); font-size: 0.9rem;">Nenhum compromisso marcado para hoje.</span>`;
+        } else {
+            let htmlAgenda = '';
+            agendaHoje.forEach(item => {
+                const estiloConcluido = item.concluida ? 'text-decoration: line-through; opacity: 0.5;' : '';
+                htmlAgenda += `
+                    <div style="background: rgba(0,0,0,0.3); border: 1px solid var(--borda-sutil); border-radius: 8px; padding: 10px; ${estiloConcluido}">
+                        <strong style="color: var(--texto-puro); font-size: 0.95rem;">${escapeHtml(item.titulo)}</strong>
+                        ${item.detalhes ? `<div style="font-size: 0.8rem; color: var(--texto-mutado); margin-top: 4px;">${escapeHtml(item.detalhes)}</div>` : ''}
+                    </div>
+                `;
+            });
+            containerAgenda.innerHTML = htmlAgenda;
+        }
+
+        // 2. Renderizar Grade de Horários (Utilizando as Novas Tags!)
+        const containerGrade = document.getElementById('resumo-grade-hoje');
+        const grades = (dadosApp.rotina && dadosApp.rotina.grades) ? dadosApp.rotina.grades : [];
+        let htmlGrade = '';
+        let temAtividade = false;
+
+        grades.forEach(grade => {
+            let itensDaGrade = '';
+            
+            if(grade.linhas) {
+                grade.linhas.forEach(linha => {
+                    const atividadeDoDia = linha[diaSigla];
+                    if (linha.horario && atividadeDoDia && atividadeDoDia.trim() !== "") {
+                        temAtividade = true;
+                        itensDaGrade += `
+                            <div style="display: flex; gap: 12px; margin-bottom: 10px; align-items: center;">
+                                <span class="tag-horario">
+                                    ${escapeHtml(linha.horario)}
+                                </span>
+                                <span style="color: var(--texto-base); font-size: 0.95rem;">${escapeHtml(atividadeDoDia)}</span>
+                            </div>
+                        `;
+                    }
+                });
+            }
+
+            if (itensDaGrade !== '') {
+                htmlGrade += `
+                    <div style="margin-bottom: 15px;">
+                        <div style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; color: var(--texto-mutado); font-weight: bold; margin-bottom: 10px;">${escapeHtml(grade.titulo || 'Grade')}</div>
+                        ${itensDaGrade}
+                    </div>
+                `;
+            }
+        });
+
+        if (!temAtividade) {
+            containerGrade.innerHTML = `<span style="color: var(--texto-mutado); font-size: 0.9rem;">Sua grade está livre neste dia.</span>`;
+        } else {
+            containerGrade.innerHTML = htmlGrade;
+        }
     }
 
     function atualizarStatus() {
