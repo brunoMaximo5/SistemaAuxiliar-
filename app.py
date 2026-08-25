@@ -8,12 +8,10 @@ app = Flask(__name__)
 DATA_FILE = 'dados.json'
 UPLOAD_FOLDER = 'uploads'
 
-# Garante que a pasta de uploads exista
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 def carregar_dados():
-    # Estrutura padrão com todas as chaves esperadas pelo sistema
     dados_padrao = {
         "xp": 0,
         "tempo_total": 0,
@@ -21,7 +19,10 @@ def carregar_dados():
         "categorias": ["Principal"],
         "edital": [],
         "forum": [],
-        "agenda": []
+        "agenda": [],
+        "ciclo": [],          
+        "financas": {"cartoes": [], "pessoas": [], "despesas": []},
+        "diario": []
     }
     
     if not os.path.exists(DATA_FILE):
@@ -30,7 +31,6 @@ def carregar_dados():
     try:
         with open(DATA_FILE, 'r', encoding='utf-8') as f:
             dados = json.load(f)
-            # Garante que chaves novas existam em arquivos salvos anteriormente
             for chave, valor in dados_padrao.items():
                 if chave not in dados:
                     dados[chave] = valor
@@ -43,7 +43,6 @@ def salvar_dados(dados):
     with open(DATA_FILE, 'w', encoding='utf-8') as f:
         json.dump(dados, f, ensure_ascii=False, indent=4)
 
-# --- ROTAS DE TELAS ---
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -75,8 +74,15 @@ def sala_estudos(id_assunto):
 @app.route('/agenda')
 def agenda():
     return render_template('agenda.html')
+    
+@app.route('/financas')
+def financas():
+    return render_template('financas.html')
 
-# --- ROTAS DE DADOS (API) ---
+@app.route('/diario')
+def diario():
+    return render_template('diario.html')
+
 @app.route('/api/dados', methods=['GET', 'POST'])
 def gerenciar_dados():
     if request.method == 'POST':
@@ -85,7 +91,6 @@ def gerenciar_dados():
         return jsonify({"status": "sucesso"})
     return jsonify(carregar_dados())
 
-# --- EDITAR POST DO FÓRUM ---
 @app.route('/api/forum/editar/<int:post_index>', methods=['POST'])
 def editar_post_forum(post_index):
     dados_recebidos = request.json
@@ -93,8 +98,6 @@ def editar_post_forum(post_index):
     nova_secao = dados_recebidos.get('secao')
     
     banco = carregar_dados()
-    
-    # Verifica se o índice existe na lista do fórum
     if 0 <= post_index < len(banco["forum"]):
         banco["forum"][post_index]["texto"] = novo_texto
         banco["forum"][post_index]["secao"] = nova_secao
@@ -102,20 +105,18 @@ def editar_post_forum(post_index):
         return jsonify({"status": "sucesso"})
     else:
         return jsonify({"status": "erro", "mensagem": "Post não encontrado"}), 404
-    
-# --- RECEBER POSTS E ARQUIVOS DO FÓRUM ---
+
 @app.route('/api/forum', methods=['POST'])
 def adicionar_post_forum():
     texto = request.form.get('texto', '')
     data_post = request.form.get('data', '')
-    secao_post = request.form.get('secao', 'Geral') # <-- CAPTURA A SEÇÃO ENVIADA PELO FRONT (Padrão: 'Geral')
+    secao_post = request.form.get('secao', 'Geral')
     nome_arquivo = None
 
     if 'arquivo' in request.files:
         arquivo = request.files['arquivo']
         if arquivo.filename != '':
             nome_limpo = secure_filename(arquivo.filename)
-            # Adiciona timestamp prefixado para impedir nomes duplicados de se sobrescreverem
             nome_arquivo = f"{int(time.time())}_{nome_limpo}"
             caminho_salvar = os.path.join(app.config['UPLOAD_FOLDER'], nome_arquivo)
             arquivo.save(caminho_salvar)
@@ -124,19 +125,13 @@ def adicionar_post_forum():
     novo_post = {
         "texto": texto,
         "data": data_post,
-        "secao": secao_post, # <-- SALVA A SEÇÃO NO JSON
+        "secao": secao_post,
         "arquivo": nome_arquivo
     }
-
-
-    
-    # Adiciona ao final da lista (o frontend forum.html cuida de inverter para exibir os recentes no topo)
     dados["forum"].append(novo_post)
     salvar_dados(dados)
-    
     return jsonify({"status": "sucesso"})
 
-# --- SERVIR OS ARQUIVOS SALVOS ---
 @app.route('/uploads/<nome_arquivo>')
 def acessar_arquivo(nome_arquivo):
     return send_from_directory(app.config['UPLOAD_FOLDER'], nome_arquivo)

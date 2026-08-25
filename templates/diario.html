@@ -1,0 +1,318 @@
+{% extends 'base.html' %} 
+
+{% block titulo %}Meu Diário{% endblock %}
+
+{% block estilos %}
+<style>
+    .diario-container {
+        display: grid;
+        grid-template-columns: 350px 1fr;
+        gap: 20px;
+        height: calc(100vh - 140px); /* Preenche a tela mantendo a barra de rolagem interna */
+    }
+    
+    @media (max-width: 900px) {
+        .diario-container { grid-template-columns: 1fr; height: auto; }
+    }
+
+    .card-painel {
+        background: var(--bg-card);
+        border: 1px solid var(--borda-sutil);
+        border-radius: 10px;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .card-painel h3 {
+        margin-bottom: 15px;
+        color: var(--texto-puro);
+        border-bottom: 1px solid var(--borda-sutil);
+        padding-bottom: 10px;
+    }
+
+    .input-group { margin-bottom: 15px; }
+    .input-group label { display: block; margin-bottom: 5px; font-size: 0.9rem; color: var(--texto-base); }
+    .input-group input, .input-group select, .input-group textarea {
+        width: 100%;
+        padding: 10px;
+        background: rgba(0,0,0,0.5);
+        border: 1px solid var(--borda-sutil);
+        border-radius: 6px;
+        color: var(--texto-puro);
+        font-family: inherit;
+    }
+    
+    .input-group textarea {
+        resize: vertical;
+        min-height: 250px;
+        line-height: 1.5;
+    }
+
+    .btn {
+        padding: 10px 15px; border: none; border-radius: 6px; cursor: pointer;
+        font-weight: bold; transition: 0.3s;
+    }
+    .btn-primario { background: var(--btn-primario-bg); color: var(--btn-primario-texto); width: 100%; }
+    .btn-secundario { background: var(--btn-secundario-bg); color: var(--texto-puro); }
+    .btn-secundario:hover { background: var(--btn-secundario-hover); }
+
+    /* Lista de Entradas */
+    .lista-entradas {
+        flex: 1;
+        overflow-y: auto;
+        padding-right: 5px;
+        margin-top: 10px;
+    }
+    
+    .entrada-item {
+        background: rgba(0,0,0,0.4);
+        border: 1px solid var(--borda-sutil);
+        border-radius: 8px;
+        padding: 12px;
+        margin-bottom: 10px;
+        cursor: pointer;
+        transition: 0.2s;
+        border-left: 4px solid transparent;
+    }
+    .entrada-item:hover {
+        background: rgba(255,255,255,0.05);
+    }
+    .entrada-item.ativa {
+        border-left-color: var(--texto-puro);
+        background: rgba(255,255,255,0.08);
+    }
+    .entrada-data { font-weight: bold; color: var(--texto-puro); font-size: 1.1rem; }
+    .entrada-resumo { font-size: 0.85rem; color: var(--texto-mutado); margin-top: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    
+    .humor-emoji { font-size: 1.5rem; margin-right: 10px; }
+</style>
+{% endblock %}
+
+{% block conteudo %}
+<h1 style="color: var(--texto-puro); margin-bottom: 20px;">Meu Diário Pessoal</h1>
+
+<div class="diario-container">
+    <!-- COLUNA ESQUERDA: LISTA E BUSCA -->
+    <div class="card-painel" style="padding-bottom: 5px;">
+        <h3>Histórico</h3>
+        <input type="text" id="busca-diario" placeholder="Buscar no diário..." onkeyup="renderizarLista()" style="width: 100%; padding: 10px; background: rgba(0,0,0,0.5); border: 1px solid var(--borda-sutil); border-radius: 6px; color: var(--texto-puro); margin-bottom: 10px;">
+        
+        <div class="lista-entradas" id="lista-diario">
+            <!-- Entradas renderizadas via JS -->
+        </div>
+        
+        <button class="btn btn-secundario" style="margin-top: 10px; margin-bottom: 15px; width: 100%;" onclick="novaEntrada()">+ Nova Anotação</button>
+    </div>
+
+    <!-- COLUNA DIREITA: EDITOR -->
+    <div class="card-painel">
+        <h3 id="titulo-editor">Escrevendo...</h3>
+        
+        <div style="display: flex; gap: 15px;">
+            <div class="input-group" style="flex: 1;">
+                <label>Data</label>
+                <input type="date" id="data-diario">
+            </div>
+            
+            <div class="input-group" style="flex: 1;">
+                <label>Humor do Dia</label>
+                <select id="humor-diario">
+                    <option value="🤩 Excelente">🤩 Excelente</option>
+                    <option value="🙂 Bom">🙂 Bom</option>
+                    <option value="😐 Normal">😐 Normal</option>
+                    <option value="😥 Cansativo">😥 Cansativo</option>
+                    <option value="😡 Estressante">😡 Estressante</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="input-group" style="flex: 1; display: flex; flex-direction: column;">
+            <label>Como foi o seu dia?</label>
+            <textarea id="texto-diario" placeholder="Escreva sobre os seus estudos, pensamentos, vitórias e dificuldades de hoje..."></textarea>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; gap: 10px;">
+            <button class="btn" style="background: transparent; border: 1px solid var(--btn-excluir); color: var(--texto-excluir); display: none;" id="btn-excluir" onclick="excluirEntradaAtual()">Excluir</button>
+            <div style="flex: 1;"></div>
+            <button class="btn btn-primario" style="width: auto; padding-left: 30px; padding-right: 30px;" onclick="salvarEntrada()">Salvar Anotação</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let bancoDiario = [];
+    let dataAtualEditando = null;
+
+    // Define a data de hoje no input ao abrir a página
+    function setHoje() {
+        const hoje = new Date();
+        const ano = hoje.getFullYear();
+        const mes = String(hoje.getMonth() + 1).padStart(2, '0');
+        const dia = String(hoje.getDate()).padStart(2, '0');
+        document.getElementById('data-diario').value = `${ano}-${mes}-${dia}`;
+    }
+
+    async function carregarDadosAPI() {
+        try {
+            const res = await fetch('/api/dados');
+            const dados = await res.json();
+            
+            if (dados.diario) {
+                bancoDiario = dados.diario;
+            }
+            
+            // Ordena da data mais nova para a mais antiga
+            bancoDiario.sort((a, b) => new Date(b.data) - new Date(a.data));
+            
+            renderizarLista();
+            novaEntrada(); // Prepara o formulário para um dia novo
+        } catch (e) {
+            console.error("Erro ao carregar diário:", e);
+        }
+    }
+
+    async function salvarNoBanco() {
+        try {
+            const res = await fetch('/api/dados');
+            let dados = await res.json();
+            
+            dados.diario = bancoDiario;
+
+            await fetch('/api/dados', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(dados)
+            });
+            
+            renderizarLista();
+        } catch (e) {
+            console.error("Erro ao salvar diário:", e);
+        }
+    }
+
+    function formatarDataBR(dataISO) {
+        if (!dataISO) return "";
+        const partes = dataISO.split('-');
+        return `${partes[2]}/${partes[1]}/${partes[0]}`;
+    }
+
+    function renderizarLista() {
+        const listaEl = document.getElementById('lista-diario');
+        const termoBusca = document.getElementById('busca-diario').value.toLowerCase();
+        
+        listaEl.innerHTML = '';
+        
+        bancoDiario.forEach(entrada => {
+            // Filtro de busca
+            if (termoBusca && !entrada.texto.toLowerCase().includes(termoBusca) && !formatarDataBR(entrada.data).includes(termoBusca)) {
+                return;
+            }
+
+            const emoji = entrada.humor.split(' ')[0]; // Pega só a carinha
+            const classeAtiva = (dataAtualEditando === entrada.data) ? 'ativa' : '';
+            
+            listaEl.innerHTML += `
+                <div class="entrada-item ${classeAtiva}" onclick="abrirEntrada('${entrada.data}')">
+                    <div style="display: flex; align-items: center;">
+                        <span class="humor-emoji">${emoji}</span>
+                        <div>
+                            <div class="entrada-data">${formatarDataBR(entrada.data)}</div>
+                        </div>
+                    </div>
+                    <div class="entrada-resumo">${entrada.texto}</div>
+                </div>
+            `;
+        });
+        
+        if (listaEl.innerHTML === '') {
+            listaEl.innerHTML = '<p style="color:var(--texto-mutado); text-align:center; margin-top:20px; font-size:0.9rem;">Nenhuma anotação encontrada.</p>';
+        }
+    }
+
+    function novaEntrada() {
+        dataAtualEditando = null;
+        setHoje();
+        document.getElementById('humor-diario').value = "🙂 Bom";
+        document.getElementById('texto-diario').value = "";
+        document.getElementById('titulo-editor').innerText = "Nova Anotação";
+        document.getElementById('btn-excluir').style.display = 'none';
+        
+        // Verifica se já existe algo hoje e abre automaticamente se existir
+        const hojeISO = document.getElementById('data-diario').value;
+        const existeHoje = bancoDiario.find(e => e.data === hojeISO);
+        if (existeHoje) {
+            abrirEntrada(hojeISO);
+        } else {
+            renderizarLista(); // Tira a seleção da lista
+        }
+    }
+
+    function abrirEntrada(dataISO) {
+        const entrada = bancoDiario.find(e => e.data === dataISO);
+        if (entrada) {
+            dataAtualEditando = dataISO;
+            document.getElementById('data-diario').value = entrada.data;
+            document.getElementById('humor-diario').value = entrada.humor;
+            document.getElementById('texto-diario').value = entrada.texto;
+            document.getElementById('titulo-editor').innerText = `Editando: ${formatarDataBR(entrada.data)}`;
+            document.getElementById('btn-excluir').style.display = 'block';
+            renderizarLista(); // Para aplicar a classe 'ativa'
+        }
+    }
+
+    function salvarEntrada() {
+        const data = document.getElementById('data-diario').value;
+        const humor = document.getElementById('humor-diario').value;
+        const texto = document.getElementById('texto-diario').value.trim();
+
+        if (!data || !texto) {
+            alert("A data e o texto são obrigatórios!");
+            return;
+        }
+
+        // Verifica se a data já existe
+        const indexExistente = bancoDiario.findIndex(e => e.data === data);
+
+        if (indexExistente >= 0) {
+            // Atualiza
+            bancoDiario[indexExistente].humor = humor;
+            bancoDiario[indexExistente].texto = texto;
+        } else {
+            // Cria novo
+            bancoDiario.push({ data, humor, texto });
+        }
+
+        // Reordena e salva
+        bancoDiario.sort((a, b) => new Date(b.data) - new Date(a.data));
+        dataAtualEditando = data; // Mantém selecionado
+        
+        salvarNoBanco();
+        
+        // Efeito visual de sucesso
+        const btn = document.querySelector('.btn-primario');
+        const textoOriginal = btn.innerText;
+        btn.innerText = "Salvo! ✔";
+        btn.style.background = "#4CAF50";
+        setTimeout(() => {
+            btn.innerText = textoOriginal;
+            btn.style.background = "var(--btn-primario-bg)";
+        }, 2000);
+    }
+
+    function excluirEntradaAtual() {
+        if (!dataAtualEditando) return;
+        
+        if (confirm(`Tem certeza que deseja excluir a anotação do dia ${formatarDataBR(dataAtualEditando)}?`)) {
+            bancoDiario = bancoDiario.filter(e => e.data !== dataAtualEditando);
+            salvarNoBanco();
+            novaEntrada();
+        }
+    }
+
+    // Inicializa
+    document.addEventListener('DOMContentLoaded', carregarDadosAPI);
+</script>
+{% endblock %}

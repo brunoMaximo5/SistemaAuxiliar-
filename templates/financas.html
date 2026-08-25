@@ -1,0 +1,492 @@
+{% extends 'base.html' %} 
+
+{% block titulo %}Finanças{% endblock %}
+
+{% block estilos %}
+<style>
+    .financas-container {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+    }
+    
+    /* Telas menores adaptam para 1 coluna */
+    @media (max-width: 1000px) {
+        .financas-container { grid-template-columns: 1fr; }
+    }
+
+    .card-painel {
+        background: var(--bg-card);
+        border: 1px solid var(--borda-sutil);
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+    .card-painel h3 {
+        margin-bottom: 15px;
+        color: var(--texto-puro);
+        border-bottom: 1px solid var(--borda-sutil);
+        padding-bottom: 10px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .input-group {
+        margin-bottom: 15px;
+    }
+    .input-group label {
+        display: block;
+        margin-bottom: 5px;
+        font-size: 0.9rem;
+        color: var(--texto-base);
+    }
+    .input-group input, .input-group select {
+        width: 100%;
+        padding: 10px;
+        background: rgba(0,0,0,0.5);
+        border: 1px solid var(--borda-sutil);
+        border-radius: 6px;
+        color: var(--texto-puro);
+    }
+    .btn {
+        padding: 10px 15px;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: bold;
+        transition: 0.3s;
+    }
+    .btn-primario { background: var(--btn-primario-bg); color: var(--btn-primario-texto); width: 100%; }
+    .btn-secundario { background: var(--btn-secundario-bg); color: var(--texto-puro); width: 100%; }
+    .btn-secundario:hover { background: var(--btn-secundario-hover); }
+    
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 10px;
+        font-size: 0.9rem;
+        table-layout: fixed; /* Evita que a tabela cresça infinitamente */
+        word-wrap: break-word; /* Quebra palavras muito grandes */
+    }
+    table th, table td {
+        padding: 10px;
+        text-align: left;
+        border-bottom: 1px solid var(--borda-sutil);
+    }
+    table th { color: var(--texto-mutado); font-weight: 600; }
+    
+    .btn-remover {
+        background: transparent; color: var(--texto-excluir);
+        border: 1px solid var(--btn-excluir); padding: 4px 8px;
+        border-radius: 4px; cursor: pointer;
+    }
+    .btn-remover:hover { background: var(--btn-excluir-hover); }
+    
+    .resumo-valor { font-size: 1.2rem; font-weight: bold; color: #4CAF50; }
+    .resumo-cartao-valor { font-size: 1.2rem; font-weight: bold; color: #FF9800; }
+    .scroll-area { max-height: 250px; overflow-y: auto; padding-right: 5px; }
+
+    /* Estilo para lista de cadastros */
+    .item-cadastro {
+        display: flex; justify-content: space-between; align-items: center;
+        background: rgba(0,0,0,0.3); padding: 8px 12px; margin-bottom: 5px;
+        border-radius: 4px; font-size: 0.9rem; word-break: break-all;
+    }
+</style>
+{% endblock %}
+
+{% block conteudo %}
+<!-- CABEÇALHO COM CONTROLE DE MÊS/ANO -->
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;">
+    <h1 style="color: var(--texto-puro); margin: 0;">Gestão de Cartões</h1>
+    <div style="background: rgba(255,255,255,0.05); padding: 10px 15px; border-radius: 8px; border: 1px solid var(--borda-sutil);">
+        <label style="color:var(--texto-base); margin-right:10px; font-weight:bold;">Mês de Referência (Fatura):</label>
+        <input type="month" id="mes-referencia" onchange="atualizarInterface()" style="padding: 5px; background: #000; color: #fff; border: 1px solid var(--borda-sutil); border-radius: 4px;">
+    </div>
+</div>
+
+<div class="financas-container">
+    <!-- COLUNA ESQUERDA -->
+    <div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+            <!-- RESUMO MENSAL POR PESSOA -->
+            <div class="card-painel">
+                <h3 style="font-size: 1.1rem;">Fatura por Pessoa</h3>
+                <div class="scroll-area" id="area-resumo-pessoa">
+                    <table id="tabela-resumo">
+                        <thead><tr><th>Pessoa</th><th>Total no Mês</th></tr></thead>
+                        <tbody><!-- Preenchido via JS --></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- RESUMO MENSAL POR CARTÃO -->
+            <div class="card-painel">
+                <h3 style="font-size: 1.1rem;">Fatura por Cartão</h3>
+                <div class="scroll-area" id="area-resumo-cartao">
+                    <table id="tabela-resumo-cartao">
+                        <thead><tr><th>Cartão</th><th>Total no Mês</th></tr></thead>
+                        <tbody><!-- Preenchido via JS --></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- LISTA DE DESPESAS COM FILTROS -->
+        <div class="card-painel">
+            <h3>Todas as Compras</h3>
+            
+            <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                <select id="filtro-pessoa" onchange="atualizarInterface()" style="flex:1; padding:8px; background:rgba(0,0,0,0.5); color:var(--texto-puro); border:1px solid var(--borda-sutil); border-radius:4px;">
+                    <!-- Preenchido via JS -->
+                </select>
+                <select id="filtro-cartao" onchange="atualizarInterface()" style="flex:1; padding:8px; background:rgba(0,0,0,0.5); color:var(--texto-puro); border:1px solid var(--borda-sutil); border-radius:4px;">
+                    <!-- Preenchido via JS -->
+                </select>
+            </div>
+
+            <div style="max-height: 400px; overflow-y: auto;">
+                <table id="tabela-despesas">
+                    <thead>
+                        <tr>
+                            <th style="width: 40%">Descrição</th>
+                            <th style="width: 25%">Pagante / Cartão</th>
+                            <th style="width: 25%">Status Parcela</th>
+                            <th style="width: 10%">Ação</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Preenchido via JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- COLUNA DIREITA -->
+    <div>
+        <!-- ADICIONAR DESPESA -->
+        <div class="card-painel">
+            <h3>Nova Compra</h3>
+            <div class="input-group">
+                <label>Descrição da Compra</label>
+                <input type="text" id="desc-despesa" placeholder="Ex: Celular, Mercado...">
+            </div>
+            
+            <div style="display: flex; gap: 10px;">
+                <div class="input-group" style="flex: 1;">
+                    <label>Valor Total (R$)</label>
+                    <input type="number" id="valor-despesa" step="0.01" placeholder="0.00">
+                </div>
+                <div class="input-group" style="flex: 1;">
+                    <label>Qtd. Parcelas</label>
+                    <input type="number" id="parcelas-despesa" value="1" min="1">
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 10px;">
+                <div class="input-group" style="flex: 1;">
+                    <label>Quem vai pagar?</label>
+                    <select id="select-pessoa"></select>
+                </div>
+                <div class="input-group" style="flex: 1;">
+                    <label>Em qual Cartão?</label>
+                    <select id="select-cartao"></select>
+                </div>
+            </div>
+            
+            <div class="input-group">
+                <label>Mês da 1ª Parcela</label>
+                <input type="month" id="mes-inicio-despesa">
+            </div>
+
+            <button class="btn btn-primario" onclick="adicionarDespesa()">Adicionar Compra</button>
+        </div>
+
+        <!-- GERENCIAR CARTÕES E PESSOAS -->
+        <div class="card-painel">
+            <h3>Gerenciar Cadastros</h3>
+            
+            <!-- Pessoas -->
+            <div style="margin-bottom: 20px;">
+                <label style="display:block; margin-bottom:5px; color:var(--texto-base); font-weight:bold;">Pessoas da Família</label>
+                <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                    <input type="text" id="nova-pessoa" placeholder="Nome..." style="flex: 1; padding: 10px; background: rgba(0,0,0,0.5); border: 1px solid var(--borda-sutil); color: var(--texto-puro); border-radius: 6px;">
+                    <button class="btn btn-secundario" style="width: auto;" onclick="adicionarPessoa()">Add</button>
+                </div>
+                <div id="lista-pessoas" class="scroll-area" style="max-height: 120px;"></div>
+            </div>
+
+            <!-- Cartões -->
+            <div>
+                <label style="display:block; margin-bottom:5px; color:var(--texto-base); font-weight:bold;">Cartões</label>
+                <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                    <input type="text" id="novo-cartao" placeholder="Nubank, Inter..." style="flex: 1; padding: 10px; background: rgba(0,0,0,0.5); border: 1px solid var(--borda-sutil); color: var(--texto-puro); border-radius: 6px;">
+                    <button class="btn btn-secundario" style="width: auto;" onclick="adicionarCartao()">Add</button>
+                </div>
+                <div id="lista-cartoes" class="scroll-area" style="max-height: 120px;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let bancoFinancas = { cartoes: [], pessoas: [], despesas: [] };
+
+    // Configura os inputs de mês para o mês atual assim que carregar
+    function setMesesIniciais() {
+        const hoje = new Date();
+        const ano = hoje.getFullYear();
+        const mes = String(hoje.getMonth() + 1).padStart(2, '0');
+        const mesAtual = `${ano}-${mes}`;
+        
+        document.getElementById('mes-referencia').value = mesAtual;
+        document.getElementById('mes-inicio-despesa').value = mesAtual;
+    }
+
+    async function carregarFinancas() {
+        setMesesIniciais();
+        try {
+            const res = await fetch('/api/dados');
+            const dados = await res.json();
+            
+            if (dados.financas) {
+                bancoFinancas = dados.financas;
+                // Tratamento caso venha dados antigos sem mes_inicio
+                bancoFinancas.despesas.forEach(d => {
+                    if(!d.mes_inicio) {
+                        d.mes_inicio = document.getElementById('mes-referencia').value;
+                    }
+                });
+            }
+            
+            atualizarInterface();
+        } catch (e) {
+            console.error("Erro ao carregar finanças:", e);
+        }
+    }
+
+    async function salvarFinancas() {
+        try {
+            const res = await fetch('/api/dados');
+            let dados = await res.json();
+            
+            dados.financas = bancoFinancas;
+
+            await fetch('/api/dados', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(dados)
+            });
+            
+            atualizarInterface();
+        } catch (e) {
+            console.error("Erro ao salvar finanças:", e);
+        }
+    }
+
+    // Calcula a diferença em meses entre duas datas "YYYY-MM"
+    function getMesesDiff(mesInicio, mesRef) {
+        if (!mesInicio || !mesRef) return 0;
+        let [y1, m1] = mesInicio.split('-').map(Number);
+        let [y2, m2] = mesRef.split('-').map(Number);
+        return (y2 - y1) * 12 + (m2 - m1);
+    }
+
+    function atualizarInterface() {
+        const mesReferencia = document.getElementById('mes-referencia').value;
+        const filtroPessoa = document.getElementById('filtro-pessoa').value;
+        const filtroCartao = document.getElementById('filtro-cartao').value;
+
+        // 1. Atualiza Selects de Formulário e Filtros
+        const selectPessoa = document.getElementById('select-pessoa');
+        const selectCartao = document.getElementById('select-cartao');
+        const selectFiltroPessoa = document.getElementById('filtro-pessoa');
+        const selectFiltroCartao = document.getElementById('filtro-cartao');
+        
+        selectPessoa.innerHTML = '<option value="">Selecione...</option>';
+        selectFiltroPessoa.innerHTML = '<option value="">Todas as Pessoas</option>';
+        bancoFinancas.pessoas.forEach(p => {
+            selectPessoa.innerHTML += `<option value="${p}">${p}</option>`;
+            let selecionado = (filtroPessoa === p) ? 'selected' : '';
+            selectFiltroPessoa.innerHTML += `<option value="${p}" ${selecionado}>${p}</option>`;
+        });
+
+        selectCartao.innerHTML = '<option value="">Selecione...</option>';
+        selectFiltroCartao.innerHTML = '<option value="">Todos os Cartões</option>';
+        bancoFinancas.cartoes.forEach(c => {
+            selectCartao.innerHTML += `<option value="${c}">${c}</option>`;
+            let selecionado = (filtroCartao === c) ? 'selected' : '';
+            selectFiltroCartao.innerHTML += `<option value="${c}" ${selecionado}>${c}</option>`;
+        });
+
+        // 2. Atualiza Listas Visuais de Cadastros (com botão excluir)
+        const listaPessoas = document.getElementById('lista-pessoas');
+        listaPessoas.innerHTML = '';
+        bancoFinancas.pessoas.forEach((p, index) => {
+            listaPessoas.innerHTML += `
+                <div class="item-cadastro">
+                    <span>${p}</span>
+                    <button class="btn-remover" title="Excluir pessoa" onclick="removerPessoa(${index})">X</button>
+                </div>`;
+        });
+
+        const listaCartoes = document.getElementById('lista-cartoes');
+        listaCartoes.innerHTML = '';
+        bancoFinancas.cartoes.forEach((c, index) => {
+            listaCartoes.innerHTML += `
+                <div class="item-cadastro">
+                    <span>${c}</span>
+                    <button class="btn-remover" title="Excluir cartão" onclick="removerCartao(${index})">X</button>
+                </div>`;
+        });
+
+        // 3. Atualiza Tabela de Despesas e Cálculos
+        const tbodyDespesas = document.querySelector('#tabela-despesas tbody');
+        tbodyDespesas.innerHTML = '';
+        
+        const resumoPessoas = {};
+        const resumoCartoes = {};
+        bancoFinancas.pessoas.forEach(p => resumoPessoas[p] = 0);
+        bancoFinancas.cartoes.forEach(c => resumoCartoes[c] = 0);
+
+        bancoFinancas.despesas.forEach((d, index) => {
+            const mesesPassados = getMesesDiff(d.mes_inicio, mesReferencia);
+            const valorParcela = d.valor_total / d.parcelas;
+            
+            // Verifica se a parcela está ativa NO MÊS DE REFERÊNCIA
+            const estaAtiva = (mesesPassados >= 0 && mesesPassados < d.parcelas);
+
+            // Soma nos resumos APENAS se a parcela estiver ativa neste mês
+            if (estaAtiva) {
+                if (resumoPessoas[d.pessoa] !== undefined) resumoPessoas[d.pessoa] += valorParcela;
+                else resumoPessoas[d.pessoa] = valorParcela;
+
+                if (resumoCartoes[d.cartao] !== undefined) resumoCartoes[d.cartao] += valorParcela;
+                else resumoCartoes[d.cartao] = valorParcela;
+            }
+
+            // Aplica os filtros Visuais para a tabela
+            const filtroP = document.getElementById('filtro-pessoa').value;
+            const filtroC = document.getElementById('filtro-cartao').value;
+            if (filtroP && d.pessoa !== filtroP) return;
+            if (filtroC && d.cartao !== filtroC) return;
+
+            // Define o texto de Status da Parcela
+            let statusBadge = "";
+            if (mesesPassados < 0) {
+                statusBadge = `<span style="color:#FF9800; font-size:0.8rem;">Inicia em ${d.mes_inicio}</span>`;
+            } else if (mesesPassados >= d.parcelas) {
+                statusBadge = `<span style="color:#4CAF50; font-size:0.8rem;">Concluída</span>`;
+            } else {
+                statusBadge = `Parcela <strong style="color:var(--texto-puro)">${mesesPassados + 1}</strong>/${d.parcelas}`;
+            }
+
+            tbodyDespesas.innerHTML += `
+                <tr>
+                    <td>
+                        <strong style="color:var(--texto-puro)">${d.descricao}</strong><br>
+                        <span style="font-size:0.8rem; color:var(--texto-mutado)">Total: R$ ${d.valor_total.toFixed(2)}</span>
+                    </td>
+                    <td style="font-size:0.85rem;">
+                        <div style="color: #4CAF50;">👤 ${d.pessoa}</div>
+                        <div style="color: #FF9800;">💳 ${d.cartao}</div>
+                    </td>
+                    <td>
+                        ${statusBadge}<br>
+                        <span style="font-size:0.8rem; color:var(--texto-mutado)">R$ ${valorParcela.toFixed(2)}/mês</span>
+                    </td>
+                    <td><button class="btn-remover" onclick="removerDespesa(${index})">X</button></td>
+                </tr>
+            `;
+        });
+
+        // 4. Monta tabelas de Resumo
+        const tbodyResumo = document.querySelector('#tabela-resumo tbody');
+        tbodyResumo.innerHTML = '';
+        for (const [pessoa, valor] of Object.entries(resumoPessoas)) {
+            tbodyResumo.innerHTML += `<tr><td>${pessoa}</td><td class="resumo-valor">R$ ${valor.toFixed(2)}</td></tr>`;
+        }
+
+        const tbodyResumoCartao = document.querySelector('#tabela-resumo-cartao tbody');
+        tbodyResumoCartao.innerHTML = '';
+        for (const [cartao, valor] of Object.entries(resumoCartoes)) {
+            tbodyResumoCartao.innerHTML += `<tr><td>${cartao}</td><td class="resumo-cartao-valor">R$ ${valor.toFixed(2)}</td></tr>`;
+        }
+    }
+
+    function adicionarPessoa() {
+        const input = document.getElementById('nova-pessoa');
+        const nome = input.value.trim();
+        if (nome && !bancoFinancas.pessoas.includes(nome)) {
+            bancoFinancas.pessoas.push(nome);
+            input.value = '';
+            salvarFinancas();
+        }
+    }
+
+    function removerPessoa(index) {
+        if (confirm("Tem certeza que deseja remover esta pessoa dos cadastros? As despesas atreladas a ela continuarão existindo.")) {
+            bancoFinancas.pessoas.splice(index, 1);
+            salvarFinancas();
+        }
+    }
+
+    function adicionarCartao() {
+        const input = document.getElementById('novo-cartao');
+        const nome = input.value.trim();
+        if (nome && !bancoFinancas.cartoes.includes(nome)) {
+            bancoFinancas.cartoes.push(nome);
+            input.value = '';
+            salvarFinancas();
+        }
+    }
+
+    function removerCartao(index) {
+        if (confirm("Tem certeza que deseja remover este cartão? As compras já feitas nele continuarão existindo.")) {
+            bancoFinancas.cartoes.splice(index, 1);
+            salvarFinancas();
+        }
+    }
+
+    function adicionarDespesa() {
+        const desc = document.getElementById('desc-despesa').value.trim();
+        const valor = parseFloat(document.getElementById('valor-despesa').value);
+        const parcelas = parseInt(document.getElementById('parcelas-despesa').value);
+        const pessoa = document.getElementById('select-pessoa').value;
+        const cartao = document.getElementById('select-cartao').value;
+        const mesInicio = document.getElementById('mes-inicio-despesa').value;
+
+        if (!desc || isNaN(valor) || isNaN(parcelas) || !pessoa || !cartao || !mesInicio) {
+            alert("Preencha todos os campos corretamente!");
+            return;
+        }
+
+        bancoFinancas.despesas.push({
+            descricao: desc,
+            valor_total: valor,
+            parcelas: parcelas,
+            pessoa: pessoa,
+            cartao: cartao,
+            mes_inicio: mesInicio
+        });
+
+        document.getElementById('desc-despesa').value = '';
+        document.getElementById('valor-despesa').value = '';
+        document.getElementById('parcelas-despesa').value = '1';
+        
+        salvarFinancas();
+    }
+
+    function removerDespesa(index) {
+        if (confirm("Tem certeza que deseja apagar essa compra do histórico?")) {
+            bancoFinancas.despesas.splice(index, 1);
+            salvarFinancas();
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', carregarFinancas);
+</script>
+{% endblock %}

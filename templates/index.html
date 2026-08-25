@@ -4,7 +4,6 @@
 
 {% block estilos %}
 <style>
-    /* Estilos específicos do Controle de Edital e Abas */
     .tabs-wrapper {
         display: flex;
         align-items: center;
@@ -80,22 +79,20 @@
         width: 100%;
     }
 
-    input[type="text"] {
-        flex: 1;
-        padding: 12px 18px;
+    input[type="text"], input[type="number"], select {
+        padding: 10px 14px;
         border-radius: 6px;
         background: rgba(0, 0, 0, 0.4);
         border: 1px solid var(--borda-sutil);
         color: var(--texto-puro);
-        font-size: 0.95rem;
+        font-size: 0.9rem;
         outline: none;
         transition: all 0.3s ease;
     }
     
-    input[type="text"]:focus { 
+    input[type="text"]:focus, input[type="number"]:focus, select:focus { 
         border-color: var(--borda-hover); 
         background: rgba(0, 0, 0, 0.7); 
-        box-shadow: 0 0 10px rgba(255, 255, 255, 0.05); 
     }
 
     button, .btn-link {
@@ -149,20 +146,16 @@
 
     .disciplina-header h2 { margin: 0; font-size: 1.3rem; font-weight: 500; color: var(--texto-puro); }
 
-    .select-mover {
+    .select-mover, .select-ciclo {
         background: rgba(0,0,0,0.5);
-        color: var(--texto-mutado);
+        color: var(--texto-puro);
         border: 1px solid var(--borda-sutil);
         border-radius: 6px;
-        padding: 6px 10px;
-        font-size: 0.8rem;
+        padding: 6px 12px;
+        font-size: 0.85rem;
         outline: none;
         cursor: pointer;
         transition: 0.3s;
-    }
-    .select-mover:hover {
-        color: var(--texto-puro);
-        border-color: var(--borda-hover);
     }
 
     .assunto-item {
@@ -183,27 +176,19 @@
     .assunto-title { font-weight: 400; font-size: 1rem; word-break: break-word; flex: 1; min-width: 200px; }
     .assunto-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 
-    /* =========================================
-       NOVOS ESTILOS: EFEITO SANFONA E TAGS 
-       ========================================= */
     .card-header-clicavel {
         display: flex;
         justify-content: space-between;
         align-items: center;
         cursor: pointer;
         user-select: none;
-        border-bottom: 1px solid transparent; 
-        transition: all 0.2s;
     }
-    
-    .card-header-clicavel:hover h3 { color: #ffffff; }
 
     .seta-toggle {
         font-size: 0.8rem;
         transition: transform 0.3s ease;
         color: var(--texto-mutado);
     }
-
     .seta-toggle.aberta { transform: rotate(180deg); }
 
     .conteudo-colapsavel {
@@ -213,25 +198,71 @@
         border-top: 1px solid var(--borda-sutil);
         animation: fadeIn 0.3s ease;
     }
-
     .conteudo-colapsavel.aberto { display: block; }
 
-    @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(-5px); }
-        to { opacity: 1; transform: translateY(0); }
+    /* ESTILOS DO CICLO DE ESTUDOS */
+    .ciclo-destaque {
+        background: linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.01) 100%);
+        border: 1px solid rgba(255,255,255,0.15);
+        border-radius: 10px;
+        padding: 15px;
+        margin-bottom: 15px;
+    }
+    .ciclo-badge-agora {
+        background: #4caf50;
+        color: #000;
+        font-size: 0.7rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        padding: 3px 8px;
+        border-radius: 12px;
+        display: inline-block;
+        margin-bottom: 8px;
+    }
+    .ciclo-item-fila {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 8px 12px;
+        background: rgba(0,0,0,0.3);
+        border: 1px solid var(--borda-sutil);
+        border-radius: 6px;
+        font-size: 0.85rem;
     }
 
-    /* Tags estilizadas para horários/turnos */
-    .tag-horario {
-        background: rgba(255, 255, 255, 0.08);
-        border: 1px solid rgba(255, 255, 255, 0.15);
-        color: var(--texto-puro);
-        padding: 4px 12px;
-        border-radius: 20px; /* Deixa bem arredondado (pílula) */
-        font-size: 0.8rem;
-        font-weight: 600;
-        letter-spacing: 0.5px;
-        display: inline-block;
+    /* MODAL DO EDITOR DE CICLO */
+    .modal-overlay {
+        display: none;
+        position: fixed;
+        top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0,0,0,0.75);
+        backdrop-filter: blur(5px);
+        z-index: 1000;
+        align-items: center;
+        justify-content: center;
+    }
+    .modal-overlay.ativo { display: flex; }
+    .modal-card {
+        background: var(--bg-card);
+        border: 1px solid var(--borda-sutil);
+        border-radius: 12px;
+        padding: 25px;
+        max-width: 550px;
+        width: 92%;
+        max-height: 85vh;
+        overflow-y: auto;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+    }
+    .item-edicao-ciclo {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: rgba(0,0,0,0.4);
+        border: 1px solid var(--borda-sutil);
+        padding: 10px 14px;
+        border-radius: 8px;
+        margin-bottom: 8px;
+        gap: 10px;
     }
 </style>
 {% endblock %}
@@ -254,13 +285,13 @@
     </div>
 </div>
 
-<!-- RESUMO DO DIA (AGENDA E ROTINA) -->
+<!-- PAINEL CENTRAL (AGENDA & CICLO DE ESTUDOS) -->
 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-bottom: 35px; align-items: start;">
         
-    <!-- Card da Agenda de Hoje (Agora Clicável/Sanfona) -->
+    <!-- Agenda de Hoje -->
     <div style="background: var(--bg-card); border: 1px solid var(--borda-sutil); border-radius: 12px; padding: 20px;">
         <div class="card-header-clicavel" onclick="toggleCard('conteudo-agenda', 'seta-agenda')">
-            <h3 style="color: var(--texto-puro); margin: 0; font-size: 1.1rem; transition: 0.2s;">Agenda de Hoje</h3>
+            <h3 style="color: var(--texto-puro); margin: 0; font-size: 1.1rem;">Agenda de Hoje</h3>
             <span id="seta-agenda" class="seta-toggle aberta">▼</span>
         </div>
         
@@ -271,17 +302,15 @@
         </div>
     </div>
 
-    <!-- Card da Grade de Horários (Agora Clicável/Sanfona) -->
+    <!-- CICLO DE ESTUDOS -->
     <div style="background: var(--bg-card); border: 1px solid var(--borda-sutil); border-radius: 12px; padding: 20px;">
-        <div class="card-header-clicavel" onclick="toggleCard('conteudo-horarios', 'seta-horarios')">
-            <h3 style="color: var(--texto-puro); margin: 0; font-size: 1.1rem; transition: 0.2s;">Horários de Hoje (<span id="nome-dia-semana">...</span>)</h3>
-            <span id="seta-horarios" class="seta-toggle aberta">▼</span>
+        <div class="card-header-clicavel" onclick="toggleCard('conteudo-ciclo', 'seta-ciclo')">
+            <h3 style="color: var(--texto-puro); margin: 0; font-size: 1.1rem;">Ciclo de Estudos</h3>
+            <span id="seta-ciclo" class="seta-toggle aberta">▼</span>
         </div>
         
-        <div id="conteudo-horarios" class="conteudo-colapsavel aberto">
-            <div id="resumo-grade-hoje" style="display: flex; flex-direction: column; gap: 15px;">
-                <span style="color: var(--texto-mutado); font-size: 0.9rem;">Carregando grade...</span>
-            </div>
+        <div id="conteudo-ciclo" class="conteudo-colapsavel aberto">
+            <div id="painel-ciclo-principal"></div>
         </div>
     </div>
 </div>
@@ -299,11 +328,48 @@
 </div>
 
 <div id="lista-disciplinas"></div>
+
+<!-- MODAL PARA MONTAR/EDITAR A SEQUÊNCIA DO CICLO -->
+<div id="modal-editor-ciclo" class="modal-overlay">
+    <div class="modal-card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--borda-sutil); padding-bottom: 10px;">
+            <h3 style="margin:0; color: var(--texto-puro);" id="modal-titulo-ciclo">Montar Sequência do Ciclo</h3>
+            <button onclick="fecharModalEditor()" style="background:none; border:none; color:var(--texto-mutado); font-size:1.2rem; cursor:pointer;">✕</button>
+        </div>
+
+        <!-- Formulário para Adicionar Disciplina ao Ciclo -->
+        <div style="background: rgba(0,0,0,0.3); border: 1px solid var(--borda-sutil); padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+            <div style="font-size: 0.85rem; font-weight: bold; color: var(--texto-puro); margin-bottom: 10px;">Adicionar Matéria ao Ciclo:</div>
+            
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                <select id="select-materia-edital" onchange="selecionarMateriaDoSelect(this.value)">
+                    <!-- Opções geradas por JS -->
+                </select>
+
+                <input type="text" id="input-materia-custom" placeholder="Ou digite o nome manualmente (ex: Química)...">
+
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <span style="font-size: 0.85rem; color: var(--texto-mutado);">Bloco (minutos):</span>
+                    <input type="number" id="input-materia-tempo" value="50" style="width: 90px;" min="5">
+                    <button class="btn-primario" style="flex: 1; font-size: 0.8rem;" onclick="adicionarMateriaManualAosequenciador()">+ Incluir na Fila</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Lista Sequencial de Matérias do Ciclo -->
+        <div style="font-size: 0.85rem; font-weight: bold; color: var(--texto-mutado); margin-bottom: 10px;">Sequência Atual da Fila:</div>
+        <div id="lista-sequencia-ciclo" style="max-height: 250px; overflow-y: auto;"></div>
+
+        <div style="margin-top: 20px; display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid var(--borda-sutil); padding-top: 15px;">
+            <button class="btn-primario" onclick="fecharModalEditor()">Concluir e Salvar</button>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block scripts %}
 <script>
-    let dadosApp = { xp: 0, tempo_total: 0, edital: [], categorias: ['Principal'] };
+    let dadosApp = { xp: 0, tempo_total: 0, edital: [], categorias: ['Principal'], ciclos: [], ciclo_ativo: 'ciclo_padrao' };
     let abaAtiva = localStorage.getItem('aba_ativa') || 'Principal';
 
     document.addEventListener('DOMContentLoaded', async () => {
@@ -319,6 +385,11 @@
             if (!dadosApp.categorias || dadosApp.categorias.length === 0) {
                 dadosApp.categorias = ['Principal'];
             }
+            if (!dadosApp.ciclos || dadosApp.ciclos.length === 0) {
+                dadosApp.ciclos = [{ id: 'ciclo_padrao', nome: 'Ciclo Principal', materias: [], indice: 0 }];
+                dadosApp.ciclo_ativo = 'ciclo_padrao';
+            }
+
             if (dadosApp.edital) {
                 dadosApp.edital.forEach(d => {
                     if (!d.categoria) d.categoria = 'Principal';
@@ -359,13 +430,253 @@
         }
     }
 
-    /* FUNÇÃO DO EFEITO SANFONA */
     function toggleCard(idConteudo, idSeta) {
         const conteudo = document.getElementById(idConteudo);
         const seta = document.getElementById(idSeta);
-        
         conteudo.classList.toggle('aberto');
         seta.classList.toggle('aberta');
+    }
+
+    function getCicloAtivo() {
+        if (!dadosApp.ciclos || dadosApp.ciclos.length === 0) return null;
+        let cAtivo = dadosApp.ciclos.find(c => c.id === dadosApp.ciclo_ativo);
+        if (!cAtivo) {
+            cAtivo = dadosApp.ciclos[0];
+            dadosApp.ciclo_ativo = cAtivo.id;
+        }
+        return cAtivo;
+    }
+
+    /* RENDERIZAÇÃO DO CICLO DE ESTUDOS */
+    function renderizarCiclo() {
+        const container = document.getElementById('painel-ciclo-principal');
+        if (!container) return;
+
+        const cicloAtual = getCicloAtivo();
+        if (!cicloAtual) return;
+
+        let optionsCiclos = '';
+        dadosApp.ciclos.forEach(c => {
+            const sel = (c.id === cicloAtual.id) ? 'selected' : '';
+            optionsCiclos += `<option value="${c.id}" ${sel}>${escapeHtml(c.nome)}</option>`;
+        });
+
+        let htmlHeaderCiclo = `
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; gap: 8px; flex-wrap: wrap;">
+                <select class="select-ciclo" style="flex: 1; font-weight: bold;" onchange="mudarCicloAtivo(this.value)">
+                    ${optionsCiclos}
+                </select>
+                <button class="btn-secundario" style="padding: 5px 10px; font-size: 0.75rem;" onclick="criarNovoCiclo()">+ Novo</button>
+                <button class="btn-primario" style="padding: 5px 10px; font-size: 0.75rem;" onclick="abrirModalEditor()">⚙️ Montar Ciclo</button>
+            </div>
+        `;
+
+        const materias = cicloAtual.materias || [];
+        const idx = cicloAtual.indice || 0;
+
+        if (materias.length === 0) {
+            container.innerHTML = `
+                ${htmlHeaderCiclo}
+                <div style="text-align: center; padding: 20px; color: var(--texto-mutado); font-size: 0.85rem;">
+                    Nenhuma matéria na fila deste ciclo!
+                    <br><br>
+                    <button class="btn-primario" onclick="abrirModalEditor()" style="font-size: 0.8rem;">
+                        ⚙️ Escolher Ordem das Matérias
+                    </button>
+                </div>
+            `;
+            return;
+        }
+
+        const materiaAtual = materias[idx % materias.length];
+        
+        let htmlFila = '';
+        for (let i = 1; i < Math.min(4, materias.length); i++) {
+            const proxIdx = (idx + i) % materias.length;
+            htmlFila += `
+                <div class="ciclo-item-fila">
+                    <span style="color: var(--texto-base);">${i}º Próxima: <strong>${escapeHtml(materias[proxIdx].nome)}</strong></span>
+                    <span style="color: var(--texto-mutado); font-size: 0.75rem;">${materias[proxIdx].tempo || 50} min</span>
+                </div>
+            `;
+        }
+
+        container.innerHTML = `
+            ${htmlHeaderCiclo}
+            <div class="ciclo-destaque">
+                <span class="ciclo-badge-agora">Sua Vez Agora</span>
+                <div style="font-size: 1.3rem; font-weight: bold; color: #fff; margin-bottom: 5px;">
+                    ${escapeHtml(materiaAtual.nome)}
+                </div>
+                <div style="font-size: 0.8rem; color: var(--texto-mutado); margin-bottom: 15px;">
+                    Meta do Bloco: ${materiaAtual.tempo || 50} minutos
+                </div>
+                
+                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                    <button class="btn-primario" style="flex: 1; font-size: 0.8rem;" onclick="concluirBlocoCiclo()">
+                        ⏭ Avançar para a Próxima Matéria
+                    </button>
+                </div>
+            </div>
+
+            ${htmlFila ? `<div style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 15px;">${htmlFila}</div>` : ''}
+
+            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem; border-top: 1px solid var(--borda-sutil); padding-top: 10px;">
+                <span style="color: var(--texto-mutado);">${materias.length} matérias no ciclo</span>
+                <div>
+                    <button onclick="abrirModalEditor()" style="background: none; border: none; color: var(--texto-base); cursor: pointer; text-decoration: underline; font-size: 0.75rem;">Organizar</button> | 
+                    <button onclick="excluirCicloAtivo()" style="background: none; border: none; color: var(--texto-excluir); cursor: pointer; text-decoration: underline; font-size: 0.75rem;">Excluir Ciclo</button>
+                </div>
+            </div>
+        `;
+    }
+
+    /* MÉTODOS DO GERENCIADOR / EDITOR DO CICLO */
+    function abrirModalEditor() {
+        const cicloAtual = getCicloAtivo();
+        if (!cicloAtual) return;
+
+        document.getElementById('modal-titulo-ciclo').innerText = `Montar Sequência: ${cicloAtual.nome}`;
+        
+        // Preenche o Select com as disciplinas cadastradas no edital
+        const select = document.getElementById('select-materia-edital');
+        select.innerHTML = `<option value="">-- Selecionar da sua Lista de Disciplinas --</option>`;
+        
+        if (dadosApp.edital) {
+            dadosApp.edital.forEach(d => {
+                select.innerHTML += `<option value="${escapeHtml(d.nome)}">${escapeHtml(d.nome)} (${escapeHtml(d.categoria)})</option>`;
+            });
+        }
+
+        renderizarFilaEdicaoModal();
+        document.getElementById('modal-editor-ciclo').classList.add('ativo');
+    }
+
+    function fecharModalEditor() {
+        document.getElementById('modal-editor-ciclo').classList.remove('ativo');
+        salvarNoBanco();
+    }
+
+    function selecionarMateriaDoSelect(valor) {
+        if (valor) {
+            document.getElementById('input-materia-custom').value = valor;
+        }
+    }
+
+    function adicionarMateriaManualAosequenciador() {
+        const cicloAtual = getCicloAtivo();
+        const inputNome = document.getElementById('input-materia-custom');
+        const inputTempo = document.getElementById('input-materia-tempo');
+        
+        const nome = inputNome.value.trim();
+        const tempo = parseInt(inputTempo.value) || 50;
+
+        if (!nome) {
+            alert("Digite ou selecione o nome de uma disciplina!");
+            return;
+        }
+
+        cicloAtual.materias.push({ nome: nome, tempo: tempo });
+        inputNome.value = '';
+        document.getElementById('select-materia-edital').value = '';
+
+        renderizarFilaEdicaoModal();
+    }
+
+    function moverMateriaNaFila(index, direcao) {
+        const cicloAtual = getCicloAtivo();
+        const materias = cicloAtual.materias;
+        const novoIndex = index + direcao;
+
+        if (novoIndex >= 0 && novoIndex < materias.length) {
+            const temp = materias[index];
+            materias[index] = materias[novoIndex];
+            materias[novoIndex] = temp;
+            renderizarFilaEdicaoModal();
+        }
+    }
+
+    function removerMateriaDaFila(index) {
+        const cicloAtual = getCicloAtivo();
+        cicloAtual.materias.splice(index, 1);
+        if (cicloAtual.indice >= cicloAtual.materias.length) {
+            cicloAtual.indice = 0;
+        }
+        renderizarFilaEdicaoModal();
+    }
+
+    function renderizarFilaEdicaoModal() {
+        const cicloAtual = getCicloAtivo();
+        const container = document.getElementById('lista-sequencia-ciclo');
+        const materias = cicloAtual.materias || [];
+
+        if (materias.length === 0) {
+            container.innerHTML = `<div style="color: var(--texto-mutado); font-size:0.85rem; padding: 10px; text-align: center;">Nenhuma matéria adicionada ainda.</div>`;
+            return;
+        }
+
+        let html = '';
+        materias.forEach((m, idx) => {
+            html += `
+                <div class="item-edicao-ciclo">
+                    <span style="font-weight: bold; color: var(--texto-base); width: 25px;">${idx + 1}º</span>
+                    <span style="flex:1; color: var(--texto-puro); font-size: 0.9rem;">${escapeHtml(m.nome)}</span>
+                    <span style="color: var(--texto-mutado); font-size: 0.8rem; margin-right: 10px;">${m.tempo} min</span>
+                    
+                    <div style="display: flex; gap: 4px;">
+                        <button onclick="moverMateriaNaFila(${idx}, -1)" style="padding: 4px 8px; font-size: 0.75rem;" class="btn-secundario" ${idx === 0 ? 'disabled style="opacity:0.3"' : ''}>▲</button>
+                        <button onclick="moverMateriaNaFila(${idx}, 1)" style="padding: 4px 8px; font-size: 0.75rem;" class="btn-secundario" ${idx === materias.length - 1 ? 'disabled style="opacity:0.3"' : ''}>▼</button>
+                        <button onclick="removerMateriaDaFila(${idx})" style="padding: 4px 8px; font-size: 0.75rem;" class="btn-excluir">✕</button>
+                    </div>
+                </div>
+            `;
+        });
+
+        container.innerHTML = html;
+    }
+
+    function mudarCicloAtivo(idCiclo) {
+        dadosApp.ciclo_ativo = idCiclo;
+        salvarNoBanco();
+    }
+
+    function criarNovoCiclo() {
+        const nome = prompt("Nome do novo Ciclo (ex: Ciclo Carreiras Policiais):");
+        if (nome && nome.trim() !== "") {
+            const novoId = 'ciclo_' + Date.now();
+            dadosApp.ciclos.push({
+                id: novoId,
+                nome: nome.trim(),
+                materias: [],
+                indice: 0
+            });
+            dadosApp.ciclo_ativo = novoId;
+            salvarNoBanco();
+            abrirModalEditor();
+        }
+    }
+
+    function excluirCicloAtivo() {
+        if (dadosApp.ciclos.length <= 1) {
+            alert("Você precisa ter pelo menos um ciclo de estudos!");
+            return;
+        }
+        const cicloAtual = getCicloAtivo();
+        if (confirm(`Excluir o ciclo "${cicloAtual.nome}"?`)) {
+            dadosApp.ciclos = dadosApp.ciclos.filter(c => c.id !== cicloAtual.id);
+            dadosApp.ciclo_ativo = dadosApp.ciclos[0].id;
+            salvarNoBanco();
+        }
+    }
+
+    function concluirBlocoCiclo() {
+        const cicloAtual = getCicloAtivo();
+        if (!cicloAtual || !cicloAtual.materias || cicloAtual.materias.length === 0) return;
+
+        // Apenas avança o índice para a próxima matéria do ciclo
+        cicloAtual.indice = (cicloAtual.indice + 1) % cicloAtual.materias.length;
+
+        salvarNoBanco();
     }
 
     /* ABAS DE CATEGORIA */
@@ -435,10 +746,11 @@
         }
     }
 
-    /* RENDERIZAÇÃO DA TELA */
+    /* RENDERIZAÇÃO GERAL DA TELA */
     function renderizarTela() {
         atualizarStatus();
-        renderizarResumoDoDia(); 
+        renderizarResumoDoDia();
+        renderizarCiclo();
         renderizarAbas();
 
         const container = document.getElementById('lista-disciplinas');
@@ -510,26 +822,13 @@
         });
     }
 
-    /* FUNÇÃO DO RESUMO DO DIA (Agenda e Rotina) */
     function renderizarResumoDoDia() {
         const d = new Date();
         const ano = d.getFullYear();
         const mes = String(d.getMonth() + 1).padStart(2, '0');
         const dia = String(d.getDate()).padStart(2, '0');
         const hojeIso = `${ano}-${mes}-${dia}`;
-        
-        const diasMapa = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sab'];
-        const nomesDias = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
-        
-        const indiceDia = d.getDay();
-        const diaSigla = diasMapa[indiceDia]; 
-        const nomeDia = nomesDias[indiceDia]; 
-        
-        // Atualiza Título
-        const spanNomeDia = document.getElementById('nome-dia-semana');
-        if(spanNomeDia) spanNomeDia.innerText = nomeDia;
 
-        // 1. Renderizar Agenda
         const containerAgenda = document.getElementById('resumo-agenda-hoje');
         const agenda = dadosApp.agenda || [];
         const agendaHoje = agenda.filter(item => item.data === hojeIso);
@@ -548,48 +847,6 @@
                 `;
             });
             containerAgenda.innerHTML = htmlAgenda;
-        }
-
-        // 2. Renderizar Grade de Horários (Utilizando as Novas Tags!)
-        const containerGrade = document.getElementById('resumo-grade-hoje');
-        const grades = (dadosApp.rotina && dadosApp.rotina.grades) ? dadosApp.rotina.grades : [];
-        let htmlGrade = '';
-        let temAtividade = false;
-
-        grades.forEach(grade => {
-            let itensDaGrade = '';
-            
-            if(grade.linhas) {
-                grade.linhas.forEach(linha => {
-                    const atividadeDoDia = linha[diaSigla];
-                    if (linha.horario && atividadeDoDia && atividadeDoDia.trim() !== "") {
-                        temAtividade = true;
-                        itensDaGrade += `
-                            <div style="display: flex; gap: 12px; margin-bottom: 10px; align-items: center;">
-                                <span class="tag-horario">
-                                    ${escapeHtml(linha.horario)}
-                                </span>
-                                <span style="color: var(--texto-base); font-size: 0.95rem;">${escapeHtml(atividadeDoDia)}</span>
-                            </div>
-                        `;
-                    }
-                });
-            }
-
-            if (itensDaGrade !== '') {
-                htmlGrade += `
-                    <div style="margin-bottom: 15px;">
-                        <div style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; color: var(--texto-mutado); font-weight: bold; margin-bottom: 10px;">${escapeHtml(grade.titulo || 'Grade')}</div>
-                        ${itensDaGrade}
-                    </div>
-                `;
-            }
-        });
-
-        if (!temAtividade) {
-            containerGrade.innerHTML = `<span style="color: var(--texto-mutado); font-size: 0.9rem;">Sua grade está livre neste dia.</span>`;
-        } else {
-            containerGrade.innerHTML = htmlGrade;
         }
     }
 
@@ -614,7 +871,6 @@
         }
     }
 
-    /* AÇÕES DE DISCIPLINAS E TÓPICOS */
     function adicionarDisciplina() {
         const input = document.getElementById('input-disciplina');
         const nome = input.value.trim();
