@@ -2,11 +2,21 @@ from flask import Flask, render_template, request, jsonify, send_from_directory
 from werkzeug.utils import secure_filename
 import json
 import os
+import tempfile
+from pathlib import Path
+from threading import RLock
 import time
+import webbrowser
+from threading import Timer
 
 app = Flask(__name__)
 DATA_FILE = 'dados.json'
 UPLOAD_FOLDER = 'uploads'
+CADERNOS_FOLDER = os.environ.get(
+    'CADERNOS_FOLDER',
+    str(Path(app.root_path).resolve().parents[1] / 'Arquivos Pessoais' / 'static' / 'cadernos')
+)
+_data_lock = RLock()
 
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
@@ -21,7 +31,7 @@ def carregar_dados():
         "forum": [],
         "agenda": [],
         "ciclo": [],          
-        "financas": {"cartoes": [], "pessoas": [], "despesas": []},
+        "financas": {"cartoes": [], "pessoas": [], "despesas": [], "cartoes_config": []},
         "diario": []
     }
     
@@ -31,17 +41,42 @@ def carregar_dados():
     try:
         with open(DATA_FILE, 'r', encoding='utf-8') as f:
             dados = json.load(f)
+            if not isinstance(dados, dict):
+                raise ValueError(f"O conteúdo de {DATA_FILE} deve ser um objeto JSON.")
             for chave, valor in dados_padrao.items():
                 if chave not in dados:
                     dados[chave] = valor
             return dados
-    except Exception as e:
-        print(f"Erro ao ler {DATA_FILE}: {e}")
-        return dados_padrao
+    except (json.JSONDecodeError, UnicodeDecodeError) as e:
+        raise ValueError(f"Não foi possível ler {DATA_FILE}; o arquivo não foi alterado.") from e
 
 def salvar_dados(dados):
-    with open(DATA_FILE, 'w', encoding='utf-8') as f:
-        json.dump(dados, f, ensure_ascii=False, indent=4)
+    if not isinstance(dados, dict):
+        raise ValueError("Os dados enviados devem ser um objeto JSON.")
+
+    caminho = os.path.abspath(DATA_FILE)
+    diretorio = os.path.dirname(caminho)
+    caminho_temporario = None
+
+    with _data_lock:
+        try:
+            with tempfile.NamedTemporaryFile(
+                mode='w',
+                encoding='utf-8',
+                dir=diretorio,
+                prefix=f'.{os.path.basename(caminho)}.',
+                suffix='.tmp',
+                delete=False
+            ) as arquivo_temporario:
+                caminho_temporario = arquivo_temporario.name
+                json.dump(dados, arquivo_temporario, ensure_ascii=False, indent=4)
+                arquivo_temporario.flush()
+                os.fsync(arquivo_temporario.fileno())
+
+            os.replace(caminho_temporario, caminho)
+        finally:
+            if caminho_temporario and os.path.exists(caminho_temporario):
+                os.remove(caminho_temporario)
 
 @app.route('/')
 def index():
@@ -86,10 +121,16 @@ def diario():
 @app.route('/api/dados', methods=['GET', 'POST'])
 def gerenciar_dados():
     if request.method == 'POST':
-        dados_recebidos = request.json
-        salvar_dados(dados_recebidos)
+        dados_recebidos = request.get_json(silent=True)
+        try:
+            salvar_dados(dados_recebidos)
+        except ValueError as e:
+            return jsonify({"status": "erro", "mensagem": str(e)}), 400
         return jsonify({"status": "sucesso"})
-    return jsonify(carregar_dados())
+    try:
+        return jsonify(carregar_dados())
+    except ValueError as e:
+        return jsonify({"status": "erro", "mensagem": str(e)}), 500
 
 @app.route('/api/forum/editar/<int:post_index>', methods=['POST'])
 def editar_post_forum(post_index):
@@ -136,6 +177,17 @@ def adicionar_post_forum():
 def acessar_arquivo(nome_arquivo):
     return send_from_directory(app.config['UPLOAD_FOLDER'], nome_arquivo)
 
+@app.route('/api/cadernos/<path:nome_arquivo>')
+def acessar_caderno(nome_arquivo):
+    if Path(nome_arquivo).suffix.lower() != '.json':
+        return jsonify({"status": "erro", "mensagem": "Arquivo não encontrado"}), 404
+    return send_from_directory(CADERNOS_FOLDER, nome_arquivo)
+
 if __name__ == '__main__':
     print("Servidor rodando! Abra seu navegador em http://127.0.0.1:5000")
+
+    # Abre o navegador após 1.5 segundo (evita abrir duplicado devido ao modo debug do Flask)
+    if not os.environ.get("WERKZEUG_RUN_MAIN"):
+        Timer(1.5, lambda: webbrowser.open("http://127.0.0.1:5000")).start()
+
     app.run(debug=True, port=5000)

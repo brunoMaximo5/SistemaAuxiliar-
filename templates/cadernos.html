@@ -252,15 +252,18 @@
             const card = document.createElement('div');
             card.className = 'card-biblioteca';
             card.innerHTML = `
-                <div class="tag-assunto">${cad.assunto || 'Sem Assunto'}</div>
-                <div class="titulo-card">${cad.titulo || 'Caderno Sem Título'}</div>
-                <div class="arquivo-info">📄 ${cad.arquivo}</div>
+                <div class="tag-assunto">${escaparHtml(cad.assunto || 'Sem Assunto')}</div>
+                <div class="titulo-card">${escaparHtml(cad.titulo || 'Caderno Sem Título')}</div>
+                <div class="arquivo-info">📄 ${escaparHtml(cad.arquivo)}</div>
                 <div class="botoes-card">
-                    <button class="btn-primario" onclick="iniciarCaderno('${cad.arquivo}', '${cad.titulo}')">▶ Iniciar</button>
+                    <button class="btn-primario iniciar-caderno" data-arquivo="${escaparHtml(cad.arquivo)}" data-titulo="${escaparHtml(cad.titulo)}">▶ Iniciar</button>
                     <button class="btn-icone" title="Editar" onclick="abrirModal(${index})">✏️</button>
                     <button class="btn-icone excluir" title="Excluir" onclick="excluirCaderno(${index})">🗑️</button>
                 </div>
             `;
+            card.querySelector('.iniciar-caderno').addEventListener('click', evento => {
+                iniciarCaderno(evento.currentTarget.dataset.arquivo, evento.currentTarget.dataset.titulo);
+            });
             grid.appendChild(card);
         });
     }
@@ -327,7 +330,7 @@
     // --- Lógica de Resolução e Navegação ---
     async function iniciarCaderno(nomeArquivo, tituloPersonalizado) {
         try {
-            const resposta = await fetch(`/static/cadernos/${nomeArquivo}`);
+            const resposta = await fetch(`/api/cadernos/${encodeURIComponent(nomeArquivo)}`);
             if (!resposta.ok) throw new Error("Arquivo não encontrado.");
             
             let dadosBrutos = await resposta.json();
@@ -396,8 +399,8 @@
             div.className = 'opcao-item';
             div.onclick = () => selecionarOpcao(div, opcao.letra);
             div.innerHTML = `
-                <div class="letra-opcao">${opcao.letra}</div>
-                <div style="flex: 1;">${opcao.texto}</div>
+                <div class="letra-opcao">${escaparHtml(opcao.letra)}</div>
+                <div style="flex: 1;">${escaparHtml(opcao.texto)}</div>
             `;
             containerOpcoes.appendChild(div);
         });
@@ -430,7 +433,7 @@
             boxFeedback.className = `feedback-box ${questao.acertou ? 'sucesso' : 'erro'}`;
             boxFeedback.innerHTML = `
                 <strong>${questao.acertou ? '✅ Resposta Correta!' : '❌ Resposta Incorreta.'}</strong><br><br>
-                ${questao.comentario ? questao.comentario : 'Sem comentários adicionais.'}
+                ${escaparHtml(questao.comentario || 'Sem comentários adicionais.')}
             `;
             
             btnResponder.style.display = 'none';

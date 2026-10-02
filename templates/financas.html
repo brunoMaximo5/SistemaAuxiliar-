@@ -1,492 +1,169 @@
-{% extends 'base.html' %} 
+{% extends 'base.html' %}
 
 {% block titulo %}Finanças{% endblock %}
 
 {% block estilos %}
 <style>
-    .financas-container {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 20px;
-    }
-    
-    /* Telas menores adaptam para 1 coluna */
-    @media (max-width: 1000px) {
-        .financas-container { grid-template-columns: 1fr; }
-    }
-
-    .card-painel {
-        background: var(--bg-card);
-        border: 1px solid var(--borda-sutil);
-        border-radius: 10px;
-        padding: 20px;
-        margin-bottom: 20px;
-    }
-    .card-painel h3 {
-        margin-bottom: 15px;
-        color: var(--texto-puro);
-        border-bottom: 1px solid var(--borda-sutil);
-        padding-bottom: 10px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-    .input-group {
-        margin-bottom: 15px;
-    }
-    .input-group label {
-        display: block;
-        margin-bottom: 5px;
-        font-size: 0.9rem;
-        color: var(--texto-base);
-    }
-    .input-group input, .input-group select {
-        width: 100%;
-        padding: 10px;
-        background: rgba(0,0,0,0.5);
-        border: 1px solid var(--borda-sutil);
-        border-radius: 6px;
-        color: var(--texto-puro);
-    }
-    .btn {
-        padding: 10px 15px;
-        border: none;
-        border-radius: 6px;
-        cursor: pointer;
-        font-weight: bold;
-        transition: 0.3s;
-    }
-    .btn-primario { background: var(--btn-primario-bg); color: var(--btn-primario-texto); width: 100%; }
-    .btn-secundario { background: var(--btn-secundario-bg); color: var(--texto-puro); width: 100%; }
-    .btn-secundario:hover { background: var(--btn-secundario-hover); }
-    
-    table {
-        width: 100%;
-        border-collapse: collapse;
-        margin-top: 10px;
-        font-size: 0.9rem;
-        table-layout: fixed; /* Evita que a tabela cresça infinitamente */
-        word-wrap: break-word; /* Quebra palavras muito grandes */
-    }
-    table th, table td {
-        padding: 10px;
-        text-align: left;
-        border-bottom: 1px solid var(--borda-sutil);
-    }
-    table th { color: var(--texto-mutado); font-weight: 600; }
-    
-    .btn-remover {
-        background: transparent; color: var(--texto-excluir);
-        border: 1px solid var(--btn-excluir); padding: 4px 8px;
-        border-radius: 4px; cursor: pointer;
-    }
-    .btn-remover:hover { background: var(--btn-excluir-hover); }
-    
-    .resumo-valor { font-size: 1.2rem; font-weight: bold; color: #4CAF50; }
-    .resumo-cartao-valor { font-size: 1.2rem; font-weight: bold; color: #FF9800; }
-    .scroll-area { max-height: 250px; overflow-y: auto; padding-right: 5px; }
-
-    /* Estilo para lista de cadastros */
-    .item-cadastro {
-        display: flex; justify-content: space-between; align-items: center;
-        background: rgba(0,0,0,0.3); padding: 8px 12px; margin-bottom: 5px;
-        border-radius: 4px; font-size: 0.9rem; word-break: break-all;
+    .finance-header { display:flex; justify-content:space-between; align-items:flex-end; gap:16px; flex-wrap:wrap; margin-bottom:22px; }
+    .finance-header h1 { color:var(--texto-puro); font-size:1.8rem; }
+    .month-control { display:flex; align-items:center; gap:10px; color:var(--texto-mutado); }
+    .month-control input, .finance-field input, .finance-field select { min-width:0; width:100%; padding:10px 12px; background:#151515; border:1px solid var(--borda-sutil); border-radius:6px; color:var(--texto-puro); }
+    .month-control input { width:auto; }
+    .finance-summary { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; margin-bottom:20px; }
+    .summary-item { padding:16px 18px; border:1px solid var(--borda-sutil); border-radius:8px; background:rgba(255,255,255,.035); }
+    .summary-item span { display:block; color:var(--texto-mutado); font-size:.82rem; }
+    .summary-item strong { display:block; margin-top:7px; color:var(--texto-puro); font-size:1.35rem; }
+    .finance-tabs { display:flex; gap:4px; overflow-x:auto; border-bottom:1px solid var(--borda-sutil); margin-bottom:20px; }
+    .finance-tab { flex:0 0 auto; border:0; border-bottom:2px solid transparent; padding:12px 15px; background:transparent; color:var(--texto-mutado); cursor:pointer; }
+    .finance-tab.active { color:var(--texto-puro); border-bottom-color:#c9d8cf; }
+    .finance-panel { display:none; }
+    .finance-panel.active { display:block; }
+    .finance-section { margin-bottom:20px; }
+    .finance-section h2 { color:var(--texto-puro); font-size:1.1rem; margin-bottom:12px; }
+    .finance-layout { display:grid; grid-template-columns:minmax(0,1.4fr) minmax(280px,.8fr); gap:20px; align-items:start; }
+    .summary-filters { display:grid; grid-template-columns:minmax(180px,1fr) minmax(180px,1fr) auto; gap:12px; align-items:end; margin-bottom:16px; }
+    .summary-filter { margin-bottom:0; }
+    .summary-context { margin:0 0 14px; color:var(--texto-mutado); font-size:.85rem; }
+    .summary-groups { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:18px; margin-bottom:20px; }
+    .summary-groups .finance-section { min-width:0; margin-bottom:0; }
+    .summary-groups .finance-table { min-width:0; }
+    .finance-table-wrap { overflow-x:auto; border:1px solid var(--borda-sutil); border-radius:8px; }
+    .finance-table { width:100%; min-width:620px; border-collapse:collapse; }
+    .finance-table th,.finance-table td { padding:12px; border-bottom:1px solid var(--borda-sutil); text-align:left; vertical-align:top; }
+    .finance-table th { color:var(--texto-mutado); font-size:.78rem; font-weight:600; }
+    .finance-table td { color:var(--texto-base); font-size:.9rem; }
+    .finance-table tr:last-child td { border-bottom:0; }
+    .finance-form { padding:18px; border:1px solid var(--borda-sutil); border-radius:8px; background:rgba(255,255,255,.025); }
+    .finance-form h2 { margin-bottom:16px; color:var(--texto-puro); font-size:1.05rem; }
+    .finance-field { min-width:0; margin-bottom:13px; }
+    .finance-field label { display:block; margin-bottom:6px; color:var(--texto-mutado); font-size:.82rem; }
+    .finance-row { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
+    .finance-actions { display:flex; gap:9px; margin-top:12px; }
+    .finance-button { min-height:40px; padding:9px 13px; border:1px solid var(--borda-sutil); border-radius:6px; background:var(--btn-secundario-bg); color:var(--texto-puro); cursor:pointer; }
+    .finance-button.primary { background:var(--btn-primario-bg); color:var(--btn-primario-texto); border:0; font-weight:700; }
+    .finance-button.danger { color:var(--texto-excluir); }
+    .payment-part { padding:14px; margin-bottom:10px; border:1px solid var(--borda-sutil); border-radius:7px; }
+    .payment-part-head { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:12px; color:var(--texto-puro); font-size:.9rem; }
+    .payment-part-fields { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+    .payment-part-fields .finance-field { margin:0; }
+    .empty-state { padding:24px 14px; color:var(--texto-mutado); text-align:center; border:1px dashed var(--borda-sutil); border-radius:8px; }
+    .card-settings { display:grid; grid-template-columns:minmax(150px,1.3fr) repeat(2,minmax(120px,.7fr)) auto; gap:10px; align-items:end; padding:12px 0; border-bottom:1px solid var(--borda-sutil); }
+    .card-settings .card-name { overflow-wrap:anywhere; }
+    .muted { color:var(--texto-mutado); font-size:.82rem; }
+    .amount { white-space:nowrap; font-weight:700; }
+    @media(max-width:850px) { .finance-layout { grid-template-columns:1fr; } }
+    @media(max-width:560px) {
+        .finance-summary { grid-template-columns:1fr; gap:8px; }
+        .summary-item { display:flex; justify-content:space-between; align-items:center; gap:12px; }
+        .summary-item strong { margin:0; font-size:1.1rem; }
+        .finance-row,.payment-part-fields { grid-template-columns:1fr; }
+        .summary-filters,.summary-groups { grid-template-columns:1fr; }
+        .summary-filters .finance-button { width:100%; }
+        .card-settings { grid-template-columns:1fr 1fr; }
+        .card-settings .card-name { grid-column:1/-1; }
+        .month-control { width:100%; justify-content:space-between; }
+        .month-control input { flex:1; }
     }
 </style>
 {% endblock %}
 
 {% block conteudo %}
-<!-- CABEÇALHO COM CONTROLE DE MÊS/ANO -->
-<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;">
-    <h1 style="color: var(--texto-puro); margin: 0;">Gestão de Cartões</h1>
-    <div style="background: rgba(255,255,255,0.05); padding: 10px 15px; border-radius: 8px; border: 1px solid var(--borda-sutil);">
-        <label style="color:var(--texto-base); margin-right:10px; font-weight:bold;">Mês de Referência (Fatura):</label>
-        <input type="month" id="mes-referencia" onchange="atualizarInterface()" style="padding: 5px; background: #000; color: #fff; border: 1px solid var(--borda-sutil); border-radius: 4px;">
+<header class="finance-header">
+    <h1>Finanças</h1>
+    <label class="month-control" for="mes-referencia">Mês de referência <input type="month" id="mes-referencia"></label>
+</header>
+
+<nav class="finance-tabs" role="tablist" aria-label="Seções de finanças">
+    <button class="finance-tab active" id="tab-resumo" role="tab" aria-selected="true" aria-controls="painel-resumo" data-panel="resumo">Resumo</button>
+    <button class="finance-tab" id="tab-compras" role="tab" aria-selected="false" aria-controls="painel-compras" data-panel="compras">Compras</button>
+    <button class="finance-tab" id="tab-cartoes" role="tab" aria-selected="false" aria-controls="painel-cartoes" data-panel="cartoes">Cartões e pessoas</button>
+    <button class="finance-tab" id="tab-pix" role="tab" aria-selected="false" aria-controls="painel-pix" data-panel="pix">Pagamentos Pix</button>
+</nav>
+
+<section class="finance-panel active" id="painel-resumo" role="tabpanel" aria-labelledby="tab-resumo">
+    <div class="summary-filters" aria-label="Filtrar resumo financeiro">
+        <div class="finance-field summary-filter"><label for="resumo-filtro-pessoa">Pessoa</label><select id="resumo-filtro-pessoa"><option value="">Todas as pessoas</option></select></div>
+        <div class="finance-field summary-filter"><label for="resumo-filtro-cartao">Cartão</label><select id="resumo-filtro-cartao"><option value="">Todos os cartões</option></select></div>
+        <button type="button" class="finance-button" id="limpar-filtros-resumo">Limpar filtros</button>
     </div>
-</div>
-
-<div class="financas-container">
-    <!-- COLUNA ESQUERDA -->
-    <div>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
-            <!-- RESUMO MENSAL POR PESSOA -->
-            <div class="card-painel">
-                <h3 style="font-size: 1.1rem;">Fatura por Pessoa</h3>
-                <div class="scroll-area" id="area-resumo-pessoa">
-                    <table id="tabela-resumo">
-                        <thead><tr><th>Pessoa</th><th>Total no Mês</th></tr></thead>
-                        <tbody><!-- Preenchido via JS --></tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- RESUMO MENSAL POR CARTÃO -->
-            <div class="card-painel">
-                <h3 style="font-size: 1.1rem;">Fatura por Cartão</h3>
-                <div class="scroll-area" id="area-resumo-cartao">
-                    <table id="tabela-resumo-cartao">
-                        <thead><tr><th>Cartão</th><th>Total no Mês</th></tr></thead>
-                        <tbody><!-- Preenchido via JS --></tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <!-- LISTA DE DESPESAS COM FILTROS -->
-        <div class="card-painel">
-            <h3>Todas as Compras</h3>
-            
-            <div style="display: flex; gap: 10px; margin-bottom: 15px;">
-                <select id="filtro-pessoa" onchange="atualizarInterface()" style="flex:1; padding:8px; background:rgba(0,0,0,0.5); color:var(--texto-puro); border:1px solid var(--borda-sutil); border-radius:4px;">
-                    <!-- Preenchido via JS -->
-                </select>
-                <select id="filtro-cartao" onchange="atualizarInterface()" style="flex:1; padding:8px; background:rgba(0,0,0,0.5); color:var(--texto-puro); border:1px solid var(--borda-sutil); border-radius:4px;">
-                    <!-- Preenchido via JS -->
-                </select>
-            </div>
-
-            <div style="max-height: 400px; overflow-y: auto;">
-                <table id="tabela-despesas">
-                    <thead>
-                        <tr>
-                            <th style="width: 40%">Descrição</th>
-                            <th style="width: 25%">Pagante / Cartão</th>
-                            <th style="width: 25%">Status Parcela</th>
-                            <th style="width: 10%">Ação</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <!-- Preenchido via JS -->
-                    </tbody>
-                </table>
-            </div>
-        </div>
+    <p class="summary-context" id="contexto-resumo">Visão completa do mês</p>
+    <section class="finance-summary" aria-label="Totais do recorte selecionado">
+        <div class="summary-item"><span>Faturas de cartão</span><strong id="total-cartoes">R$ 0,00</strong></div>
+        <div class="summary-item"><span>Pagamentos Pix</span><strong id="total-pix">R$ 0,00</strong></div>
+        <div class="summary-item"><span>Total previsto</span><strong id="total-mes">R$ 0,00</strong></div>
+    </section>
+    <div class="summary-groups">
+        <section class="finance-section">
+            <h2>Total por pessoa</h2>
+            <div class="finance-table-wrap" id="resumo-pessoas"></div>
+        </section>
+        <section class="finance-section">
+            <h2>Total por cartão</h2>
+            <div class="finance-table-wrap" id="resumo-cartoes"></div>
+        </section>
     </div>
+    <section class="finance-section">
+        <h2>Lançamentos que compõem os totais</h2>
+        <div class="finance-table-wrap" id="resumo-lancamentos"></div>
+    </section>
+</section>
 
-    <!-- COLUNA DIREITA -->
-    <div>
-        <!-- ADICIONAR DESPESA -->
-        <div class="card-painel">
-            <h3>Nova Compra</h3>
-            <div class="input-group">
-                <label>Descrição da Compra</label>
-                <input type="text" id="desc-despesa" placeholder="Ex: Celular, Mercado...">
+<section class="finance-panel" id="painel-compras" role="tabpanel" aria-labelledby="tab-compras">
+    <div class="finance-layout">
+        <section class="finance-section">
+            <h2>Compras e parcelas</h2>
+            <div class="finance-row" style="margin-bottom:12px;">
+                <div class="finance-field"><label for="filtro-pessoa">Pessoa</label><select id="filtro-pessoa"><option value="">Todas</option></select></div>
+                <div class="finance-field"><label for="filtro-cartao">Cartão</label><select id="filtro-cartao"><option value="">Todos</option></select></div>
             </div>
-            
-            <div style="display: flex; gap: 10px;">
-                <div class="input-group" style="flex: 1;">
-                    <label>Valor Total (R$)</label>
-                    <input type="number" id="valor-despesa" step="0.01" placeholder="0.00">
-                </div>
-                <div class="input-group" style="flex: 1;">
-                    <label>Qtd. Parcelas</label>
-                    <input type="number" id="parcelas-despesa" value="1" min="1">
-                </div>
-            </div>
+            <div class="finance-table-wrap" id="lista-compras"></div>
+        </section>
+        <form class="finance-form" id="form-compra">
+            <h2>Nova compra</h2>
+            <div class="finance-field"><label for="desc-despesa">O que foi comprado?</label><input id="desc-despesa" required maxlength="120" placeholder="Ex.: mercado, eletrodoméstico"></div>
+            <div class="finance-field"><label for="select-pessoa">Quem vai pagar?</label><select id="select-pessoa" required></select></div>
+            <div class="payment-part-head"><span>Como será paga</span><button type="button" class="finance-button" id="adicionar-parte">+ Dividir pagamento</button></div>
+            <div id="partes-pagamento"></div>
+            <button type="submit" class="finance-button primary" style="width:100%;">Salvar compra</button>
+        </form>
+    </div>
+</section>
 
-            <div style="display: flex; gap: 10px;">
-                <div class="input-group" style="flex: 1;">
-                    <label>Quem vai pagar?</label>
-                    <select id="select-pessoa"></select>
-                </div>
-                <div class="input-group" style="flex: 1;">
-                    <label>Em qual Cartão?</label>
-                    <select id="select-cartao"></select>
-                </div>
-            </div>
-            
-            <div class="input-group">
-                <label>Mês da 1ª Parcela</label>
-                <input type="month" id="mes-inicio-despesa">
-            </div>
-
-            <button class="btn btn-primario" onclick="adicionarDespesa()">Adicionar Compra</button>
-        </div>
-
-        <!-- GERENCIAR CARTÕES E PESSOAS -->
-        <div class="card-painel">
-            <h3>Gerenciar Cadastros</h3>
-            
-            <!-- Pessoas -->
-            <div style="margin-bottom: 20px;">
-                <label style="display:block; margin-bottom:5px; color:var(--texto-base); font-weight:bold;">Pessoas da Família</label>
-                <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-                    <input type="text" id="nova-pessoa" placeholder="Nome..." style="flex: 1; padding: 10px; background: rgba(0,0,0,0.5); border: 1px solid var(--borda-sutil); color: var(--texto-puro); border-radius: 6px;">
-                    <button class="btn btn-secundario" style="width: auto;" onclick="adicionarPessoa()">Add</button>
-                </div>
-                <div id="lista-pessoas" class="scroll-area" style="max-height: 120px;"></div>
-            </div>
-
-            <!-- Cartões -->
-            <div>
-                <label style="display:block; margin-bottom:5px; color:var(--texto-base); font-weight:bold;">Cartões</label>
-                <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-                    <input type="text" id="novo-cartao" placeholder="Nubank, Inter..." style="flex: 1; padding: 10px; background: rgba(0,0,0,0.5); border: 1px solid var(--borda-sutil); color: var(--texto-puro); border-radius: 6px;">
-                    <button class="btn btn-secundario" style="width: auto;" onclick="adicionarCartao()">Add</button>
-                </div>
-                <div id="lista-cartoes" class="scroll-area" style="max-height: 120px;"></div>
-            </div>
+<section class="finance-panel" id="painel-cartoes" role="tabpanel" aria-labelledby="tab-cartoes">
+    <div class="finance-layout">
+        <section class="finance-section">
+            <h2>Cartões cadastrados</h2>
+            <p class="muted">Informe os dias de fechamento e vencimento para consultar cada cartão com clareza.</p>
+            <div id="configuracao-cartoes" style="margin-top:12px;"></div>
+        </section>
+        <div>
+            <form class="finance-form" id="form-cartao">
+                <h2>Novo cartão</h2>
+                <div class="finance-field"><label for="novo-cartao">Nome do cartão</label><input id="novo-cartao" maxlength="60" placeholder="Ex.: Cartão principal"></div>
+                <button class="finance-button primary" type="submit" style="width:100%;">Adicionar cartão</button>
+            </form>
+            <form class="finance-form" id="form-pessoa" style="margin-top:16px;">
+                <h2>Nova pessoa</h2>
+                <div class="finance-field"><label for="nova-pessoa">Nome</label><input id="nova-pessoa" maxlength="60" placeholder="Nome da pessoa"></div>
+                <button class="finance-button primary" type="submit" style="width:100%;">Adicionar pessoa</button>
+            </form>
+            <section class="finance-section" style="margin-top:18px;">
+                <h2>Pessoas cadastradas</h2>
+                <div id="lista-pessoas"></div>
+            </section>
         </div>
     </div>
-</div>
+</section>
+
+<section class="finance-panel" id="painel-pix" role="tabpanel" aria-labelledby="tab-pix">
+    <section class="finance-section">
+        <h2>Pagamentos Pix no mês</h2>
+        <p class="muted" style="margin-bottom:12px;">Aqui aparecem as partes de compras pagas por Pix no mês selecionado.</p>
+        <div class="finance-table-wrap" id="lista-pix"></div>
+    </section>
+</section>
 {% endblock %}
 
 {% block scripts %}
-<script>
-    let bancoFinancas = { cartoes: [], pessoas: [], despesas: [] };
-
-    // Configura os inputs de mês para o mês atual assim que carregar
-    function setMesesIniciais() {
-        const hoje = new Date();
-        const ano = hoje.getFullYear();
-        const mes = String(hoje.getMonth() + 1).padStart(2, '0');
-        const mesAtual = `${ano}-${mes}`;
-        
-        document.getElementById('mes-referencia').value = mesAtual;
-        document.getElementById('mes-inicio-despesa').value = mesAtual;
-    }
-
-    async function carregarFinancas() {
-        setMesesIniciais();
-        try {
-            const res = await fetch('/api/dados');
-            const dados = await res.json();
-            
-            if (dados.financas) {
-                bancoFinancas = dados.financas;
-                // Tratamento caso venha dados antigos sem mes_inicio
-                bancoFinancas.despesas.forEach(d => {
-                    if(!d.mes_inicio) {
-                        d.mes_inicio = document.getElementById('mes-referencia').value;
-                    }
-                });
-            }
-            
-            atualizarInterface();
-        } catch (e) {
-            console.error("Erro ao carregar finanças:", e);
-        }
-    }
-
-    async function salvarFinancas() {
-        try {
-            const res = await fetch('/api/dados');
-            let dados = await res.json();
-            
-            dados.financas = bancoFinancas;
-
-            await fetch('/api/dados', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(dados)
-            });
-            
-            atualizarInterface();
-        } catch (e) {
-            console.error("Erro ao salvar finanças:", e);
-        }
-    }
-
-    // Calcula a diferença em meses entre duas datas "YYYY-MM"
-    function getMesesDiff(mesInicio, mesRef) {
-        if (!mesInicio || !mesRef) return 0;
-        let [y1, m1] = mesInicio.split('-').map(Number);
-        let [y2, m2] = mesRef.split('-').map(Number);
-        return (y2 - y1) * 12 + (m2 - m1);
-    }
-
-    function atualizarInterface() {
-        const mesReferencia = document.getElementById('mes-referencia').value;
-        const filtroPessoa = document.getElementById('filtro-pessoa').value;
-        const filtroCartao = document.getElementById('filtro-cartao').value;
-
-        // 1. Atualiza Selects de Formulário e Filtros
-        const selectPessoa = document.getElementById('select-pessoa');
-        const selectCartao = document.getElementById('select-cartao');
-        const selectFiltroPessoa = document.getElementById('filtro-pessoa');
-        const selectFiltroCartao = document.getElementById('filtro-cartao');
-        
-        selectPessoa.innerHTML = '<option value="">Selecione...</option>';
-        selectFiltroPessoa.innerHTML = '<option value="">Todas as Pessoas</option>';
-        bancoFinancas.pessoas.forEach(p => {
-            selectPessoa.innerHTML += `<option value="${p}">${p}</option>`;
-            let selecionado = (filtroPessoa === p) ? 'selected' : '';
-            selectFiltroPessoa.innerHTML += `<option value="${p}" ${selecionado}>${p}</option>`;
-        });
-
-        selectCartao.innerHTML = '<option value="">Selecione...</option>';
-        selectFiltroCartao.innerHTML = '<option value="">Todos os Cartões</option>';
-        bancoFinancas.cartoes.forEach(c => {
-            selectCartao.innerHTML += `<option value="${c}">${c}</option>`;
-            let selecionado = (filtroCartao === c) ? 'selected' : '';
-            selectFiltroCartao.innerHTML += `<option value="${c}" ${selecionado}>${c}</option>`;
-        });
-
-        // 2. Atualiza Listas Visuais de Cadastros (com botão excluir)
-        const listaPessoas = document.getElementById('lista-pessoas');
-        listaPessoas.innerHTML = '';
-        bancoFinancas.pessoas.forEach((p, index) => {
-            listaPessoas.innerHTML += `
-                <div class="item-cadastro">
-                    <span>${p}</span>
-                    <button class="btn-remover" title="Excluir pessoa" onclick="removerPessoa(${index})">X</button>
-                </div>`;
-        });
-
-        const listaCartoes = document.getElementById('lista-cartoes');
-        listaCartoes.innerHTML = '';
-        bancoFinancas.cartoes.forEach((c, index) => {
-            listaCartoes.innerHTML += `
-                <div class="item-cadastro">
-                    <span>${c}</span>
-                    <button class="btn-remover" title="Excluir cartão" onclick="removerCartao(${index})">X</button>
-                </div>`;
-        });
-
-        // 3. Atualiza Tabela de Despesas e Cálculos
-        const tbodyDespesas = document.querySelector('#tabela-despesas tbody');
-        tbodyDespesas.innerHTML = '';
-        
-        const resumoPessoas = {};
-        const resumoCartoes = {};
-        bancoFinancas.pessoas.forEach(p => resumoPessoas[p] = 0);
-        bancoFinancas.cartoes.forEach(c => resumoCartoes[c] = 0);
-
-        bancoFinancas.despesas.forEach((d, index) => {
-            const mesesPassados = getMesesDiff(d.mes_inicio, mesReferencia);
-            const valorParcela = d.valor_total / d.parcelas;
-            
-            // Verifica se a parcela está ativa NO MÊS DE REFERÊNCIA
-            const estaAtiva = (mesesPassados >= 0 && mesesPassados < d.parcelas);
-
-            // Soma nos resumos APENAS se a parcela estiver ativa neste mês
-            if (estaAtiva) {
-                if (resumoPessoas[d.pessoa] !== undefined) resumoPessoas[d.pessoa] += valorParcela;
-                else resumoPessoas[d.pessoa] = valorParcela;
-
-                if (resumoCartoes[d.cartao] !== undefined) resumoCartoes[d.cartao] += valorParcela;
-                else resumoCartoes[d.cartao] = valorParcela;
-            }
-
-            // Aplica os filtros Visuais para a tabela
-            const filtroP = document.getElementById('filtro-pessoa').value;
-            const filtroC = document.getElementById('filtro-cartao').value;
-            if (filtroP && d.pessoa !== filtroP) return;
-            if (filtroC && d.cartao !== filtroC) return;
-
-            // Define o texto de Status da Parcela
-            let statusBadge = "";
-            if (mesesPassados < 0) {
-                statusBadge = `<span style="color:#FF9800; font-size:0.8rem;">Inicia em ${d.mes_inicio}</span>`;
-            } else if (mesesPassados >= d.parcelas) {
-                statusBadge = `<span style="color:#4CAF50; font-size:0.8rem;">Concluída</span>`;
-            } else {
-                statusBadge = `Parcela <strong style="color:var(--texto-puro)">${mesesPassados + 1}</strong>/${d.parcelas}`;
-            }
-
-            tbodyDespesas.innerHTML += `
-                <tr>
-                    <td>
-                        <strong style="color:var(--texto-puro)">${d.descricao}</strong><br>
-                        <span style="font-size:0.8rem; color:var(--texto-mutado)">Total: R$ ${d.valor_total.toFixed(2)}</span>
-                    </td>
-                    <td style="font-size:0.85rem;">
-                        <div style="color: #4CAF50;">👤 ${d.pessoa}</div>
-                        <div style="color: #FF9800;">💳 ${d.cartao}</div>
-                    </td>
-                    <td>
-                        ${statusBadge}<br>
-                        <span style="font-size:0.8rem; color:var(--texto-mutado)">R$ ${valorParcela.toFixed(2)}/mês</span>
-                    </td>
-                    <td><button class="btn-remover" onclick="removerDespesa(${index})">X</button></td>
-                </tr>
-            `;
-        });
-
-        // 4. Monta tabelas de Resumo
-        const tbodyResumo = document.querySelector('#tabela-resumo tbody');
-        tbodyResumo.innerHTML = '';
-        for (const [pessoa, valor] of Object.entries(resumoPessoas)) {
-            tbodyResumo.innerHTML += `<tr><td>${pessoa}</td><td class="resumo-valor">R$ ${valor.toFixed(2)}</td></tr>`;
-        }
-
-        const tbodyResumoCartao = document.querySelector('#tabela-resumo-cartao tbody');
-        tbodyResumoCartao.innerHTML = '';
-        for (const [cartao, valor] of Object.entries(resumoCartoes)) {
-            tbodyResumoCartao.innerHTML += `<tr><td>${cartao}</td><td class="resumo-cartao-valor">R$ ${valor.toFixed(2)}</td></tr>`;
-        }
-    }
-
-    function adicionarPessoa() {
-        const input = document.getElementById('nova-pessoa');
-        const nome = input.value.trim();
-        if (nome && !bancoFinancas.pessoas.includes(nome)) {
-            bancoFinancas.pessoas.push(nome);
-            input.value = '';
-            salvarFinancas();
-        }
-    }
-
-    function removerPessoa(index) {
-        if (confirm("Tem certeza que deseja remover esta pessoa dos cadastros? As despesas atreladas a ela continuarão existindo.")) {
-            bancoFinancas.pessoas.splice(index, 1);
-            salvarFinancas();
-        }
-    }
-
-    function adicionarCartao() {
-        const input = document.getElementById('novo-cartao');
-        const nome = input.value.trim();
-        if (nome && !bancoFinancas.cartoes.includes(nome)) {
-            bancoFinancas.cartoes.push(nome);
-            input.value = '';
-            salvarFinancas();
-        }
-    }
-
-    function removerCartao(index) {
-        if (confirm("Tem certeza que deseja remover este cartão? As compras já feitas nele continuarão existindo.")) {
-            bancoFinancas.cartoes.splice(index, 1);
-            salvarFinancas();
-        }
-    }
-
-    function adicionarDespesa() {
-        const desc = document.getElementById('desc-despesa').value.trim();
-        const valor = parseFloat(document.getElementById('valor-despesa').value);
-        const parcelas = parseInt(document.getElementById('parcelas-despesa').value);
-        const pessoa = document.getElementById('select-pessoa').value;
-        const cartao = document.getElementById('select-cartao').value;
-        const mesInicio = document.getElementById('mes-inicio-despesa').value;
-
-        if (!desc || isNaN(valor) || isNaN(parcelas) || !pessoa || !cartao || !mesInicio) {
-            alert("Preencha todos os campos corretamente!");
-            return;
-        }
-
-        bancoFinancas.despesas.push({
-            descricao: desc,
-            valor_total: valor,
-            parcelas: parcelas,
-            pessoa: pessoa,
-            cartao: cartao,
-            mes_inicio: mesInicio
-        });
-
-        document.getElementById('desc-despesa').value = '';
-        document.getElementById('valor-despesa').value = '';
-        document.getElementById('parcelas-despesa').value = '1';
-        
-        salvarFinancas();
-    }
-
-    function removerDespesa(index) {
-        if (confirm("Tem certeza que deseja apagar essa compra do histórico?")) {
-            bancoFinancas.despesas.splice(index, 1);
-            salvarFinancas();
-        }
-    }
-
-    document.addEventListener('DOMContentLoaded', carregarFinancas);
-</script>
+<script src="{{ url_for('static', filename='js/financas.js') }}"></script>
 {% endblock %}

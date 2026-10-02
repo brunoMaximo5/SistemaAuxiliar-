@@ -357,6 +357,7 @@
         </div>
     </div>
 
+    <script src="{{ url_for('static', filename='vendor/purify.min.js') }}"></script>
     <script>
         let dadosApp = {};
         let i_disc = 0;
@@ -389,7 +390,7 @@
 
         function renderizarDados() {
             document.getElementById('nome-assunto').innerText = topicoAtual.nome;
-            document.getElementById('editor-resumo').innerHTML = topicoAtual.resumo || "";
+            document.getElementById('editor-resumo').innerHTML = DOMPurify.sanitize(topicoAtual.resumo || "", { USE_PROFILES: { html: true } });
             document.getElementById('texto-erros').value = topicoAtual.erros || "";
             document.getElementById('qtd-questoes').innerText = topicoAtual.quiz.length;
             document.getElementById('qtd-flashcards').innerText = topicoAtual.flashcards.length;
@@ -435,7 +436,9 @@
         });
 
         async function salvarTudo() {
-            topicoAtual.resumo = document.getElementById('editor-resumo').innerHTML;
+            const editorResumo = document.getElementById('editor-resumo');
+            topicoAtual.resumo = DOMPurify.sanitize(editorResumo.innerHTML, { USE_PROFILES: { html: true } });
+            editorResumo.innerHTML = topicoAtual.resumo;
             topicoAtual.erros = document.getElementById('texto-erros').value;
             
             try {

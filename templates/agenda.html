@@ -604,19 +604,20 @@
             let htmlItems = '';
             tarefasDoDia.forEach(t => {
                 const tagInfo = getTagCategoria(t.tipo);
+                const tarefaId = Number(t.id);
 
                 htmlItems += `
                     <div class="item-tarefa ${t.concluida ? 'concluida' : ''}">
                         <div class="info-tarefa">
-                            <input type="checkbox" class="checkbox-custom" ${t.concluida ? 'checked' : ''} onchange="alternarConcluida(${t.id})">
+                            <input type="checkbox" class="checkbox-custom" ${t.concluida ? 'checked' : ''} onchange="alternarConcluida(${tarefaId})">
                             <div>
-                                <div class="titulo-tarefa">${t.titulo}</div>
-                                ${t.detalhes ? `<div class="detalhes-tarefa">${t.detalhes}</div>` : ''}
+                                <div class="titulo-tarefa">${escaparHtml(t.titulo)}</div>
+                                ${t.detalhes ? `<div class="detalhes-tarefa">${escaparHtml(t.detalhes)}</div>` : ''}
                             </div>
                         </div>
                         <div style="display: flex; align-items: center; gap: 12px;">
                             <span class="tag-tipo ${tagInfo.classe}">${tagInfo.texto}</span>
-                            <button class="btn-deletar" onclick="deletarTarefa(${t.id})" title="Excluir">🗑️</button>
+                            <button class="btn-deletar" onclick="deletarTarefa(${tarefaId})" title="Excluir">🗑️</button>
                         </div>
                     </div>
                 `;

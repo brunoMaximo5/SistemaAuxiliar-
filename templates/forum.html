@@ -383,13 +383,6 @@
         }
     }
 
-    function escapeHtml(texto) {
-        if (!texto) return '';
-        const div = document.createElement('div');
-        div.innerText = texto;
-        return div.innerHTML;
-    }
-
     function renderizarPosts() {
         const feed = document.getElementById('feed-forum');
         const filtroSelecionado = document.getElementById('filtro-secao').value;
@@ -425,15 +418,15 @@
                 htmlAnexo = `
                     <div>
                         <a href="/uploads/${encodeURIComponent(post.arquivo)}" target="_blank" class="anexo-box">
-                            📎 ${escapeHtml(post.arquivo)}
+                            📎 ${escaparHtml(post.arquivo)}
                         </a>
                     </div>
                 `;
             }
 
             const textoBruto = post.texto || '';
-            const textoFormatado = escapeHtml(textoBruto) || '<em>Sem descrição.</em>';
-            const nomeSecao = escapeHtml(post.secao || 'Geral');
+            const textoFormatado = escaparHtml(textoBruto) || '<em>Sem descrição.</em>';
+            const nomeSecao = escaparHtml(post.secao || 'Geral');
 
             feed.insertAdjacentHTML('beforeend', `
                 <div class="post-card" id="post-card-${idx}">
@@ -446,7 +439,7 @@
                                 <span class="badge-secao">${nomeSecao}</span>
                             </div>
                             <div>
-                                <span style="margin-right: 15px;">${escapeHtml(post.data)}</span>
+                                <span style="margin-right: 15px;">${escaparHtml(post.data)}</span>
                                 <button onclick="abrirEdicao(${idx})" class="btn-editar">✏️ Editar</button>
                             </div>
                         </div>
@@ -458,12 +451,12 @@
                     <div id="edit-${idx}" style="display: none;">
                         <div style="margin-bottom: 15px;">
                             <label style="font-size: 0.85rem; color: var(--texto-mutado); display: block; margin-bottom: 5px;">Editar Seção:</label>
-                            <input type="text" id="input-edit-secao-${idx}" value="${nomeSecao}" class="input-nova-secao" style="display: block; width: 100%;" placeholder="Nome da Seção">
+                            <input type="text" id="input-edit-secao-${idx}" value="${escaparHtml(post.secao || 'Geral')}" class="input-nova-secao" style="display: block; width: 100%;" placeholder="Nome da Seção">
                         </div>
                         
                         <div style="margin-bottom: 15px;">
                             <label style="font-size: 0.85rem; color: var(--texto-mutado); display: block; margin-bottom: 5px;">Editar Anotação:</label>
-                            <textarea id="input-edit-texto-${idx}" style="height: 90px;">${textoBruto}</textarea>
+                            <textarea id="input-edit-texto-${idx}" style="height: 90px;">${escaparHtml(textoBruto)}</textarea>
                         </div>
                         
                         <div style="display: flex; gap: 10px;">

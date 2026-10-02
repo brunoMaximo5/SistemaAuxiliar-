@@ -276,6 +276,7 @@
         carregarDadosReais();
     </script>
 
+    <script src="{{ url_for('static', filename='js/foco.js') }}"></script>
     <script>
         /* SISTEMA DE FOCO (SINCRO EM SEGUNDO PLANO) */
         let relogioIntervalo;
@@ -296,27 +297,16 @@
 
         async function salvarFocoConcluido() {
             try {
-                const res = await fetch('/api/dados');
-                let dados = await res.json();
-
-                dados.tempo_total = (dados.tempo_total || 0) + tempoTotalDefinido;
-                dados.xp = (dados.xp || 0) + Math.floor(tempoTotalDefinido / 60);
-                
-                const hoje = new Date().toLocaleDateString('pt-BR');
-                if (dados.ultimo_acesso !== hoje) {
-                    dados.dias_seguidos = (dados.dias_seguidos || 0) + 1;
-                    dados.ultimo_acesso = hoje;
-                }
-
-                await fetch('/api/dados', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(dados)
-                });
+                await window.registrarSessaoFoco(
+                    tempoTotalDefinido,
+                    localStorage.getItem('foco_disciplina')
+                );
 
                 localStorage.removeItem('foco_total_segundos');
                 localStorage.removeItem('foco_fim_timestamp');
+                localStorage.removeItem('foco_tempo_restante');
                 localStorage.removeItem('foco_rodando');
+                localStorage.removeItem('foco_pausado');
                 localStorage.removeItem('foco_disciplina');
 
                 // Recarrega os dados na tela para a esfera crescer na hora

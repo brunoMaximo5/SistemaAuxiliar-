@@ -207,29 +207,34 @@
         
         bancoDiario.forEach(entrada => {
             // Filtro de busca
-            if (termoBusca && !entrada.texto.toLowerCase().includes(termoBusca) && !formatarDataBR(entrada.data).includes(termoBusca)) {
+            const textoEntrada = String(entrada.texto || '');
+            if (termoBusca && !textoEntrada.toLowerCase().includes(termoBusca) && !formatarDataBR(entrada.data).includes(termoBusca)) {
                 return;
             }
 
-            const emoji = entrada.humor.split(' ')[0]; // Pega só a carinha
+            const emoji = String(entrada.humor || '').split(' ')[0];
             const classeAtiva = (dataAtualEditando === entrada.data) ? 'ativa' : '';
             
             listaEl.innerHTML += `
-                <div class="entrada-item ${classeAtiva}" onclick="abrirEntrada('${entrada.data}')">
+                <div class="entrada-item ${classeAtiva}" data-data="${escaparHtml(entrada.data)}">
                     <div style="display: flex; align-items: center;">
-                        <span class="humor-emoji">${emoji}</span>
+                        <span class="humor-emoji">${escaparHtml(emoji)}</span>
                         <div>
-                            <div class="entrada-data">${formatarDataBR(entrada.data)}</div>
+                            <div class="entrada-data">${escaparHtml(formatarDataBR(entrada.data))}</div>
                         </div>
                     </div>
-                    <div class="entrada-resumo">${entrada.texto}</div>
+                    <div class="entrada-resumo">${escaparHtml(textoEntrada)}</div>
                 </div>
             `;
         });
         
-        if (listaEl.innerHTML === '') {
+        if (listaEl.childElementCount === 0) {
             listaEl.innerHTML = '<p style="color:var(--texto-mutado); text-align:center; margin-top:20px; font-size:0.9rem;">Nenhuma anotação encontrada.</p>';
         }
+
+        listaEl.querySelectorAll('.entrada-item').forEach(item => {
+            item.addEventListener('click', () => abrirEntrada(item.dataset.data));
+        });
     }
 
     function novaEntrada() {

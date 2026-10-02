@@ -4,7 +4,7 @@
 
 {% block estilos %}
 <!-- Biblioteca Chart.js para geração dos gráficos -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="{{ url_for('static', filename='vendor/chart.umd.min.js') }}"></script>
 
 <style>
     /* Estilos específicos da tela de Estatísticas */
