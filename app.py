@@ -6,11 +6,13 @@ from dotenv import load_dotenv
 from werkzeug.utils import secure_filename
 from copy import deepcopy
 import os
+import math
 from pathlib import Path
 import time
 import webbrowser
 import re
 import uuid
+from datetime import date
 from threading import Timer
 from urllib.parse import urlparse
 
@@ -41,7 +43,14 @@ DADOS_PADRAO = {
     "forum": [],
     "agenda": [],
     "ciclo": [],
-    "financas": {"cartoes": [], "pessoas": [], "despesas": [], "cartoes_config": []},
+    "financas": {
+        "cartoes": [],
+        "pessoas": [],
+        "despesas": [],
+        "receitas": [],
+        "categorias": ["Outros"],
+        "cartoes_config": []
+    },
     "diario": []
 }
 
@@ -102,25 +111,104 @@ def _id_dados_usuario(user_id):
     return f'dados_principais:{user_id}'
 
 
+def _tem_conteudo_util(dados):
+    if not isinstance(dados, dict):
+        return False
+    if any(dados.get(chave, 0) not in (0, None, '') for chave in ('xp', 'tempo_total', 'dias_seguidos')):
+        return True
+    for chave in ('edital', 'forum', 'agenda', 'ciclo', 'diario', 'rotina', 'historico'):
+        valor = dados.get(chave)
+        if isinstance(valor, (list, dict, str)) and len(valor) > 0:
+            return True
+    categorias = dados.get('categorias')
+    if isinstance(categorias, list) and any(item != 'Principal' for item in categorias):
+        return True
+    financas = dados.get('financas')
+    if isinstance(financas, dict):
+        for chave in ('cartoes', 'pessoas', 'despesas', 'receitas', 'cartoes_config'):
+            valor = financas.get(chave)
+            if isinstance(valor, (list, dict, str)) and len(valor) > 0:
+                return True
+        categorias_financeiras = financas.get('categorias')
+        if isinstance(categorias_financeiras, list) and any(item != 'Outros' for item in categorias_financeiras):
+            return True
+    return False
+
+
+def _tem_dados_principais(dados):
+    if not isinstance(dados, dict):
+        return False
+    if any(dados.get(chave, 0) not in (0, None, '') for chave in ('xp', 'tempo_total')):
+        return True
+
+    edital = dados.get('edital')
+    if isinstance(edital, (list, dict, str)) and len(edital) > 0:
+        return True
+
+    categorias = dados.get('categorias')
+    if isinstance(categorias, list) and any(
+        item not in (None, '', 'Principal') for item in categorias
+    ):
+        return True
+
+    financas = dados.get('financas')
+    if isinstance(financas, dict):
+        despesas = financas.get('despesas')
+        if isinstance(despesas, (list, dict, str)) and len(despesas) > 0:
+            return True
+    return False
+
+
+def _encontrar_legado_util(colecao):
+    legado = colecao.find_one({'_id': 'dados_principais'})
+    if legado and not legado.get('user_id') and not legado.get('migrado_para') and _tem_conteudo_util(legado):
+        return legado
+
+    if not hasattr(colecao, 'find'):
+        return None
+    for candidato in colecao.find({'user_id': {'$exists': False}}):
+        if candidato.get('_id') == 'dados_principais':
+            continue
+        if not candidato.get('migrado_para') and _tem_conteudo_util(candidato):
+            return candidato
+    return None
+
+
+def _fundir_dados_usuario(ativo, legado):
+    resultado = deepcopy(ativo) if isinstance(ativo, dict) else {}
+    for chave, valor_legado in legado.items():
+        if chave in ('_id', 'user_id', 'migrado_para'):
+            continue
+
+        valor_ativo = resultado.get(chave)
+        if isinstance(valor_ativo, dict) and isinstance(valor_legado, dict):
+            resultado[chave] = _fundir_dados_usuario(valor_ativo, valor_legado)
+        elif isinstance(valor_ativo, list):
+            if not valor_ativo and isinstance(valor_legado, list) and valor_legado:
+                resultado[chave] = deepcopy(valor_legado)
+        elif chave not in resultado or valor_ativo in (None, '', 0):
+            if valor_legado not in (None, '', 0, [], {}):
+                resultado[chave] = deepcopy(valor_legado)
+    return resultado
+
+
 def _garantir_dados_usuario(user_id):
     colecao = _get_collection()
     id_usuario = _id_dados_usuario(user_id)
-    if colecao.find_one({'_id': id_usuario, 'user_id': str(user_id)}):
+    documento_atual = colecao.find_one({'_id': id_usuario, 'user_id': str(user_id)})
+    legado = _encontrar_legado_util(colecao)
+    if legado:
+        copia = _fundir_dados_usuario(documento_atual, legado)
+        copia['_id'] = id_usuario
+        copia['user_id'] = str(user_id)
+        colecao.replace_one({'_id': id_usuario}, copia, upsert=True)
+        legado_marcado = deepcopy(legado)
+        legado_marcado['migrado_para'] = str(user_id)
+        colecao.replace_one({'_id': legado['_id']}, legado_marcado, upsert=True)
         return
 
-    usuarios = _get_users_collection()
-    primeiro_usuario = usuarios.find_one({'_id': str(user_id)})
-    primeiro = True
-    if hasattr(usuarios, 'count_documents'):
-        primeiro = usuarios.count_documents({}) == 1
-    if primeiro and primeiro_usuario:
-        legado = colecao.find_one({'_id': 'dados_principais'})
-        if legado and not legado.get('user_id'):
-            copia = deepcopy(legado)
-            copia['_id'] = id_usuario
-            copia['user_id'] = str(user_id)
-            colecao.replace_one({'_id': id_usuario}, copia, upsert=True)
-            return
+    if documento_atual and _tem_dados_principais(documento_atual):
+        return
 
     documento = deepcopy(DADOS_PADRAO)
     documento['_id'] = id_usuario
@@ -128,28 +216,166 @@ def _garantir_dados_usuario(user_id):
     colecao.replace_one({'_id': id_usuario}, documento, upsert=True)
 
 
+FORMAS_PAGAMENTO = {'pix_debito', 'pix_credito', 'cartao_credito', 'va', 'vr', 'dinheiro'}
+
+
+def _texto(valor, padrao=''):
+    return valor.strip() if isinstance(valor, str) and valor.strip() else padrao
+
+
+def _numero(valor, padrao=0):
+    if valor is None or valor == '':
+        return padrao
+    try:
+        numero = float(valor)
+    except (TypeError, ValueError, OverflowError) as erro:
+        raise ValueError('Valores financeiros devem ser números finitos.') from erro
+    if not math.isfinite(numero):
+        raise ValueError('Valores financeiros devem ser finitos.')
+    return int(numero) if numero.is_integer() else numero
+
+
+def _data_iso(valor):
+    if not isinstance(valor, str) or not re.fullmatch(r'\d{4}-\d{2}-\d{2}', valor):
+        return ''
+    try:
+        date.fromisoformat(valor)
+    except ValueError:
+        return ''
+    return valor
+
+
+def _normalizar_despesa(despesa, indice=None):
+    origem = despesa if isinstance(despesa, dict) else {}
+    resultado = deepcopy(origem)
+    resultado['tipo'] = 'Despesa'
+    resultado['descricao'] = _texto(origem.get('descricao'), 'Sem descrição')
+    resultado['valor_total'] = _numero(origem.get('valor_total', origem.get('valor')), 0)
+    parcelas = origem.get('parcelas', 1)
+    parcelas_numero = _numero(parcelas, 1)
+    if not isinstance(parcelas_numero, int) or parcelas_numero < 1:
+        raise ValueError('Parcelas devem ser um inteiro maior ou igual a 1.')
+    resultado['parcelas'] = parcelas_numero
+    resultado['mes_inicio'] = _texto(origem.get('mes_inicio', origem.get('mes_referencia')), '')
+    resultado['data_compra'] = _data_iso(origem.get('data_compra'))
+    resultado['categoria'] = _texto(origem.get('categoria'), 'Outros')
+    resultado['titular_despesa'] = _texto(
+        origem.get('titular_despesa', origem.get('pessoa')), 'Minha Despesa'
+    )
+
+    forma = _texto(origem.get('forma_pagamento'))
+    meio = _texto(origem.get('meio')).lower()
+    cartao = _texto(origem.get('cartao'))
+    if forma not in FORMAS_PAGAMENTO:
+        if meio == 'pix' or meio == 'pix_debito':
+            forma = 'pix_credito' if origem.get('credito') or origem.get('pix_credito') else 'pix_debito'
+        elif meio in FORMAS_PAGAMENTO:
+            forma = meio
+        elif cartao:
+            forma = 'cartao_credito'
+        else:
+            forma = 'dinheiro'
+    resultado['forma_pagamento'] = forma
+    resultado['meio'] = 'pix' if forma.startswith('pix_') else ('cartao' if forma == 'cartao_credito' else forma)
+    origem_cartao_conta = _texto(origem.get('origem_cartao_conta'))
+    cartao_efetivo = cartao or (origem_cartao_conta if forma == 'pix_credito' else '')
+    resultado['cartao'] = cartao_efetivo
+    resultado['origem_cartao_conta'] = origem_cartao_conta or cartao_efetivo
+    resultado['pessoa'] = _texto(origem.get('pessoa'), '')
+    resultado['compra_id'] = _texto(origem.get('compra_id', origem.get('id')), '')
+    if not resultado['compra_id']:
+        resultado['compra_id'] = f'legado-despesa-{indice}' if indice is not None else uuid.uuid4().hex
+    return resultado
+
+
+def _normalizar_receita(receita, indice=None):
+    origem = receita if isinstance(receita, dict) else {}
+    resultado = deepcopy(origem)
+    resultado['id'] = _texto(origem.get('id'), f'legado-receita-{indice}' if indice is not None else uuid.uuid4().hex)
+    resultado['tipo'] = 'Receita'
+    resultado['descricao'] = _texto(origem.get('descricao'), 'Sem descrição')
+    resultado['valor'] = _numero(origem.get('valor', origem.get('valor_total')), 0)
+    resultado['mes_referencia'] = _texto(origem.get('mes_referencia', origem.get('mes_inicio')), '')
+    resultado['categoria'] = _texto(origem.get('categoria'), 'Outros')
+    return resultado
+
+
+def normalizar_financas(financas):
+    origem = financas if isinstance(financas, dict) else {}
+    resultado = deepcopy(origem)
+    resultado['cartoes'] = [item for item in origem.get('cartoes', []) if isinstance(item, str)] if isinstance(origem.get('cartoes', []), list) else []
+    resultado['pessoas'] = [item for item in origem.get('pessoas', []) if isinstance(item, str)] if isinstance(origem.get('pessoas', []), list) else []
+    categorias = origem.get('categorias', [])
+    resultado['categorias'] = list(dict.fromkeys(
+        [item.strip() for item in categorias if isinstance(item, str) and item.strip()]
+    )) if isinstance(categorias, list) else []
+    if 'Outros' not in resultado['categorias']:
+        resultado['categorias'].append('Outros')
+    despesas = origem.get('despesas', [])
+    resultado['despesas'] = [_normalizar_despesa(item, indice) for indice, item in enumerate(despesas)] if isinstance(despesas, list) else []
+    receitas = origem.get('receitas', [])
+    resultado['receitas'] = [_normalizar_receita(item, indice) for indice, item in enumerate(receitas)] if isinstance(receitas, list) else []
+    configuracoes = origem.get('cartoes_config', [])
+    resultado['cartoes_config'] = []
+    if isinstance(configuracoes, list):
+        for configuracao in configuracoes:
+            if not isinstance(configuracao, dict):
+                continue
+            item = deepcopy(configuracao)
+            item['nome'] = _texto(item.get('nome'))
+            item['titular'] = _texto(item.get('titular'), 'Minha Despesa')
+            resultado['cartoes_config'].append(item)
+    return resultado
+
+
+def _normalizar_dados(dados):
+    if not isinstance(dados, dict):
+        raise ValueError("Os dados enviados devem ser um objeto JSON.")
+    resultado = deepcopy(dados)
+    resultado.pop('_id', None)
+    resultado.pop('user_id', None)
+    for chave, valor in DADOS_PADRAO.items():
+        if chave not in resultado:
+            resultado[chave] = deepcopy(valor)
+    resultado['financas'] = normalizar_financas(resultado.get('financas'))
+    return resultado
+
+
 def carregar_dados():
     _garantir_dados_usuario(current_user.id)
-    documento = _get_collection().find_one({'_id': _id_dados_usuario(current_user.id)})
+    documento = _get_collection().find_one({
+        '_id': _id_dados_usuario(current_user.id),
+        'user_id': str(current_user.id),
+    })
     if documento is None:
         return deepcopy(DADOS_PADRAO)
     if not isinstance(documento, dict):
         raise ValueError("O documento principal de dados deve ser um objeto.")
 
-    documento.pop('_id', None)
-    documento.pop('user_id', None)
-    for chave, valor in DADOS_PADRAO.items():
-        if chave not in documento:
-            documento[chave] = deepcopy(valor)
-    return documento
+    return _normalizar_dados(documento)
 
 def salvar_dados(dados):
     if not isinstance(dados, dict):
         raise ValueError("Os dados enviados devem ser um objeto JSON.")
-    documento = deepcopy(dados)
-    documento.pop('_id', None)
-    documento.pop('user_id', None)
-    documento['_id'] = _id_dados_usuario(current_user.id)
+    id_documento = _id_dados_usuario(current_user.id)
+    atual = _get_collection().find_one({'_id': id_documento, 'user_id': str(current_user.id)}) or {}
+
+    def mesclar(base, alteracoes):
+        resultado = deepcopy(base)
+        for chave, valor in alteracoes.items():
+            if isinstance(valor, dict) and isinstance(resultado.get(chave), dict):
+                resultado[chave] = mesclar(resultado[chave], valor)
+            else:
+                resultado[chave] = deepcopy(valor)
+        return resultado
+
+    dados_cliente = deepcopy(dados)
+    dados_cliente.pop('_id', None)
+    dados_cliente.pop('user_id', None)
+    atual.pop('_id', None)
+    atual.pop('user_id', None)
+    documento = _normalizar_dados(mesclar(atual or DADOS_PADRAO, dados_cliente))
+    documento['_id'] = id_documento
     documento['user_id'] = str(current_user.id)
     _get_collection().replace_one(
         {'_id': documento['_id'], 'user_id': str(current_user.id)}, documento, upsert=True

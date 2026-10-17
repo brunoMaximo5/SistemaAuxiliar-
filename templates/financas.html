@@ -7,8 +7,21 @@
     .finance-header { display:flex; justify-content:space-between; align-items:flex-end; gap:16px; flex-wrap:wrap; margin-bottom:22px; }
     .finance-header h1 { color:var(--texto-puro); font-size:1.8rem; }
     .month-control { display:flex; align-items:center; gap:10px; color:var(--texto-mutado); }
-    .month-control input, .finance-field input, .finance-field select { min-width:0; width:100%; padding:10px 12px; background:#151515; border:1px solid var(--borda-sutil); border-radius:6px; color:var(--texto-puro); }
-    .month-control input { width:auto; }
+.month-control input, .finance-field input, .finance-field select { 
+    min-width:0; 
+    width:100%; 
+    padding:10px 12px; 
+    background:#151515; 
+    border:1px solid var(--borda-sutil); 
+    border-radius:6px; 
+    color:var(--texto-puro); 
+    color-scheme: dark; /* Garante que o seletor de mês e texto fiquem brancos */
+}
+input[type="month"]::-webkit-calendar-picker-indicator,
+input[type="date"]::-webkit-calendar-picker-indicator {
+    filter: invert(1);
+    cursor: pointer;
+}
     .finance-summary { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; margin-bottom:20px; }
     .summary-item { padding:16px 18px; border:1px solid var(--borda-sutil); border-radius:8px; background:rgba(255,255,255,.035); }
     .summary-item span { display:block; color:var(--texto-mutado); font-size:.82rem; }
@@ -51,9 +64,27 @@
     .card-settings .card-name { overflow-wrap:anywhere; }
     .muted { color:var(--texto-mutado); font-size:.82rem; }
     .amount { white-space:nowrap; font-weight:700; }
+    .dashboard-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; margin-bottom:20px; }
+    .dashboard-card { padding:16px; border:1px solid var(--borda-sutil); border-radius:8px; background:rgba(255,255,255,.035); }
+    .dashboard-card span { display:block; color:var(--texto-mutado); font-size:.78rem; }
+    .dashboard-card strong { display:block; margin-top:8px; color:var(--texto-puro); font-size:1.2rem; }
+    .dashboard-columns { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:18px; margin-bottom:20px; }
+    .dashboard-list { padding:16px; border:1px solid var(--borda-sutil); border-radius:8px; background:rgba(255,255,255,.025); }
+    .dashboard-list h2 { color:var(--texto-puro); font-size:1rem; margin-bottom:14px; }
+    .category-bar { display:grid; grid-template-columns:minmax(90px,.7fr) minmax(100px,2fr) auto; gap:10px; align-items:center; margin:10px 0; color:var(--texto-base); font-size:.82rem; }
+    .category-bar progress { width:100%; height:8px; accent-color:#b8d7c5; }
+    .quick-launch { display:none; }
+    .finance-modal { display:none; position:fixed; inset:0; z-index:20; align-items:center; justify-content:center; padding:18px; background:rgba(0,0,0,.72); }
+    .finance-modal.is-open { display:flex; }
+    .finance-modal-content { width:min(520px,100%); max-height:92vh; overflow:auto; padding:20px; border:1px solid var(--borda-sutil); border-radius:8px; background:#171717; }
+    .finance-modal-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; }
+    .finance-modal-head h2 { color:var(--texto-puro); font-size:1.1rem; }
+    .finance-analysis-controls { display:flex; align-items:flex-end; gap:12px; flex-wrap:wrap; }
+    .finance-analysis-controls .finance-field { margin:0; min-width:150px; }
     @media(max-width:850px) { .finance-layout { grid-template-columns:1fr; } }
     @media(max-width:560px) {
-        .finance-summary { grid-template-columns:1fr; gap:8px; }
+        .finance-summary,.dashboard-grid { grid-template-columns:1fr; gap:8px; }
+        .dashboard-columns { grid-template-columns:1fr; }
         .summary-item { display:flex; justify-content:space-between; align-items:center; gap:12px; }
         .summary-item strong { margin:0; font-size:1.1rem; }
         .finance-row,.payment-part-fields { grid-template-columns:1fr; }
@@ -63,6 +94,7 @@
         .card-settings .card-name { grid-column:1/-1; }
         .month-control { width:100%; justify-content:space-between; }
         .month-control input { flex:1; }
+        .quick-launch { display:block; position:sticky; bottom:12px; z-index:5; width:100%; margin:0 0 18px; }
     }
 </style>
 {% endblock %}
@@ -70,7 +102,11 @@
 {% block conteudo %}
 <header class="finance-header">
     <h1>Finanças</h1>
-    <label class="month-control" for="mes-referencia">Mês de referência <input type="month" id="mes-referencia"></label>
+    <div class="finance-analysis-controls" aria-label="Análise financeira">
+        <div class="finance-field"><label for="periodo-financeiro">Período</label><select id="periodo-financeiro"><option value="mes">Mês</option><option value="semana">Semana</option><option value="dia">Dia</option></select></div>
+        <div class="finance-field"><label for="data-analise-financeira">Data da análise</label><input type="date" id="data-analise-financeira"></div>
+        <label class="month-control" for="mes-referencia">Mês de referência <input type="month" id="mes-referencia"></label>
+    </div>
 </header>
 
 <nav class="finance-tabs" role="tablist" aria-label="Seções de finanças">
@@ -81,12 +117,31 @@
 </nav>
 
 <section class="finance-panel active" id="painel-resumo" role="tabpanel" aria-labelledby="tab-resumo">
+    <section id="painel-dashboard" class="finance-section" aria-label="Dashboard financeiro">
+        <div class="dashboard-grid">
+            <div class="dashboard-card"><span>Entradas no mês</span><strong id="dashboard-entradas">R$ 0,00</strong></div>
+            <div class="dashboard-card"><span>Saldo previsto</span><strong id="dashboard-saldo">R$ 0,00</strong></div>
+            <div class="dashboard-card"><span>Fatura total do banco</span><strong id="dashboard-fatura-banco">R$ 0,00</strong></div>
+            <div class="dashboard-card"><span>Gasto pessoal</span><strong id="dashboard-gasto-pessoal">R$ 0,00</strong></div>
+            <div class="dashboard-card"><span>VA</span><strong id="dashboard-va">R$ 0,00</strong></div>
+            <div class="dashboard-card"><span>VR</span><strong id="dashboard-vr">R$ 0,00</strong></div>
+            <div class="dashboard-card"><span>Dinheiro</span><strong id="dashboard-dinheiro">R$ 0,00</strong></div>
+            <div class="dashboard-card"><span>Pix débito</span><strong id="dashboard-pix-debito">R$ 0,00</strong></div>
+            <div class="dashboard-card"><span>Pix Crédito</span><strong id="dashboard-pix-credito">R$ 0,00</strong></div>
+        </div>
+        <div class="dashboard-columns">
+            <div class="dashboard-list"><h2>Categorias</h2><div id="dashboard-categorias"></div></div>
+            <div class="dashboard-list"><h2>A receber da família</h2><div id="a-receber-familia"></div></div>
+        </div>
+        <div class="dashboard-list"><h2>Gastos por dia</h2><div id="gastos-por-dia"></div></div>
+    </section>
     <div class="summary-filters" aria-label="Filtrar resumo financeiro">
         <div class="finance-field summary-filter"><label for="resumo-filtro-pessoa">Pessoa</label><select id="resumo-filtro-pessoa"><option value="">Todas as pessoas</option></select></div>
         <div class="finance-field summary-filter"><label for="resumo-filtro-cartao">Cartão</label><select id="resumo-filtro-cartao"><option value="">Todos os cartões</option></select></div>
         <button type="button" class="finance-button" id="limpar-filtros-resumo">Limpar filtros</button>
     </div>
     <p class="summary-context" id="contexto-resumo">Visão completa do mês</p>
+    <p class="summary-context" id="periodo-selecionado-resumo"></p>
     <section class="finance-summary" aria-label="Totais do recorte selecionado">
         <div class="summary-item"><span>Faturas de cartão</span><strong id="total-cartoes">R$ 0,00</strong></div>
         <div class="summary-item"><span>Pagamentos Pix</span><strong id="total-pix">R$ 0,00</strong></div>
@@ -106,6 +161,21 @@
         <h2>Lançamentos que compõem os totais</h2>
         <div class="finance-table-wrap" id="resumo-lancamentos"></div>
     </section>
+    <section class="finance-section">
+        <h2>Receitas</h2>
+        <div class="finance-layout">
+            <div class="finance-table-wrap" id="lista-receitas"></div>
+            <form class="finance-form" id="form-receita">
+                <div class="finance-field"><label for="receita-descricao">Descrição</label><input id="receita-descricao" required maxlength="120"></div>
+                <div class="finance-row"><div class="finance-field"><label for="receita-valor">Valor</label><input id="receita-valor" type="number" min="0.01" step="0.01" required></div><div class="finance-field"><label for="receita-mes">Mês</label><input id="receita-mes" type="month" required></div></div>
+                <div class="finance-field"><label for="receita-categoria">Categoria</label><select id="receita-categoria"></select></div>
+                <button class="finance-button primary" type="submit" style="width:100%;">Adicionar receita</button>
+            </form>
+        </div>
+        <form class="finance-form" id="form-categoria" style="margin-top:16px;">
+            <div class="finance-row"><div class="finance-field"><label for="nova-categoria">Nova categoria financeira</label><input id="nova-categoria" maxlength="60"></div><div class="finance-actions"><button class="finance-button primary" type="submit">Cadastrar categoria</button></div></div>
+        </form>
+    </section>
 </section>
 
 <section class="finance-panel" id="painel-compras" role="tabpanel" aria-labelledby="tab-compras">
@@ -120,8 +190,11 @@
         </section>
         <form class="finance-form" id="form-compra">
             <h2>Nova compra</h2>
+            <div class="finance-row"><div class="finance-field"><label for="tipo-despesa">Tipo</label><select id="tipo-despesa"><option value="Despesa">Despesa</option></select></div><div class="finance-field"><label for="categoria-despesa">Categoria</label><select id="categoria-despesa"></select></div></div>
             <div class="finance-field"><label for="desc-despesa">O que foi comprado?</label><input id="desc-despesa" required maxlength="120" placeholder="Ex.: mercado, eletrodoméstico"></div>
             <div class="finance-field"><label for="select-pessoa">Quem vai pagar?</label><select id="select-pessoa" required></select></div>
+            <div class="finance-field"><label for="titular-despesa">Titular da despesa</label><input id="titular-despesa" placeholder="Minha Despesa ou Reembolsável - Nome"></div>
+            <div class="finance-field"><label for="data-compra">Data da compra</label><input id="data-compra" type="date" required></div>
             <div class="payment-part-head"><span>Como será paga</span><button type="button" class="finance-button" id="adicionar-parte">+ Dividir pagamento</button></div>
             <div id="partes-pagamento"></div>
             <button type="submit" class="finance-button primary" style="width:100%;">Salvar compra</button>
@@ -140,6 +213,7 @@
             <form class="finance-form" id="form-cartao">
                 <h2>Novo cartão</h2>
                 <div class="finance-field"><label for="novo-cartao">Nome do cartão</label><input id="novo-cartao" maxlength="60" placeholder="Ex.: Cartão principal"></div>
+                <div class="finance-field"><label for="novo-cartao-titular">Titular</label><input id="novo-cartao-titular" maxlength="60" placeholder="Pessoa ou texto livre"></div>
                 <button class="finance-button primary" type="submit" style="width:100%;">Adicionar cartão</button>
             </form>
             <form class="finance-form" id="form-pessoa" style="margin-top:16px;">
@@ -154,6 +228,21 @@
         </div>
     </div>
 </section>
+
+<button type="button" class="finance-button primary quick-launch" id="btn-lancamento-rapido">+ Lançamento rápido</button>
+<div class="finance-modal" id="modal-lancamento-rapido" role="dialog" aria-modal="true" aria-labelledby="titulo-lancamento-rapido">
+    <form class="finance-modal-content finance-form" id="form-lancamento-rapido">
+        <div class="finance-modal-head"><h2 id="titulo-lancamento-rapido">Lançamento rápido</h2><button type="button" class="finance-button" id="fechar-lancamento-rapido" aria-label="Fechar">Fechar</button></div>
+        <div class="finance-field"><label for="rapido-valor">Valor</label><input id="rapido-valor" type="number" min="0.01" step="0.01" required></div>
+        <div class="finance-field"><label for="rapido-descricao">Descrição</label><input id="rapido-descricao" maxlength="120" required></div>
+        <div class="finance-row"><div class="finance-field"><label for="rapido-forma">Forma</label><select id="rapido-forma"><option value="dinheiro">Dinheiro</option><option value="pix_debito">Pix</option><option value="pix_credito">Pix Crédito</option><option value="cartao_credito">Cartão de crédito</option><option value="va">VA</option><option value="vr">VR</option></select></div><div class="finance-field"><label for="rapido-categoria">Categoria</label><select id="rapido-categoria"></select></div></div>
+        <div class="finance-field" id="rapido-cartao-campo" hidden><label for="rapido-cartao">Cartão/origem da conta</label><select id="rapido-cartao"><option value="">Selecione...</option></select></div>
+        <div class="finance-field"><label for="rapido-titular">Titular</label><input id="rapido-titular" placeholder="Minha Despesa"></div>
+        <div class="finance-row"><div class="finance-field"><label for="rapido-parcelas">Parcelas</label><input id="rapido-parcelas" type="number" min="1" step="1" value="1"></div><div class="finance-field"><label for="rapido-mes">Mês inicial</label><input id="rapido-mes" type="month"></div></div>
+        <div class="finance-field"><label for="rapido-data-compra">Data da compra</label><input id="rapido-data-compra" type="date" required></div>
+        <button class="finance-button primary" type="submit" style="width:100%;">Salvar lançamento</button>
+    </form>
+</div>
 
 <section class="finance-panel" id="painel-pix" role="tabpanel" aria-labelledby="tab-pix">
     <section class="finance-section">
