@@ -1,6 +1,6 @@
 # SistemaAuxiliar-
 
-Aplicação pessoal local para organizar estudos, rotina, agenda, finanças e anotações. O servidor usa Flask; os dados principais ficam em `dados.json`, que contém informações pessoais e não deve ser publicado.
+Aplicação pessoal local para organizar estudos, rotina, agenda, finanças e anotações. O servidor usa Flask e MongoDB Atlas via PyMongo. Configure `MONGO_URI` no ambiente antes de iniciar; nunca inclua credenciais na documentação ou no código.
 
 ## Requisitos
 
@@ -30,21 +30,12 @@ Uma compra pode ser dividida em partes independentes, cada uma com meio de pagam
 
 ## Testes e verificações
 
-Os testes usam arquivos temporários e não escrevem no `dados.json` real:
+Os testes usam uma coleção falsa em memória e não acessam o MongoDB real:
 
 ```powershell
 .\.venv\Scripts\python.exe -m unittest discover -s tests -v
 .\.venv\Scripts\python.exe -m compileall -q app.py tests
-.\.venv\Scripts\python.exe -m json.tool dados.json > $null
 ```
+O banco padrão é `sistema_auxiliar`, mas pode ser alterado com `MONGO_DB_NAME`. O estado agregado da aplicação fica na coleção `dados`, em um único documento principal.
 
-O último comando valida o JSON local sem exibir o conteúdo. Se o arquivo estiver danificado, faça uma cópia antes de qualquer reparo; a aplicação agora informa erro de leitura em vez de substituir os dados por valores padrão.
-
-## Backup e restauração
-
-1. Feche a aplicação antes de copiar `dados.json`.
-2. Guarde uma cópia em local privado e protegido; o arquivo inclui informações pessoais e financeiras.
-3. Para restaurar, feche o servidor e substitua `dados.json` pela cópia válida.
-4. Preserve também os arquivos da pasta de cadernos e os anexos em `uploads/` se quiser restaurar todos os dados locais.
-
-`dados.json`, `uploads/` e os JSON dos cadernos são ignorados pelo Git. Não remova essa proteção nem envie esses arquivos a um repositório público.
+Para backup e restauração, use os recursos do MongoDB Atlas e mantenha também os arquivos da pasta de cadernos e os anexos em `uploads/` se quiser preservar todos os dados locais.

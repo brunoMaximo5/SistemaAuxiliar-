@@ -6,7 +6,12 @@ uploads/
 
 # Ignora arquivos de cache temporários do Python (boa prática)
 __pycache__/
+*.py[cod]
+.pytest_cache/
 
 # Ignorar todos os cadernos de questões (Dados sensíveis/pessoais)
 static/cadernos/*.json
+
+#.env
+.env
 

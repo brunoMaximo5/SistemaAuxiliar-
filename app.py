@@ -1,82 +1,76 @@
 from flask import Flask, render_template, request, jsonify, send_from_directory
+from pymongo import MongoClient
+from pymongo.errors import PyMongoError
+from dotenv import load_dotenv
 from werkzeug.utils import secure_filename
-import json
+from copy import deepcopy
 import os
-import tempfile
 from pathlib import Path
-from threading import RLock
 import time
 import webbrowser
 from threading import Timer
 
+load_dotenv()
+
 app = Flask(__name__)
-DATA_FILE = 'dados.json'
 UPLOAD_FOLDER = 'uploads'
 CADERNOS_FOLDER = os.environ.get(
     'CADERNOS_FOLDER',
     str(Path(app.root_path).resolve().parents[1] / 'Arquivos Pessoais' / 'static' / 'cadernos')
 )
-_data_lock = RLock()
+_mongo_client = None
+_mongo_collection = None
+
+DADOS_PADRAO = {
+    "xp": 0,
+    "tempo_total": 0,
+    "dias_seguidos": 0,
+    "categorias": ["Principal"],
+    "edital": [],
+    "forum": [],
+    "agenda": [],
+    "ciclo": [],
+    "financas": {"cartoes": [], "pessoas": [], "despesas": [], "cartoes_config": []},
+    "diario": []
+}
 
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
+def _get_collection():
+    global _mongo_client, _mongo_collection
+
+    if _mongo_collection is None:
+        mongo_uri = os.environ.get('MONGO_URI')
+        if not mongo_uri:
+            raise RuntimeError("A variável de ambiente MONGO_URI não está configurada.")
+        _mongo_client = MongoClient(mongo_uri, serverSelectionTimeoutMS=5000)
+        banco = _mongo_client[os.environ.get('MONGO_DB_NAME', 'sistema_auxiliar')]
+        _mongo_collection = banco['dados']
+    return _mongo_collection
+
+
 def carregar_dados():
-    dados_padrao = {
-        "xp": 0,
-        "tempo_total": 0,
-        "dias_seguidos": 0,
-        "categorias": ["Principal"],
-        "edital": [],
-        "forum": [],
-        "agenda": [],
-        "ciclo": [],          
-        "financas": {"cartoes": [], "pessoas": [], "despesas": [], "cartoes_config": []},
-        "diario": []
-    }
-    
-    if not os.path.exists(DATA_FILE):
-        return dados_padrao
-    
-    try:
-        with open(DATA_FILE, 'r', encoding='utf-8') as f:
-            dados = json.load(f)
-            if not isinstance(dados, dict):
-                raise ValueError(f"O conteúdo de {DATA_FILE} deve ser um objeto JSON.")
-            for chave, valor in dados_padrao.items():
-                if chave not in dados:
-                    dados[chave] = valor
-            return dados
-    except (json.JSONDecodeError, UnicodeDecodeError) as e:
-        raise ValueError(f"Não foi possível ler {DATA_FILE}; o arquivo não foi alterado.") from e
+    documento = _get_collection().find_one({'_id': 'dados_principais'})
+    if documento is None:
+        return deepcopy(DADOS_PADRAO)
+    if not isinstance(documento, dict):
+        raise ValueError("O documento principal de dados deve ser um objeto.")
+
+    documento.pop('_id', None)
+    for chave, valor in DADOS_PADRAO.items():
+        if chave not in documento:
+            documento[chave] = deepcopy(valor)
+    return documento
 
 def salvar_dados(dados):
     if not isinstance(dados, dict):
         raise ValueError("Os dados enviados devem ser um objeto JSON.")
-
-    caminho = os.path.abspath(DATA_FILE)
-    diretorio = os.path.dirname(caminho)
-    caminho_temporario = None
-
-    with _data_lock:
-        try:
-            with tempfile.NamedTemporaryFile(
-                mode='w',
-                encoding='utf-8',
-                dir=diretorio,
-                prefix=f'.{os.path.basename(caminho)}.',
-                suffix='.tmp',
-                delete=False
-            ) as arquivo_temporario:
-                caminho_temporario = arquivo_temporario.name
-                json.dump(dados, arquivo_temporario, ensure_ascii=False, indent=4)
-                arquivo_temporario.flush()
-                os.fsync(arquivo_temporario.fileno())
-
-            os.replace(caminho_temporario, caminho)
-        finally:
-            if caminho_temporario and os.path.exists(caminho_temporario):
-                os.remove(caminho_temporario)
+    documento = deepcopy(dados)
+    documento['_id'] = 'dados_principais'
+    _get_collection().replace_one(
+        {'_id': 'dados_principais'}, documento, upsert=True
+    )
 
 @app.route('/')
 def index():
@@ -124,12 +118,12 @@ def gerenciar_dados():
         dados_recebidos = request.get_json(silent=True)
         try:
             salvar_dados(dados_recebidos)
-        except ValueError as e:
+        except (ValueError, RuntimeError, PyMongoError) as e:
             return jsonify({"status": "erro", "mensagem": str(e)}), 400
         return jsonify({"status": "sucesso"})
     try:
         return jsonify(carregar_dados())
-    except ValueError as e:
+    except (ValueError, RuntimeError, PyMongoError) as e:
         return jsonify({"status": "erro", "mensagem": str(e)}), 500
 
 @app.route('/api/forum/editar/<int:post_index>', methods=['POST'])
@@ -138,14 +132,16 @@ def editar_post_forum(post_index):
     novo_texto = dados_recebidos.get('texto')
     nova_secao = dados_recebidos.get('secao')
     
-    banco = carregar_dados()
-    if 0 <= post_index < len(banco["forum"]):
-        banco["forum"][post_index]["texto"] = novo_texto
-        banco["forum"][post_index]["secao"] = nova_secao
-        salvar_dados(banco)
-        return jsonify({"status": "sucesso"})
-    else:
+    try:
+        banco = carregar_dados()
+        if 0 <= post_index < len(banco["forum"]):
+            banco["forum"][post_index]["texto"] = novo_texto
+            banco["forum"][post_index]["secao"] = nova_secao
+            salvar_dados(banco)
+            return jsonify({"status": "sucesso"})
         return jsonify({"status": "erro", "mensagem": "Post não encontrado"}), 404
+    except (ValueError, RuntimeError, PyMongoError) as e:
+        return jsonify({"status": "erro", "mensagem": str(e)}), 500
 
 @app.route('/api/forum', methods=['POST'])
 def adicionar_post_forum():
@@ -162,16 +158,19 @@ def adicionar_post_forum():
             caminho_salvar = os.path.join(app.config['UPLOAD_FOLDER'], nome_arquivo)
             arquivo.save(caminho_salvar)
     
-    dados = carregar_dados()
-    novo_post = {
-        "texto": texto,
-        "data": data_post,
-        "secao": secao_post,
-        "arquivo": nome_arquivo
-    }
-    dados["forum"].append(novo_post)
-    salvar_dados(dados)
-    return jsonify({"status": "sucesso"})
+    try:
+        dados = carregar_dados()
+        novo_post = {
+            "texto": texto,
+            "data": data_post,
+            "secao": secao_post,
+            "arquivo": nome_arquivo
+        }
+        dados["forum"].append(novo_post)
+        salvar_dados(dados)
+        return jsonify({"status": "sucesso"})
+    except (ValueError, RuntimeError, PyMongoError) as e:
+        return jsonify({"status": "erro", "mensagem": str(e)}), 500
 
 @app.route('/uploads/<nome_arquivo>')
 def acessar_arquivo(nome_arquivo):

@@ -1,4 +1,5 @@
 import json
+import copy
 import tempfile
 import unittest
 from pathlib import Path
@@ -7,21 +8,37 @@ from unittest.mock import patch
 import app
 
 
+class FakeCollection:
+    def __init__(self, documento=None, erro=None):
+        self.documento = copy.deepcopy(documento)
+        self.erro = erro
+
+    def find_one(self, filtro):
+        if self.erro:
+            raise self.erro
+        return copy.deepcopy(self.documento)
+
+    def replace_one(self, filtro, documento, upsert=False):
+        if self.erro:
+            raise self.erro
+        self.documento = copy.deepcopy(documento)
+
+
 class PersistenciaDadosTests(unittest.TestCase):
     def setUp(self):
         self.pasta_temporaria = tempfile.TemporaryDirectory()
-        self.arquivo_dados = Path(self.pasta_temporaria.name) / "dados-teste.json"
-        self.patch_arquivo = patch.object(app, "DATA_FILE", str(self.arquivo_dados))
-        self.patch_arquivo.start()
-        self.addCleanup(self.patch_arquivo.stop)
         self.addCleanup(self.pasta_temporaria.cleanup)
         self.cliente = app.app.test_client()
+        self.colecao = FakeCollection()
+        self.patch_colecao = patch.object(app, "_get_collection", return_value=self.colecao)
+        self.patch_colecao.start()
+        self.addCleanup(self.patch_colecao.stop)
 
-    def test_rejeita_payload_que_nao_e_objeto_sem_criar_arquivo(self):
+    def test_rejeita_payload_que_nao_e_objeto(self):
         resposta = self.cliente.post("/api/dados", json=[])
 
         self.assertEqual(resposta.status_code, 400)
-        self.assertFalse(self.arquivo_dados.exists())
+        self.assertIsNone(self.colecao.documento)
 
     def test_grava_e_carrega_dados_validos(self):
         resposta = self.cliente.post("/api/dados", json={"xp": 8})
@@ -32,15 +49,19 @@ class PersistenciaDadosTests(unittest.TestCase):
         self.assertEqual(dados["agenda"], [])
         self.assertEqual(dados["financas"]["cartoes_config"], [])
 
-    def test_json_corrompido_nao_e_substituido_por_defaults(self):
-        conteudo_original = b"{json corrompido"
-        self.arquivo_dados.write_bytes(conteudo_original)
-
+    def test_documento_ausente_retorna_defaults(self):
         resposta = self.cliente.get("/api/dados")
 
+        self.assertEqual(resposta.status_code, 200)
+        self.assertEqual(resposta.get_json(), app.DADOS_PADRAO)
+
+    def test_erro_de_banco_retorna_json_controlado(self):
+        with patch.object(app, "_get_collection", side_effect=app.PyMongoError("banco indisponível")):
+            resposta = self.cliente.get("/api/dados")
+
         self.assertEqual(resposta.status_code, 500)
-        self.assertEqual(self.arquivo_dados.read_bytes(), conteudo_original)
-        self.assertEqual(list(self.arquivo_dados.parent.glob("*.tmp")), [])
+        self.assertEqual(resposta.get_json()["status"], "erro")
+        self.assertIn("banco indisponível", resposta.get_json()["mensagem"])
 
     def test_endpoint_serve_apenas_json_da_pasta_configurada(self):
         pasta_cadernos = Path(self.pasta_temporaria.name) / "cadernos"
