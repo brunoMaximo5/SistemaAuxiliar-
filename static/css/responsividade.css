@@ -1,0 +1,231 @@
+/* Shared responsive behavior for the application shells. */
+:root {
+    --mobile-header-height: 58px;
+}
+
+html {
+    overflow-x: hidden;
+}
+
+button,
+a,
+input,
+select,
+textarea {
+    touch-action: manipulation;
+}
+
+button,
+.btn-link,
+.nav-btn,
+select,
+input[type="button"],
+input[type="submit"] {
+    min-height: 44px;
+}
+
+.table-responsive {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.modal-dialog,
+.modal-card,
+.modal-content,
+.modal-box {
+    max-width: calc(100vw - 2rem);
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.tabs-container,
+.abas-container,
+.finance-tabs {
+    scrollbar-width: thin;
+}
+
+@media (min-width: 992px) {
+    .app-shell .sidebar {
+        position: fixed;
+        inset: 0 auto 0 0;
+        height: 100vh;
+    }
+
+    .app-shell .main-content {
+        margin-left: 260px;
+        width: calc(100% - 260px);
+        min-width: 0;
+    }
+
+    .mobile-header,
+    .drawer-backdrop {
+        display: none !important;
+    }
+}
+
+@media (max-width: 991.98px) {
+    .app-shell {
+        display: block;
+        overflow-x: hidden;
+    }
+
+    .app-shell .sidebar {
+        position: fixed;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        width: min(88vw, 320px);
+        min-width: 0;
+        max-height: none;
+        height: 100dvh;
+        transform: translateX(-105%);
+        transition: transform 240ms ease, visibility 240ms ease;
+        visibility: hidden;
+        z-index: 1045;
+        overflow-y: auto;
+        border-right: 1px solid var(--borda-sutil);
+        border-bottom: 0;
+        flex-direction: column;
+        flex-wrap: nowrap;
+    }
+
+    .app-shell .sidebar.is-open {
+        transform: translateX(0);
+        visibility: visible;
+    }
+
+    .app-shell .status-panel {
+        display: block;
+        padding: 28px 20px;
+        margin-bottom: 0;
+    }
+
+    .app-shell .sidebar > div:not(.status-panel) {
+        display: block !important;
+        width: auto;
+        padding: 20px !important;
+        margin: 0;
+    }
+
+    .app-shell .sidebar > div:not(.status-panel) > div:first-child {
+        display: block;
+    }
+
+    .app-shell .sidebar .nav-btn {
+        display: block;
+        width: 100%;
+        min-height: 48px;
+        padding: 14px 24px;
+        border-left: 3px solid transparent;
+        border-bottom: 0;
+        text-align: left;
+        font-size: 1rem;
+    }
+
+    .app-shell .sidebar .nav-btn.active {
+        border-left-color: var(--texto-puro);
+        border-bottom-color: transparent;
+    }
+
+    .app-shell .main-content {
+        min-width: 0;
+        width: 100%;
+        height: 100dvh;
+        padding: calc(var(--mobile-header-height) + 18px) 16px 24px;
+        overflow-y: auto;
+    }
+
+    .mobile-header {
+        position: fixed;
+        inset: 0 0 auto 0;
+        height: var(--mobile-header-height);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 8px 16px;
+        background: rgba(18, 18, 18, 0.94);
+        border-bottom: 1px solid var(--borda-sutil);
+        z-index: 1030;
+        backdrop-filter: blur(10px);
+    }
+
+    .mobile-menu-button {
+        width: 44px;
+        min-width: 44px;
+        padding: 0;
+        color: var(--texto-puro);
+        background: transparent;
+        border: 1px solid var(--borda-sutil);
+        border-radius: 6px;
+        font-size: 1.35rem;
+        line-height: 1;
+    }
+
+    .mobile-header-title {
+        color: var(--texto-puro);
+        font-size: 1rem;
+        font-weight: 600;
+    }
+
+    .drawer-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.62);
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 240ms ease, visibility 240ms ease;
+        z-index: 1040;
+    }
+
+    .drawer-backdrop.is-visible {
+        opacity: 1;
+        visibility: visible;
+    }
+
+    body.drawer-open {
+        overflow: hidden;
+    }
+
+    .tabs-wrapper,
+    .finance-tabs,
+    .abas-container {
+        overflow-x: auto;
+        flex-wrap: nowrap;
+        justify-content: flex-start;
+    }
+
+    .tabs-wrapper {
+        align-items: flex-start;
+    }
+
+    .top-bar,
+    .toolbar-custom,
+    .botoes-modal,
+    .finance-actions {
+        flex-wrap: wrap;
+    }
+
+    .top-bar > *,
+    .toolbar-custom > * {
+        max-width: 100%;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .modal-card,
+    .modal-content,
+    .modal-box {
+        width: calc(100vw - 2rem) !important;
+        padding: 20px;
+    }
+
+    .dashboard-counter {
+        font-size: 2.25rem !important;
+    }
+
+    .botoes-modal > *,
+    .finance-actions > * {
+        flex: 1 1 100%;
+    }
+}

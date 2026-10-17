@@ -2,12 +2,6 @@
 	"folders": [
 		{
 			"path": "."
-		},
-		{
-			"path": "../../Arquivos Pessoais/uploads"
-		},
-		{
-			"path": "../../Arquivos Pessoais/static"
 		}
 	],
 	"settings": {

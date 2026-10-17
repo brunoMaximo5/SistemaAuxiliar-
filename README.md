@@ -38,4 +38,8 @@ Os testes usam uma coleção falsa em memória e não acessam o MongoDB real:
 ```
 O banco padrão é `sistema_auxiliar`, mas pode ser alterado com `MONGO_DB_NAME`. O estado agregado da aplicação fica na coleção `dados`, em um único documento principal.
 
+As contas usam Flask-Login e senhas armazenadas somente como hash Werkzeug. Páginas e arquivos privados redirecionam ao login; endpoints `/api/*` retornam JSON 401 para manter os `fetch(...).json()` existentes compatíveis. A sessão usa `SECRET_KEY`, cookie HttpOnly e SameSite=Lax. Flask-WTF/CSRF obrigatório não foi introduzido porque os POSTs atuais usam `fetch` e `FormData` sem token; em produção, configure uma `SECRET_KEY` forte, HTTPS e considere adicionar token CSRF aos helpers JavaScript antes de expor a aplicação a requisições entre sites.
+
+O banco padrão é `sistema_auxiliar`, mas pode ser alterado com `MONGO_DB_NAME`. Os usuários ficam na coleção `usuarios` e os dados ficam na coleção `dados`, em um documento por usuário. O documento legado `_id=dados_principais` é preservado e copiado apenas para o primeiro usuário.
+
 Para backup e restauração, use os recursos do MongoDB Atlas e mantenha também os arquivos da pasta de cadernos e os anexos em `uploads/` se quiser preservar todos os dados locais.
